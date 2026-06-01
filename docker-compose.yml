@@ -12,7 +12,10 @@ services:
       ENABLE_CRON: "true"
     networks:
       - proxy
+      - bookit-network
 
 networks:
+  bookit-network:
+    driver: bridge
   proxy:
     external: true

@@ -14,34 +14,24 @@ export interface VerticalTerminology {
   booking: string;
   booking_plural: string;
   /** e.g. "Service" | "Style" | "Tag" */
-  service: string;
+  service_tag: string;
   service_plural: string;
-  /** Label for booking_notes field */
-  booking_notes_label: string;
   /** Placeholder for booking_notes field */
   booking_notes_placeholder: string;
-  /** e.g. "Agency" | "Studio" */
+  /** e.g. "Agent" | "Manager" */
   operator: string;
 }
 
 export interface VerticalDefaults {
   client_mode: ClientMode;
   booking_confirm_mode: BookingConfirmMode;
-  slot_minutes: number;
-  booking_notes_required: boolean;
-  age_gate_minimum: number;
+  client_approval_mode: 'manual' | 'auto';
+  default_slot_minutes: number;
+  require_booking_notes: boolean;
+  booking_notes_label: string;
+  age_gate_minimum: number | null;
   require_age_confirm: boolean;
   pricing_enabled: boolean;
-}
-
-export interface WizardStepConfig {
-  id: string;
-  title: string;
-  description: string;
-}
-
-export interface VerticalWizard {
-  steps: WizardStepConfig[];
 }
 
 export interface VerticalConfig {
@@ -49,7 +39,12 @@ export interface VerticalConfig {
   label: string;
   terminology: VerticalTerminology;
   defaults: VerticalDefaults;
-  wizard: VerticalWizard;
+  show_kvk_field: boolean;
+  show_license_field: boolean;
+  show_bsn_on_staff: boolean;
+  show_gdpr_photo_consent: boolean;
+  show_age_gate_step: boolean;
+  staff_require_pseudonym: boolean;
   /** Pre-seeded service tag names shown during onboarding */
   seed_tags: string[];
   /** Whether deposits are configurable for this vertical */
