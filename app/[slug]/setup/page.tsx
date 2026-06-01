@@ -1,5 +1,8 @@
 import { getAuthenticatedUser } from '@/lib/auth/session';
+import { resolveTenant } from '@/lib/auth/tenant';
+import { getVerticalConfig } from '@/lib/verticals';
 import { redirect } from 'next/navigation';
+import WizardShell from './wizard-shell';
 
 export default async function SetupPage({
   params,
@@ -17,9 +20,23 @@ export default async function SetupPage({
     redirect(`/${slug}/dashboard`);
   }
 
+  const tenant = await resolveTenant(slug);
+
+  if (!tenant) {
+    redirect(`/${slug}/login`);
+  }
+
+  if (tenant.wizardCompleted) {
+    redirect(`/${slug}/dashboard`);
+  }
+
+  const config = getVerticalConfig(tenant.vertical);
+
   return (
-    <div className="min-h-screen bg-zinc-950 flex items-center justify-center">
-      <p className="text-zinc-400 text-sm">Onboarding wizard — Phase 3</p>
-    </div>
+    <WizardShell
+      slug={slug}
+      tenantName={tenant.name}
+      config={config}
+    />
   );
 }
