@@ -46,9 +46,10 @@ export default function ChangePasswordForm({
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ staffId }),
       });
+      router.push(`/${slug}/staff-setup`);
+    } else {
+      router.push(`/${slug}/dashboard`);
     }
-
-    router.push(`/${slug}/dashboard`);
     router.refresh();
   }
 

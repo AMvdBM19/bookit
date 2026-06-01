@@ -1,5 +1,6 @@
 import { createServiceClient } from '@/lib/supabase/server';
-import { sendWhatsAppMessage, resolveTemplate } from '@/lib/twilio/dispatch';
+import { getWhatsAppProvider } from '@/lib/whatsapp';
+import { resolveTemplate } from '@/lib/twilio/dispatch';
 
 interface NotificationOptions {
   tenantId: string;
@@ -42,7 +43,8 @@ export async function sendWhatsApp(opts: WhatsAppOptions): Promise<boolean> {
   const body = await resolveTemplate(opts.tenantId, opts.eventType, 'whatsapp', opts.variables);
   if (!body) return false;
 
-  const sent = await sendWhatsAppMessage(opts.tenantId, opts.recipientPhone, body);
+  const provider = await getWhatsAppProvider(opts.tenantId);
+  const sent = provider ? await provider.sendMessage(opts.recipientPhone, body) : false;
 
   const supabase = createServiceClient();
   await supabase.from('notification_log').insert({

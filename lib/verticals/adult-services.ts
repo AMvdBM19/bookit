@@ -32,6 +32,6 @@ export const adultServicesConfig: VerticalConfig = {
   show_gdpr_photo_consent: true,
   show_age_gate_step: true,
   staff_require_pseudonym: true,
-  seed_tags: ['GFE', 'Massage', 'Duo', 'Dinner Date', 'Overnight'],
+  seed_tags: ['Escort', 'Massage', 'GFE', 'Dinner Date'],
   deposits_supported: false,
 };

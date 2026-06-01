@@ -25,7 +25,8 @@ export default async function TenantLayout({
   if (
     !tenant.wizardCompleted &&
     !nextUrl.includes('/setup') &&
-    !nextUrl.includes('/change-password')
+    !nextUrl.includes('/change-password') &&
+    !nextUrl.includes('/staff-setup')
   ) {
     redirect(`/${slug}/setup`);
   }

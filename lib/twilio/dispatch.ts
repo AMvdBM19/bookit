@@ -24,7 +24,7 @@ async function getTwilioConfig(tenantId: string): Promise<TwilioConfig | null> {
   return { accountSid, authToken, fromNumber: data.api_key };
 }
 
-/** Send a WhatsApp message via Twilio. Returns true if sent successfully. */
+/** @deprecated Use lib/whatsapp/ provider abstraction instead. Kept for resolveTemplate only. */
 export async function sendWhatsAppMessage(
   tenantId: string,
   recipientPhone: string,

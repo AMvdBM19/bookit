@@ -96,8 +96,8 @@ export interface GuestBlock {
   email: string | null;
   phone: string | null;
   reason: string | null;
-  blocked_by_agent_id: string | null;
-  created_at: string;
+  blocked_by: string | null;
+  blocked_at: string;
 }
 
 export interface ServiceTag {
@@ -193,6 +193,18 @@ export interface TenantSettings {
   ai_assistant_enabled: boolean;
   ai_provider: 'anthropic' | 'openai' | 'mistral' | null;
   gdpr_retention_years: number;
+  updated_at: string;
+}
+
+export interface TenantIntegration {
+  id: string;
+  tenant_id: string;
+  integration_type: string;
+  api_key: string | null;
+  config: Record<string, string> | null;
+  is_active: boolean;
+  added_by_agent_id: string | null;
+  created_at: string;
   updated_at: string;
 }
 

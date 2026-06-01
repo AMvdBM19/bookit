@@ -55,7 +55,8 @@ export async function middleware(request: NextRequest) {
     if (
       !tenant.wizard_completed &&
       !subPath.startsWith('/setup') &&
-      !subPath.startsWith('/change-password')
+      !subPath.startsWith('/change-password') &&
+      !subPath.startsWith('/staff-setup')
     ) {
       return NextResponse.redirect(new URL(`/${slug}/setup`, request.url));
     }

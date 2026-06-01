@@ -22,7 +22,10 @@ lib/supabase/          — server/client/middleware Supabase clients
 app/[slug]/            — all tenant-scoped routes
 app/[slug]/(auth)/     — login, logout, change-password (outside tenant layout)
 app/[slug]/setup/      — onboarding wizard (agent-only)
+app/[slug]/staff-setup/  — staff profile wizard (4-step)
 app/[slug]/dashboard/  — ERP shell (built in Phase 6)
+app/api/[slug]/staff/    — staff creation API (agent-only)
+lib/whatsapp/            — WA provider abstraction (Twilio + Meta)
 supabase/migrations/   — DB schema
 supabase/seed.sql      — demo data (inkhaus + velours-demo)
 
@@ -44,4 +47,5 @@ velours-demo (adult_services, account mode) — agent: agent@velours-demo.nl / T
 Phase 1: ✅ Repo + vertical config + DB
 Phase 2: ✅ Auth + tenant resolution + route shell
 Phase 3: ✅ Wizard (complete)
-Phase 4-9: pending
+Phase 4A: ✅ WA provider abstraction + staff wizard
+Phase 4B-9: pending
