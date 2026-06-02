@@ -25,6 +25,8 @@ app/[slug]/setup/      — onboarding wizard (agent-only)
 app/[slug]/staff-setup/  — staff profile wizard (4-step)
 app/[slug]/dashboard/    — role-based dashboard (staff: pending bookings + actions)
 app/api/[slug]/bookings/ — booking accept/decline APIs
+app/book/[slug]/         — public booking widget + APIs (no auth)
+app/book/[slug]/api/     — catalog, availability, book endpoints
 app/api/[slug]/staff/    — staff creation API (agent-only)
 lib/whatsapp/            — WA provider abstraction (Twilio + Meta)
 supabase/migrations/   — DB schema
