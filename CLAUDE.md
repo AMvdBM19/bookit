@@ -51,4 +51,5 @@ Phase 1: ✅ Repo + vertical config + DB
 Phase 2: ✅ Auth + tenant resolution + route shell
 Phase 3: ✅ Wizard (complete)
 Phase 4: ✅ Staff flow + WA dispatch + calendar link
-Phase 5-9: pending
+Phase 5: ✅ Client widget (guest + account mode) + booking engine
+Phase 6-9: pending
