@@ -53,7 +53,7 @@ async function processReminders() {
       slot_end,
       reminder_sent,
       tenant_settings!inner(reminder_lead_time_minutes),
-      staff!inner(pseudonym),
+      staff(pseudonym),
       clients(phone, wa_opt_in, display_name),
       guest_clients(phone, wa_opt_in, name)
     `)
@@ -81,8 +81,8 @@ async function processReminders() {
     // Fire if slot is within the lead window but has not passed yet
     if (minutesUntilSlot < 0 || minutesUntilSlot > leadMinutes) continue;
 
-    const staffArr = booking.staff as unknown as Array<{ pseudonym: string }>;
-    const staff = Array.isArray(staffArr) ? staffArr[0] : (staffArr as unknown as { pseudonym: string });
+    const staffArr = booking.staff as unknown as Array<{ pseudonym: string }> | { pseudonym: string } | null;
+    const staff = Array.isArray(staffArr) ? staffArr[0] ?? null : staffArr ?? null;
     const clientArr = booking.clients as unknown as Array<{ phone: string | null; wa_opt_in: boolean; display_name: string }>;
     const client = Array.isArray(clientArr) ? clientArr[0] ?? null : (clientArr as unknown as { phone: string | null; wa_opt_in: boolean; display_name: string } | null);
     const guestArr = booking.guest_clients as unknown as Array<{ phone: string | null; wa_opt_in: boolean; name: string }>;

@@ -16,22 +16,6 @@ const nextConfig = {
       },
       {
         // Public API routes consumed by the embed widget — CORS
-        source: '/:slug/api/catalog',
-        headers: [
-          { key: 'Access-Control-Allow-Origin', value: '*' },
-          { key: 'Access-Control-Allow-Methods', value: 'GET, OPTIONS' },
-          { key: 'Access-Control-Allow-Headers', value: 'Content-Type' },
-        ],
-      },
-      {
-        source: '/:slug/api/availability',
-        headers: [
-          { key: 'Access-Control-Allow-Origin', value: '*' },
-          { key: 'Access-Control-Allow-Methods', value: 'GET, OPTIONS' },
-          { key: 'Access-Control-Allow-Headers', value: 'Content-Type' },
-        ],
-      },
-      {
         source: '/book/:slug/api/:path*',
         headers: [
           { key: 'Access-Control-Allow-Origin', value: '*' },

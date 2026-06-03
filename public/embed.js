@@ -2,6 +2,17 @@
   'use strict';
 
   var BOOKIT_URL = 'https://bookit.monoliet.cloud';
+  var iframes = [];
+
+  // Register message listener once at init — not per iframe load.
+  // Without this guard, every reload of an embedded iframe would add a duplicate listener.
+  window.addEventListener('message', function (event) {
+    if (event.origin !== BOOKIT_URL) return;
+    if (!event.data || event.data.type !== 'bookit:resize') return;
+    for (var i = 0; i < iframes.length; i++) {
+      iframes[i].height = event.data.height + 'px';
+    }
+  });
 
   function init() {
     var containers = document.querySelectorAll('[data-bookit-slug]');
@@ -22,24 +33,14 @@
       iframe.frameBorder = '0';
       iframe.scrolling = 'yes';
       iframe.allow = 'fullscreen';
+      iframe.loading = 'lazy';
       iframe.title = 'Book-IT Booking Widget';
       iframe.style.border = 'none';
       iframe.style.display = 'block';
       iframe.style.maxWidth = '100%';
 
       el.appendChild(iframe);
-
-      // Resize iframe to fit content
-      iframe.addEventListener('load', function () {
-        try {
-          window.addEventListener('message', function (event) {
-            if (event.origin !== BOOKIT_URL) return;
-            if (event.data && event.data.type === 'bookit:resize') {
-              iframe.height = event.data.height + 'px';
-            }
-          });
-        } catch (e) {}
-      });
+      iframes.push(iframe);
     }
   }
 

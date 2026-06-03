@@ -3,6 +3,7 @@ import { updateSession } from '@/lib/supabase/middleware';
 
 const PUBLIC_ROUTES = ['/login', '/auth/callback', '/change-password', '/setup', '/onboarding'];
 const BYPASS_PREFIXES = ['/api/super-admin', '/book'];
+const SYSTEM_SLUGS = ['super-admin'];
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
@@ -27,6 +28,11 @@ export async function middleware(request: NextRequest) {
 
   // Root path — handled by app/page.tsx (BUG 6 FIX)
   if (!slug) {
+    return NextResponse.next();
+  }
+
+  // System slugs (e.g. super-admin) — not tenants, skip tenant resolution
+  if (SYSTEM_SLUGS.includes(slug)) {
     return NextResponse.next();
   }
 

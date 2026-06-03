@@ -29,8 +29,11 @@ app/api/[slug]/clients/  — client status PATCH (account mode)
 app/api/[slug]/guests/   — guest list + block APIs (guest mode)
 app/api/[slug]/settings/ — settings summary (agent-only, read-only)
 app/api/[slug]/notifications/ — WA/email template CRUD (agent-only)
+app/super-admin/         — super admin console (API-key auth, session-scoped)
+app/api/super-admin/     — super admin tenant CRUD + stats
 instrumentation.ts         — boots reminder cron in Node runtime
 lib/cron/                  — node-cron jobs (reminders)
+lib/auth/super-admin.ts  — Bearer key validation for super-admin routes
 app/book/[slug]/         — public booking widget + APIs (no auth)
 app/book/[slug]/api/     — catalog, availability, book endpoints
 app/api/[slug]/staff/    — staff creation API (agent-only)
@@ -60,4 +63,5 @@ Phase 4: ✅ Staff flow + WA dispatch + calendar link
 Phase 5: ✅ Client widget (guest + account mode) + booking engine
 Phase 6: ✅ Agent ERP dashboard (bookings, staff, guests/clients, settings)
 Phase 7: ✅ Reminder cron wiring, WA templates API + UI, cancellation dispatch
-Phase 8-9: pending
+Phase 8: ✅ Super admin console, WordPress hardening, accumulated cleanup
+Phase 9: pending
