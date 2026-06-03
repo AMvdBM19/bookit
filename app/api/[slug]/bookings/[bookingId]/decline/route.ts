@@ -11,16 +11,12 @@ export async function POST(
 
   let user;
   try {
-    user = await requireRole(['staff']);
+    user = await requireRole(['staff', 'agent']);
   } catch {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
   const tenantId = user.tenantId;
-  const staffId = user.staffId;
-  if (!staffId) {
-    return NextResponse.json({ error: 'No staff ID in session' }, { status: 403 });
-  }
 
   const body = await request.json().catch(() => null);
 
@@ -38,9 +34,19 @@ export async function POST(
   if (booking.tenant_id !== tenantId) {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
   }
-  if (booking.staff_id !== staffId) {
-    return NextResponse.json({ error: 'Not your booking' }, { status: 403 });
+
+  // Staff: must own the booking (their staffId matches)
+  // Agent: tenant_id check above is sufficient ownership validation
+  if (user.role === 'staff') {
+    const staffId = user.staffId;
+    if (!staffId) {
+      return NextResponse.json({ error: 'No staff ID in session' }, { status: 403 });
+    }
+    if (booking.staff_id !== staffId) {
+      return NextResponse.json({ error: 'Not your booking' }, { status: 403 });
+    }
   }
+
   if (booking.status !== 'pending_staff') {
     return NextResponse.json({ error: `Cannot decline booking with status '${booking.status}'` }, { status: 400 });
   }
@@ -50,7 +56,7 @@ export async function POST(
     .update({
       status: 'cancelled',
       cancelled_at: new Date().toISOString(),
-      cancelled_by: 'staff',
+      cancelled_by: user.role === 'agent' ? 'agent' : 'staff',
       cancellation_reason: body?.reason || null,
     })
     .eq('id', bookingId);
@@ -85,11 +91,9 @@ export async function POST(
     }
   }
 
-  const { data: staffRecord } = await supabase
-    .from('staff')
-    .select('pseudonym')
-    .eq('id', staffId)
-    .single();
+  const { data: staffRecord } = booking.staff_id
+    ? await supabase.from('staff').select('pseudonym').eq('id', booking.staff_id).single()
+    : { data: null };
   const staffName = staffRecord?.pseudonym ?? 'Staff';
 
   const { data: settings } = await supabase
