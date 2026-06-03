@@ -23,8 +23,11 @@ app/[slug]/            — all tenant-scoped routes
 app/[slug]/(auth)/     — login, logout, change-password (outside tenant layout)
 app/[slug]/setup/      — onboarding wizard (agent-only)
 app/[slug]/staff-setup/  — staff profile wizard (4-step)
-app/[slug]/dashboard/    — role-based dashboard (staff: pending bookings + actions)
-app/api/[slug]/bookings/ — booking accept/decline APIs
+app/[slug]/dashboard/    — role-based dashboard (agent: ERP tabs; staff: pending bookings)
+app/api/[slug]/bookings/ — booking accept/decline + list APIs
+app/api/[slug]/clients/  — client status PATCH (account mode)
+app/api/[slug]/guests/   — guest list + block APIs (guest mode)
+app/api/[slug]/settings/ — settings summary (agent-only, read-only)
 app/book/[slug]/         — public booking widget + APIs (no auth)
 app/book/[slug]/api/     — catalog, availability, book endpoints
 app/api/[slug]/staff/    — staff creation API (agent-only)
@@ -52,4 +55,5 @@ Phase 2: ✅ Auth + tenant resolution + route shell
 Phase 3: ✅ Wizard (complete)
 Phase 4: ✅ Staff flow + WA dispatch + calendar link
 Phase 5: ✅ Client widget (guest + account mode) + booking engine
-Phase 6-9: pending
+Phase 6: ✅ Agent ERP dashboard (bookings, staff, guests/clients, settings)
+Phase 7-9: pending

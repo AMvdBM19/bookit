@@ -4,6 +4,7 @@ import { getVerticalConfig } from '@/lib/verticals';
 import { createClient } from '@/lib/supabase/server';
 import { redirect } from 'next/navigation';
 import StaffDashboard from './staff-dashboard';
+import AgentDashboard from './agent-dashboard';
 
 export default async function DashboardPage({
   params,
@@ -73,11 +74,16 @@ export default async function DashboardPage({
     );
   }
 
-  return (
-    <div className="min-h-screen bg-zinc-950 flex items-center justify-center">
-      <p className="text-zinc-400 text-sm">
-        Dashboard — {tenant?.name ?? slug} [{tenant?.vertical ?? ''}]
-      </p>
-    </div>
-  );
+  if (user.role === 'agent') {
+    return (
+      <AgentDashboard
+        slug={slug}
+        tenantName={tenant?.name ?? slug}
+        agentEmail={user.email}
+        clientMode={tenant?.clientMode ?? 'guest'}
+      />
+    );
+  }
+
+  redirect(`/${slug}/login`);
 }
