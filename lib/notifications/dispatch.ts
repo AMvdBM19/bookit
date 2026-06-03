@@ -120,6 +120,26 @@ export async function notifyBookingDeclined(
   }
 }
 
+export async function notifyBookingCancelled(
+  tenantId: string,
+  bookingId: string,
+  recipientPhone: string | null,
+  waOptIn: boolean,
+  variables: Record<string, string>,
+  recipientType: 'client' | 'guest_client' = 'client'
+) {
+  if (recipientPhone && waOptIn) {
+    await sendWhatsApp({
+      tenantId,
+      recipientPhone,
+      eventType: 'booking_cancelled',
+      variables,
+      recipientType,
+      bookingId,
+    });
+  }
+}
+
 export async function notifyClientSignup(
   tenantId: string,
   clientId: string,

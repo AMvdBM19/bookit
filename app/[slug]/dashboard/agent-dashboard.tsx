@@ -5,8 +5,9 @@ import BookingsSection from './sections/bookings-section';
 import StaffSection from './sections/staff-section';
 import ClientsSection from './sections/clients-section';
 import SettingsSection from './sections/settings-section';
+import TemplatesSection from './sections/templates-section';
 
-type Tab = 'bookings' | 'staff' | 'clients' | 'settings';
+type Tab = 'bookings' | 'staff' | 'clients' | 'templates' | 'settings';
 
 interface Props {
   slug: string;
@@ -19,6 +20,7 @@ const TABS: Array<{ id: Tab; label: string }> = [
   { id: 'bookings', label: 'Bookings' },
   { id: 'staff', label: 'Staff' },
   { id: 'clients', label: 'Clients' },
+  { id: 'templates', label: 'Templates' },
   { id: 'settings', label: 'Settings' },
 ];
 
@@ -84,6 +86,7 @@ export default function AgentDashboard({
           {tab === 'bookings' && <BookingsSection slug={slug} />}
           {tab === 'staff' && <StaffSection slug={slug} />}
           {tab === 'clients' && <ClientsSection slug={slug} clientMode={clientMode} />}
+          {tab === 'templates' && <TemplatesSection slug={slug} />}
           {tab === 'settings' && <SettingsSection slug={slug} />}
         </div>
       </main>

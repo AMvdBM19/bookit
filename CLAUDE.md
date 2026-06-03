@@ -28,6 +28,9 @@ app/api/[slug]/bookings/ — booking accept/decline + list APIs
 app/api/[slug]/clients/  — client status PATCH (account mode)
 app/api/[slug]/guests/   — guest list + block APIs (guest mode)
 app/api/[slug]/settings/ — settings summary (agent-only, read-only)
+app/api/[slug]/notifications/ — WA/email template CRUD (agent-only)
+instrumentation.ts         — boots reminder cron in Node runtime
+lib/cron/                  — node-cron jobs (reminders)
 app/book/[slug]/         — public booking widget + APIs (no auth)
 app/book/[slug]/api/     — catalog, availability, book endpoints
 app/api/[slug]/staff/    — staff creation API (agent-only)
@@ -56,4 +59,5 @@ Phase 3: ✅ Wizard (complete)
 Phase 4: ✅ Staff flow + WA dispatch + calendar link
 Phase 5: ✅ Client widget (guest + account mode) + booking engine
 Phase 6: ✅ Agent ERP dashboard (bookings, staff, guests/clients, settings)
-Phase 7-9: pending
+Phase 7: ✅ Reminder cron wiring, WA templates API + UI, cancellation dispatch
+Phase 8-9: pending
