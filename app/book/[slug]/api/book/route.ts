@@ -4,6 +4,11 @@ import { checkAvailability } from '@/lib/availability/check';
 import { calculatePricing } from '@/lib/pricing/calculate';
 import { getVerticalConfig, isValidVertical } from '@/lib/verticals';
 import { notifyBookingRequest, sendWhatsApp } from '@/lib/notifications/dispatch';
+import { checkRateLimit } from '@/lib/rate-limit/book';
+
+function stripHtml(input: string): string {
+  return input.replace(/<[^>]*>/g, '').trim();
+}
 
 interface BookingBody {
   staff_id?: string;
@@ -25,6 +30,20 @@ export async function POST(
   { params }: { params: Promise<{ slug: string }> }
 ) {
   const { slug } = await params;
+
+  const ip =
+    request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ?? '127.0.0.1';
+  const rateLimit = checkRateLimit(ip);
+  if (!rateLimit.allowed) {
+    return NextResponse.json(
+      { error: 'Too many requests. Please try again shortly.' },
+      {
+        status: 429,
+        headers: { 'Retry-After': String(rateLimit.retryAfter) },
+      }
+    );
+  }
+
   const body = (await request.json().catch(() => null)) as BookingBody | null;
 
   if (!body) {
@@ -110,6 +129,7 @@ export async function POST(
     }
 
     const emailLower = body.guest_email.toLowerCase();
+    const safeGuestName = stripHtml(body.guest_name);
 
     const { data: block } = await supabase
       .from('guest_blocks')
@@ -134,7 +154,7 @@ export async function POST(
       await supabase
         .from('guest_clients')
         .update({
-          name: body.guest_name,
+          name: safeGuestName,
           phone: body.guest_phone || null,
           wa_opt_in: body.guest_wa_opt_in ?? false,
           last_seen_at: new Date().toISOString(),
@@ -148,7 +168,7 @@ export async function POST(
         .insert({
           tenant_id: tenant.id,
           email: emailLower,
-          name: body.guest_name,
+          name: safeGuestName,
           phone: body.guest_phone || null,
           wa_opt_in: body.guest_wa_opt_in ?? false,
           booking_count: 1,
@@ -158,7 +178,7 @@ export async function POST(
       guestClientId = newGuest?.id ?? null;
     }
 
-    clientDisplayName = body.guest_name;
+    clientDisplayName = safeGuestName;
     clientPhone = body.guest_phone || null;
     waOptIn = body.guest_wa_opt_in ?? false;
   } else {
@@ -233,7 +253,7 @@ export async function POST(
       slot_start: body.slot_start,
       slot_end: body.slot_end,
       duration_minutes: durationMinutes,
-      booking_notes: body.booking_notes || null,
+      booking_notes: body.booking_notes ? stripHtml(body.booking_notes) : null,
       base_rate_per_30: pricing.baseRatePer30,
       tag_extras_total: pricing.tagExtrasTotal,
       total_price: pricing.totalPrice,

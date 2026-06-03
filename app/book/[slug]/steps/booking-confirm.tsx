@@ -18,6 +18,9 @@ interface Props {
   submitting: boolean;
   submitError: string | null;
   onSubmit: () => void;
+  brandColor: string;
+  isGuestMode: boolean;
+  vertical: string;
 }
 
 function formatDate(dateStr: string): string {
@@ -52,6 +55,9 @@ export default function BookingConfirm({
   submitting,
   submitError,
   onSubmit,
+  brandColor,
+  isGuestMode,
+  vertical,
 }: Props) {
   const showPrice = settings?.show_price_to_client ?? false;
   const baseRate = settings?.base_rate_per_30min ?? 60;
@@ -61,6 +67,14 @@ export default function BookingConfirm({
   const baseTotal = baseRate * slots30;
   const tagExtrasTotal = selectedTags.reduce((sum, t) => sum + (t.extra_price ?? 0), 0);
   const totalPrice = baseTotal + tagExtrasTotal;
+
+  const depositPct = settings?.deposit_pct ?? 0;
+  const depositThreshold = settings?.deposit_required_above_minutes ?? 0;
+  const depositApplies =
+    vertical === 'tattoo' &&
+    depositPct > 0 &&
+    duration > depositThreshold;
+  const depositAmount = depositApplies ? totalPrice * (depositPct / 100) : 0;
 
   return (
     <div className="space-y-4">
@@ -129,16 +143,30 @@ export default function BookingConfirm({
         </section>
       )}
 
+      {depositApplies && (
+        <div className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-xs text-amber-800">
+          A deposit of {currency} {depositAmount.toFixed(2)} ({depositPct}%) is required to
+          confirm this booking. Payment link will be sent after confirmation.
+        </div>
+      )}
+
       {submitError && <p className="text-red-400 text-xs">{submitError}</p>}
 
       <button
         type="button"
         onClick={onSubmit}
         disabled={submitting}
-        className="w-full bg-white text-zinc-900 rounded-lg py-2.5 text-sm font-medium hover:bg-zinc-100 transition-colors disabled:opacity-50"
+        className="w-full rounded-lg py-2.5 text-sm font-medium transition-opacity hover:opacity-90 disabled:opacity-50"
+        style={{ backgroundColor: brandColor, color: '#fff' }}
       >
         {submitting ? 'Submitting…' : 'Submit Booking'}
       </button>
+
+      {isGuestMode && (
+        <p className="text-[10px] text-zinc-600 text-center">
+          Your details are not stored without your consent.
+        </p>
+      )}
     </div>
   );
 }

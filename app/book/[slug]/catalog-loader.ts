@@ -27,6 +27,8 @@ export interface CatalogSettings {
   default_slot_minutes: number;
   min_lead_time_hours: number;
   currency: string;
+  deposit_pct: number | null;
+  deposit_required_above_minutes: number | null;
 }
 
 export interface Catalog {
@@ -57,7 +59,7 @@ export async function loadCatalog(slug: string): Promise<Catalog | null> {
   const { data: settings } = await supabase
     .from('tenant_settings')
     .select(
-      'brand_color, agency_display_name, logo_url, show_price_to_client, base_rate_per_30min, age_gate_minimum, require_age_confirm, booking_confirm_mode, default_slot_minutes, min_lead_time_hours, currency'
+      'brand_color, agency_display_name, logo_url, show_price_to_client, base_rate_per_30min, age_gate_minimum, require_age_confirm, booking_confirm_mode, default_slot_minutes, min_lead_time_hours, currency, deposit_pct, deposit_required_above_minutes'
     )
     .eq('tenant_id', tenant.id)
     .single();

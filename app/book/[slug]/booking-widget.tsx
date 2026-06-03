@@ -342,6 +342,9 @@ export default function BookingWidget({ slug, catalog }: Props) {
                   submitting={state.submitting}
                   submitError={state.submitError}
                   onSubmit={handleSubmit}
+                  brandColor={brandColor}
+                  isGuestMode={!isAccountMode}
+                  vertical={catalog.tenant.vertical}
                 />
                 <div className="flex justify-between gap-2 pt-2">
                   <button

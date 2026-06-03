@@ -94,7 +94,7 @@ export default function DateTimeSelect({
     <div className="space-y-4">
       <div>
         <p className="text-xs text-zinc-400 mb-2">Choose a date</p>
-        <div className="flex gap-2 overflow-x-auto pb-2 -mx-1 px-1">
+        <div className="flex gap-2 overflow-x-auto pb-2 -mx-1 px-1 snap-x snap-mandatory">
           {dateChips.map(d => {
             const isSelected = d.value === selectedDate;
             return (
@@ -102,7 +102,7 @@ export default function DateTimeSelect({
                 key={d.value}
                 type="button"
                 onClick={() => onSelectDate(d.value)}
-                className={`shrink-0 rounded-lg border px-3 py-2 text-xs transition-colors ${
+                className={`shrink-0 snap-start rounded-lg border px-3 py-2 text-xs transition-colors ${
                   isSelected
                     ? 'text-white border-transparent'
                     : 'text-zinc-300 border-zinc-800 bg-zinc-900 hover:border-zinc-600'
@@ -115,6 +115,12 @@ export default function DateTimeSelect({
           })}
         </div>
       </div>
+
+      {!selectedDate && (
+        <p className="text-xs text-zinc-600 italic">
+          ← Select a date to see available times
+        </p>
+      )}
 
       {selectedDate && (
         <div>

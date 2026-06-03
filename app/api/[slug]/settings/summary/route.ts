@@ -15,10 +15,17 @@ export async function GET() {
   const { data: settings } = await supabase
     .from('tenant_settings')
     .select(
-      'agency_display_name, logo_url, booking_confirm_mode, base_rate_per_30min, currency, min_lead_time_hours, max_booking_days_ahead, age_gate_minimum, require_age_confirm'
+      'agency_display_name, logo_url, brand_color, booking_confirm_mode, base_rate_per_30min, currency, min_lead_time_hours, max_booking_days_ahead, age_gate_minimum, require_age_confirm, show_price_to_client, reminder_lead_time_minutes, deposit_pct, deposit_required_above_minutes'
     )
     .eq('tenant_id', user.tenantId)
     .single();
+
+  const { data: lockedRows } = await supabase
+    .from('tenant_locked_settings')
+    .select('field_name')
+    .eq('tenant_id', user.tenantId);
+
+  const lockedFields = (lockedRows ?? []).map(r => r.field_name);
 
   const { data: tenant } = await supabase
     .from('tenants')
@@ -37,6 +44,7 @@ export async function GET() {
   return NextResponse.json({
     tenant: tenant ?? null,
     settings: settings ?? null,
+    locked_fields: lockedFields,
     integrations: {
       whatsapp: waIntegration
         ? { configured: true, provider: waIntegration.integration_type }

@@ -27,7 +27,8 @@ app/[slug]/dashboard/    — role-based dashboard (agent: ERP tabs; staff: pendi
 app/api/[slug]/bookings/ — booking accept/decline + list APIs
 app/api/[slug]/clients/  — client status PATCH (account mode)
 app/api/[slug]/guests/   — guest list + block APIs (guest mode)
-app/api/[slug]/settings/ — settings summary (agent-only, read-only)
+app/api/[slug]/settings/ — settings summary (GET) + PATCH (editable non-locked fields)
+lib/rate-limit/          — IP-based rate limiting for public endpoints (booking POST)
 app/api/[slug]/notifications/ — WA/email template CRUD (agent-only)
 app/super-admin/         — super admin console (API-key auth, session-scoped)
 app/api/super-admin/     — super admin tenant CRUD + stats
@@ -64,4 +65,10 @@ Phase 5: ✅ Client widget (guest + account mode) + booking engine
 Phase 6: ✅ Agent ERP dashboard (bookings, staff, guests/clients, settings)
 Phase 7: ✅ Reminder cron wiring, WA templates API + UI, cancellation dispatch
 Phase 8: ✅ Super admin console, WordPress hardening, accumulated cleanup
-Phase 9: pending
+Phase 9: ✅ Widget polish, deposit scaffold, rate limiting, settings edit
+
+## Deposits (tattoo only)
+Migration `supabase/migrations/20260603000004_deposits.sql` adds
+`deposit_pct` and `deposit_required_above_minutes` to `tenant_settings`.
+Widget shows a deposit notice when vertical=tattoo AND deposit_pct>0 AND duration>deposit_required_above_minutes.
+No payment processing yet — informational scaffolding only.
