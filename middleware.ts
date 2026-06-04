@@ -2,7 +2,7 @@ import { NextResponse, type NextRequest } from 'next/server';
 import { updateSession } from '@/lib/supabase/middleware';
 
 const PUBLIC_ROUTES = ['/login', '/auth/callback', '/change-password', '/setup', '/onboarding'];
-const BYPASS_PREFIXES = ['/api/super-admin', '/book'];
+const BYPASS_PREFIXES = ['/api', '/book'];
 const SYSTEM_SLUGS = ['super-admin'];
 
 export async function middleware(request: NextRequest) {
