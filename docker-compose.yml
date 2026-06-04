@@ -1,21 +1,15 @@
 services:
-  bookit:
-    build: .
-    container_name: bookit
+  bookit-frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: bookit-frontend
     restart: unless-stopped
-    ports:
-      - "3020:3000"
     env_file:
-      - .env
-    environment:
-      NODE_ENV: production
-      ENABLE_CRON: "true"
+      - .env.production
     networks:
-      - proxy
-      - bookit-network
+      - web
 
 networks:
-  bookit-network:
-    driver: bridge
-  proxy:
+  web:
     external: true

@@ -1,10 +1,12 @@
 import type { VerticalConfig, VerticalId } from './types';
 import { adultServicesConfig } from './adult-services';
 import { tattooConfig } from './tattoo';
+import { consultancyConfig } from './consultancy';
 
 const VERTICAL_REGISTRY: Record<VerticalId, VerticalConfig> = {
   adult_services: adultServicesConfig,
   tattoo: tattooConfig,
+  consultancy: consultancyConfig,
 };
 
 export function getVerticalConfig(vertical: VerticalId): VerticalConfig {
@@ -20,4 +22,4 @@ export function isValidVertical(value: unknown): value is VerticalId {
 }
 
 export type { VerticalConfig, VerticalId };
-export { adultServicesConfig, tattooConfig };
+export { adultServicesConfig, tattooConfig, consultancyConfig };

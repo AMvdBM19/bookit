@@ -1,4 +1,4 @@
-export type VerticalId = 'adult_services' | 'tattoo';
+export type VerticalId = 'adult_services' | 'tattoo' | 'consultancy';
 
 export type ClientMode = 'account' | 'guest';
 export type BookingConfirmMode = 'staff_must_accept' | 'auto_confirm';

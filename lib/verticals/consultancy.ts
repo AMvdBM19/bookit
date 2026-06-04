@@ -1,0 +1,47 @@
+import type { VerticalConfig } from './types';
+
+export const consultancyConfig: VerticalConfig = {
+  id: 'consultancy',
+  label: 'Consultancy',
+  terminology: {
+    staff: 'Consultant',
+    staff_plural: 'Consultants',
+    client: 'Client',
+    client_plural: 'Clients',
+    booking: 'Session',
+    booking_plural: 'Sessions',
+    operator: 'Manager',
+    service_tag: 'Specialty',
+    service_plural: 'Specialties',
+    booking_notes_placeholder:
+      "Briefly describe what you'd like to cover — goals, current stack, challenges...",
+  },
+  defaults: {
+    client_mode: 'account',
+    booking_confirm_mode: 'auto_confirm',
+    client_approval_mode: 'manual',
+    default_slot_minutes: 60,
+    require_booking_notes: true,
+    booking_notes_label: 'What would you like to discuss?',
+    age_gate_minimum: null,
+    require_age_confirm: false,
+    pricing_enabled: true,
+  },
+  show_kvk_field: false,
+  show_license_field: false,
+  show_bsn_on_staff: false,
+  show_gdpr_photo_consent: false,
+  show_age_gate_step: false,
+  staff_require_pseudonym: false,
+  deposits_supported: false,
+  seed_tags: [
+    'AI & Automation',
+    'n8n / Make',
+    'ERP / CRM Setup',
+    'Website & WordPress',
+    'Process Mapping',
+    'Tech Stack Audit',
+    'IT Infrastructure',
+    'Discovery Call',
+  ],
+};
