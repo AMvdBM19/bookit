@@ -12,7 +12,7 @@ const ALLOWED_EVENT_TYPES = [
 
 const ALLOWED_CHANNELS = ['whatsapp', 'email'] as const;
 
-export const TEMPLATE_VARIABLES: Record<string, string[]> = {
+const TEMPLATE_VARIABLES: Record<string, string[]> = {
   booking_confirmed: ['client_name', 'staff_name', 'date', 'time', 'duration', 'agency_name'],
   booking_declined: ['client_name', 'staff_name', 'date', 'time', 'agency_name'],
   booking_reminder: ['client_name', 'staff_name', 'date', 'time'],
