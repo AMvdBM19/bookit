@@ -1,4 +1,4 @@
--- Phase 3 fixes: guest_clients additions, guest_blocks column renames, seed_tags cleanup
+﻿-- Phase 3 fixes: guest_clients additions, guest_blocks column renames, seed_tags cleanup
 
 -- Fix guest_clients: add first_seen_at, notes
 ALTER TABLE guest_clients
