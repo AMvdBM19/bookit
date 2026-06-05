@@ -1,6 +1,6 @@
 import { createServiceClient } from '@/lib/supabase/server';
-import { getVerticalConfig, isValidVertical } from '@/lib/verticals';
-import type { VerticalTerminology, VerticalDefaults } from '@/lib/verticals/types';
+import type { Terminology, FeatureFlags } from '@/lib/types/tenant-config';
+import { DEFAULT_TERMINOLOGY, DEFAULT_FEATURE_FLAGS } from '@/lib/types/tenant-config';
 
 export interface CatalogStaff {
   id: string;
@@ -41,8 +41,8 @@ export interface Catalog {
   settings: CatalogSettings | null;
   staff: CatalogStaff[];
   tags: Array<{ id: string; name: string; extra_price: number | null }>;
-  terminology: VerticalTerminology;
-  defaults: VerticalDefaults;
+  terminology: Terminology;
+  featureFlags: FeatureFlags;
 }
 
 export async function loadCatalog(slug: string): Promise<Catalog | null> {
@@ -110,8 +110,14 @@ export async function loadCatalog(slug: string): Promise<Catalog | null> {
     .eq('is_active', true)
     .order('display_order');
 
-  const verticalId = isValidVertical(tenant.vertical) ? tenant.vertical : 'adult_services';
-  const config = getVerticalConfig(verticalId);
+  const { data: tenantConfig } = await supabase
+    .from('tenant_config')
+    .select('terminology, feature_flags')
+    .eq('tenant_id', tenant.id)
+    .maybeSingle();
+
+  const terminology = (tenantConfig?.terminology as Terminology | undefined) ?? DEFAULT_TERMINOLOGY;
+  const featureFlags = (tenantConfig?.feature_flags as FeatureFlags | undefined) ?? DEFAULT_FEATURE_FLAGS;
 
   return {
     tenant: {
@@ -123,7 +129,7 @@ export async function loadCatalog(slug: string): Promise<Catalog | null> {
     settings: (settings as CatalogSettings | null) ?? null,
     staff,
     tags: allTags ?? [],
-    terminology: config.terminology,
-    defaults: config.defaults,
+    terminology,
+    featureFlags,
   };
 }

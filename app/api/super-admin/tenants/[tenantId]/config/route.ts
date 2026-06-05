@@ -7,6 +7,32 @@ import {
   validateComplianceFlags,
 } from '@/lib/templates/validation';
 
+// GET — return a tenant's config (source template + JSONB blocks) for the detail view.
+export async function GET(
+  request: NextRequest,
+  { params }: { params: Promise<{ tenantId: string }> }
+) {
+  if (!validateSuperAdminKey(request)) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
+  const { tenantId } = await params;
+  const supabase = createServiceClient();
+
+  const { data: config, error } = await supabase
+    .from('tenant_config')
+    .select('source_template_slug, terminology, feature_flags, compliance_flags, updated_at')
+    .eq('tenant_id', tenantId)
+    .maybeSingle();
+
+  if (error) {
+    console.error('[super-admin:tenant-config:get] error:', error);
+    return NextResponse.json({ error: 'Failed to load config' }, { status: 500 });
+  }
+
+  return NextResponse.json({ config: config ?? null });
+}
+
 // PATCH — super admin may edit any tenant_config field, including compliance.
 export async function PATCH(
   request: NextRequest,

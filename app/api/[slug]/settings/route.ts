@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase/server';
 import { requireRole } from '@/lib/auth/session';
-import { getVerticalConfig, isValidVertical } from '@/lib/verticals';
+import type { FeatureFlags } from '@/lib/types/tenant-config';
+import { DEFAULT_FEATURE_FLAGS } from '@/lib/types/tenant-config';
 
 const EDITABLE_FIELDS = [
   'agency_display_name',
@@ -36,29 +37,24 @@ export async function PATCH(request: NextRequest) {
 
   const supabase = createServiceClient();
 
-  // Resolve tenant to check vertical for deposit fields
-  const { data: tenant } = await supabase
-    .from('tenants')
-    .select('vertical')
-    .eq('id', user.tenantId)
-    .single();
+  // Resolve tenant config to check whether deposits are supported.
+  const { data: tenantConfig } = await supabase
+    .from('tenant_config')
+    .select('feature_flags')
+    .eq('tenant_id', user.tenantId)
+    .maybeSingle();
 
-  if (!tenant) {
-    return NextResponse.json({ error: 'Tenant not found' }, { status: 404 });
-  }
-
-  const verticalId = isValidVertical(tenant.vertical) ? tenant.vertical : 'adult_services';
-  const config = getVerticalConfig(verticalId);
+  const featureFlags = (tenantConfig?.feature_flags as FeatureFlags | undefined) ?? DEFAULT_FEATURE_FLAGS;
 
   // Build the candidate update, filtering to editable fields only
   const update: Record<string, unknown> = {};
   for (const field of EDITABLE_FIELDS) {
     if (!(field in body)) continue;
 
-    // Reject deposit fields for verticals that don't support them
-    if (DEPOSIT_FIELDS.includes(field) && !config.deposits_supported) {
+    // Reject deposit fields for templates that don't support them
+    if (DEPOSIT_FIELDS.includes(field) && !featureFlags.deposits_supported) {
       return NextResponse.json(
-        { error: `Field not available for this vertical: ${field}` },
+        { error: `Field not available for this template: ${field}` },
         { status: 400 }
       );
     }

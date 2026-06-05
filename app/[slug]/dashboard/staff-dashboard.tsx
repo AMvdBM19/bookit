@@ -1,4 +1,6 @@
-import type { VerticalConfig } from '@/lib/verticals/types';
+'use client';
+
+import { useTenantConfig } from '@/lib/context/tenant-config';
 import StaffBookingCard from './staff-booking-card';
 
 interface BookingRow {
@@ -36,7 +38,6 @@ function toCardBooking(b: BookingRow) {
 interface Props {
   slug: string;
   tenantName: string;
-  config: VerticalConfig;
   pendingBookings: BookingRow[];
   upcomingBookings: BookingRow[];
 }
@@ -44,18 +45,18 @@ interface Props {
 export default function StaffDashboard({
   slug,
   tenantName,
-  config,
   pendingBookings,
   upcomingBookings,
 }: Props) {
-  const bookingLabel = config.terminology.booking;
+  const { terminology } = useTenantConfig();
+  const bookingLabel = terminology.booking;
 
   return (
     <div className="min-h-screen bg-zinc-950 px-4 py-8">
       <div className="max-w-2xl mx-auto">
         <div className="mb-8">
           <h1 className="text-white text-xl font-semibold">
-            Your {config.terminology.booking_plural}
+            Your {terminology.booking_plural}
           </h1>
           <p className="text-zinc-500 text-sm mt-1">{tenantName}</p>
         </div>
@@ -89,7 +90,7 @@ export default function StaffDashboard({
         <section>
           <h2 className="text-white text-sm font-medium mb-4">Upcoming This Week</h2>
           {upcomingBookings.length === 0 ? (
-            <p className="text-zinc-600 text-sm">No upcoming {config.terminology.booking_plural.toLowerCase()}.</p>
+            <p className="text-zinc-600 text-sm">No upcoming {terminology.booking_plural.toLowerCase()}.</p>
           ) : (
             <div className="space-y-3">
               {upcomingBookings.map(b => (

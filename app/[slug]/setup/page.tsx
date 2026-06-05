@@ -1,6 +1,6 @@
 import { getAuthenticatedUser } from '@/lib/auth/session';
 import { resolveTenant } from '@/lib/auth/tenant';
-import { getVerticalConfig } from '@/lib/verticals';
+import { createServiceClient } from '@/lib/supabase/server';
 import { redirect } from 'next/navigation';
 import WizardShell from './wizard-shell';
 
@@ -30,13 +30,22 @@ export default async function SetupPage({
     redirect(`/${slug}/dashboard`);
   }
 
-  const config = getVerticalConfig(tenant.vertical);
+  // Service tags are seeded when a template is selected; show any that already exist
+  // so the agent can review them in the Services step.
+  const supabase = createServiceClient();
+  const { data: tags } = await supabase
+    .from('service_tags')
+    .select('name')
+    .eq('tenant_id', tenant.tenantId)
+    .order('display_order');
+
+  const initialServiceTags = (tags ?? []).map(t => t.name);
 
   return (
     <WizardShell
       slug={slug}
       tenantName={tenant.name}
-      config={config}
+      initialServiceTags={initialServiceTags}
     />
   );
 }

@@ -9,14 +9,19 @@ VPS: /opt/docker/bookit (port 3020)
 Next.js 14 (App Router), TypeScript, Tailwind CSS, Supabase (PostgreSQL + Auth), Twilio WhatsApp, node-cron, Docker
 
 ## Architecture
-One codebase, config-driven verticals. Each tenant has a vertical field that loads a VerticalConfig at runtime.
+One codebase, data-driven industry templates. `industry_templates` (DB) define
+terminology + feature/compliance flags + default settings + seed tags; selecting
+one stamps a `tenant_config` row for the tenant. Each tenant's `vertical` column
+holds the source template slug (free-form), kept for back-compat.
 Client modes: account (login required) or guest (email-deduped, no account)
 Booking confirm modes: staff_must_accept or auto_confirm
 JWT claims: tenant_id, user_role (agent/staff/client/super_admin), staff_id?, client_id?
 
 ## Key paths
-lib/verticals/         — vertical config system (types, registry, adult-services, tattoo)
-lib/context/           — React context providers (TenantProvider, VerticalProvider)
+lib/types/tenant-config.ts — JSONB contract interfaces (Terminology, FeatureFlags, ComplianceFlags, DefaultSettings) + DEFAULT_* constants + core type aliases (VerticalId, ClientMode, BookingConfirmMode)
+lib/context/tenant-config.tsx — TenantConfigProvider + useTenantConfig() (data-driven config)
+lib/templates/validation.ts — JSONB payload validators for templates/tenant_config
+lib/context/           — React context providers (TenantProvider, TenantConfigProvider)
 lib/auth/              — session helpers, tenant resolution
 lib/supabase/          — server/client/middleware Supabase clients
 app/[slug]/            — all tenant-scoped routes
@@ -30,8 +35,10 @@ app/api/[slug]/guests/   — guest list + block APIs (guest mode)
 app/api/[slug]/settings/ — settings summary (GET) + PATCH (editable non-locked fields)
 lib/rate-limit/          — IP-based rate limiting for public endpoints (booking POST)
 app/api/[slug]/notifications/ — WA/email template CRUD (agent-only)
-app/super-admin/         — super admin console (API-key auth, session-scoped)
-app/api/super-admin/     — super admin tenant CRUD + stats
+app/super-admin/         — super admin console (Tenants + Templates tabs, API-key auth)
+app/api/super-admin/     — super admin tenant CRUD + stats + template CRUD + tenant config/reset
+app/api/templates/active — public active templates for the wizard picker
+app/api/[slug]/setup/select-template — stamps tenant_config from a chosen template
 instrumentation.ts         — boots reminder cron in Node runtime
 lib/cron/                  — node-cron jobs (reminders)
 lib/auth/super-admin.ts  — Bearer key validation for super-admin routes
@@ -42,15 +49,26 @@ lib/whatsapp/            — WA provider abstraction (Twilio + Meta)
 supabase/migrations/   — DB schema
 supabase/seed.sql      — demo data (inkhaus + velours-demo)
 
-## Vertical config shape (lib/verticals/types.ts)
-VerticalConfig has: id, label, terminology, defaults, boolean wizard flags (show_kvk_field etc.), seed_tags, deposits_supported.
-NO nested wizard object. Flags live directly on VerticalConfig.
+## Tenant config shape (lib/types/tenant-config.ts)
+`tenant_config` holds three JSONB blocks + source_template_slug:
+- Terminology: staff, staff_plural, client, client_plural, booking, booking_plural, operator, service_tag
+- FeatureFlags: show_age_gate_step, age_gate_minimum, staff_require_pseudonym, deposits_supported, show_price_to_client, require_booking_notes, booking_notes_label, booking_notes_placeholder
+- ComplianceFlags: show_kvk_field, show_license_field, show_bsn_on_staff, show_gdpr_photo_consent, require_terms_acceptance
+DefaultSettings (template only, applied to tenant_settings at creation): client_mode, booking_confirm_mode, client_approval_mode, default_slot_minutes, deposit_pct, deposit_required_above_minutes.
+Read at runtime via useTenantConfig() (client) or a `tenant_config` query (server/public).
 
 ## Auth flow
 Middleware (middleware.ts) resolves tenant from slug via raw Supabase REST (edge-compatible)
-app/[slug]/layout.tsx resolves full TenantContext + injects VerticalProvider
+app/[slug]/layout.tsx resolves full TenantContext, fetches tenant_config, injects TenantConfigProvider
 lib/auth/session.ts reads JWT claims for AuthenticatedUser
 Staff with first_login=true → forced to /change-password after login
+
+## Wizard (setup)
+Dynamic step array driven by tenant_config. Step 0 = template picker (only when
+source_template_slug is null); after selection, router.refresh() re-stamps config
+and the picker drops out. Compliance step only appears when any compliance flag or
+the age gate is active. Compliance flags are read-only notices; only the age gate
+is tenant-editable.
 
 ## Demo tenants
 inkhaus (tattoo, guest mode) — agent: agent@inkhaus.nl / Test1234!
@@ -66,6 +84,8 @@ Phase 6: ✅ Agent ERP dashboard (bookings, staff, guests/clients, settings)
 Phase 7: ✅ Reminder cron wiring, WA templates API + UI, cancellation dispatch
 Phase 8: ✅ Super admin console, WordPress hardening, accumulated cleanup
 Phase 9: ✅ Widget polish, deposit scaffold, rate limiting, settings edit
+Phase 10A-1: ✅ industry_templates + tenant_config tables, APIs, TenantConfigProvider
+Phase 10A-2: ✅ Codebase swap to data-driven templates, wizard redesign, old vertical system removed
 
 ## Deposits (tattoo only)
 Migration `supabase/migrations/20260603000004_deposits.sql` adds

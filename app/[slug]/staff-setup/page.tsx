@@ -1,6 +1,5 @@
 import { getAuthenticatedUser } from '@/lib/auth/session';
 import { resolveTenant } from '@/lib/auth/tenant';
-import { getVerticalConfig } from '@/lib/verticals';
 import { createClient } from '@/lib/supabase/server';
 import { redirect } from 'next/navigation';
 import StaffWizardShell from './wizard-shell';
@@ -64,8 +63,6 @@ export default async function StaffSetupPage({
     .select('day_of_week, start_time, end_time')
     .eq('staff_id', staffId);
 
-  const config = getVerticalConfig(tenant.vertical);
-
   const socialLinks = (staff.social_links ?? {}) as Record<string, string>;
   const selectedTagIds = (existingTagLinks ?? []).map(l => l.tag_id);
 
@@ -111,7 +108,6 @@ export default async function StaffSetupPage({
       staffId={staffId}
       initialState={initialState}
       availableTags={tags ?? []}
-      config={config}
     />
   );
 }

@@ -1,11 +1,10 @@
 'use client';
 
-import type { VerticalConfig } from '@/lib/verticals/types';
+import { useTenantConfig } from '@/lib/context/tenant-config';
 import type { StaffWizardState } from '../wizard-shell';
 
 interface Props {
   state: StaffWizardState;
-  config: VerticalConfig;
   availableTags: Array<{ id: string; name: string }>;
   error?: string;
 }
@@ -23,7 +22,8 @@ function Row({ label, value }: { label: string; value: string }) {
   );
 }
 
-export default function StepReview({ state, config, availableTags, error }: Props) {
+export default function StepReview({ state, availableTags, error }: Props) {
+  const { terminology, featureFlags } = useTenantConfig();
   const selectedTagNames = availableTags
     .filter(t => state.selected_tag_ids.includes(t.id))
     .map(t => t.name);
@@ -46,7 +46,7 @@ export default function StepReview({ state, config, availableTags, error }: Prop
         </h3>
         <div className="bg-zinc-900 rounded-lg border border-zinc-800 px-3">
           <Row
-            label={config.id === 'adult_services' ? 'Pseudonym' : 'Display Name'}
+            label={featureFlags.staff_require_pseudonym ? 'Pseudonym' : 'Display Name'}
             value={state.pseudonym}
           />
           <Row label="Bio" value={state.bio} />
@@ -72,7 +72,7 @@ export default function StepReview({ state, config, availableTags, error }: Prop
 
       <section>
         <h3 className="text-xs font-medium text-zinc-400 uppercase tracking-wider mb-2">
-          {config.terminology.service_plural}
+          {terminology.service_tag}
         </h3>
         <div className="flex flex-wrap gap-2">
           {selectedTagNames.map(name => (

@@ -1,8 +1,6 @@
 import { cache } from 'react';
 import { createServiceClient } from '@/lib/supabase/server';
 import type { TenantContext } from '@/lib/types/auth';
-import type { VerticalId } from '@/lib/verticals/types';
-import { isValidVertical } from '@/lib/verticals';
 
 export const resolveTenant = cache(async (slug: string): Promise<TenantContext | null> => {
   const supabase = createServiceClient();
@@ -15,13 +13,11 @@ export const resolveTenant = cache(async (slug: string): Promise<TenantContext |
 
   if (error || !data) return null;
 
-  const vertical = isValidVertical(data.vertical) ? data.vertical : 'adult_services';
-
   return {
     tenantId: data.id,
     slug: data.slug,
     name: data.name,
-    vertical: vertical as VerticalId,
+    vertical: (data.vertical as string) ?? '',
     clientMode: data.client_mode as 'account' | 'guest',
     isActive: data.is_active,
     wizardCompleted: data.wizard_completed,

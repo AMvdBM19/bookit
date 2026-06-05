@@ -1,8 +1,10 @@
 'use client';
 
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import type { VerticalConfig } from '@/lib/verticals/types';
+import { useTenantConfig } from '@/lib/context/tenant-config';
+import type { ComplianceFlags, FeatureFlags, Terminology } from '@/lib/types/tenant-config';
+import StepTemplatePicker from './steps/step-template-picker';
 import StepIdentity from './steps/step-identity';
 import StepBranding from './steps/step-branding';
 import StepBookingRules from './steps/step-booking-rules';
@@ -31,75 +33,96 @@ export interface WizardState {
   service_tags: string[];
 }
 
-function buildDefaultState(config: VerticalConfig, tenantName: string): WizardState {
+function buildDefaultState(
+  featureFlags: FeatureFlags,
+  tenantName: string,
+  initialServiceTags: string[]
+): WizardState {
   return {
     agency_display_name: tenantName,
     kvk_number: '',
     license_number: '',
     brand_color: '#2BB673',
     logo_url: '',
-    default_slot_minutes: config.defaults.default_slot_minutes,
+    default_slot_minutes: 30,
     min_lead_time_hours: 2,
-    booking_confirm_mode: config.defaults.booking_confirm_mode,
+    booking_confirm_mode: 'staff_must_accept',
     base_rate_per_30min: 60,
     staff_payout_pct: 70,
     currency: 'EUR',
     tax_rate_pct: 21,
     tax_label: 'BTW',
-    age_gate_minimum: config.defaults.age_gate_minimum ?? 18,
-    require_age_confirm: config.defaults.require_age_confirm,
+    age_gate_minimum: featureFlags.age_gate_minimum ?? 18,
+    require_age_confirm: featureFlags.show_age_gate_step,
     require_id_upload: false,
-    service_tags: [...config.seed_tags],
+    service_tags: [...initialServiceTags],
   };
 }
 
-const TOTAL_STEPS = 7;
+type StepKey =
+  | 'template'
+  | 'identity'
+  | 'branding'
+  | 'booking'
+  | 'financial'
+  | 'compliance'
+  | 'services'
+  | 'review';
 
-function getStepLabel(step: number, config: VerticalConfig): string {
-  const isAdult = config.id === 'adult_services';
-  switch (step) {
-    case 1:
-      return isAdult ? 'Agency Identity' : 'Studio Identity';
-    case 2:
+function stepLabel(key: StepKey, terminology: Terminology): string {
+  switch (key) {
+    case 'template':
+      return 'Industry';
+    case 'identity':
+      return 'Identity';
+    case 'branding':
       return 'Branding';
-    case 3:
+    case 'booking':
       return 'Booking Rules';
-    case 4:
+    case 'financial':
       return 'Financial';
-    case 5:
-      return isAdult ? 'Compliance' : 'Age Gate';
-    case 6:
-      return config.terminology.service_plural;
-    case 7:
+    case 'compliance':
+      return 'Compliance';
+    case 'services':
+      return terminology.service_tag;
+    case 'review':
       return 'Review & Launch';
-    default:
-      return '';
   }
 }
 
-function validateStep(step: number, state: WizardState, config: VerticalConfig): string | null {
-  switch (step) {
-    case 1:
+function validateStep(
+  key: StepKey,
+  state: WizardState,
+  complianceFlags: ComplianceFlags,
+  featureFlags: FeatureFlags
+): string | null {
+  switch (key) {
+    case 'identity':
       if (!state.agency_display_name.trim()) return 'Name is required.';
-      if (config.show_kvk_field && !state.kvk_number.trim()) return 'KVK number is required.';
-      if (config.show_license_field && !state.license_number.trim()) return 'License number is required.';
+      if (complianceFlags.show_kvk_field && !state.kvk_number.trim())
+        return 'KVK number is required.';
+      if (complianceFlags.show_license_field && !state.license_number.trim())
+        return 'License number is required.';
       return null;
-    case 2:
-      if (!state.brand_color.match(/^#[0-9a-fA-F]{6}$/)) return 'Enter a valid hex color (e.g. #2BB673).';
+    case 'branding':
+      if (!state.brand_color.match(/^#[0-9a-fA-F]{6}$/))
+        return 'Enter a valid hex color (e.g. #2BB673).';
       return null;
-    case 3:
+    case 'booking':
       if (state.min_lead_time_hours < 0) return 'Lead time cannot be negative.';
       return null;
-    case 4:
+    case 'financial':
       if (state.base_rate_per_30min < 0) return 'Base rate cannot be negative.';
-      if (state.staff_payout_pct < 0 || state.staff_payout_pct > 100) return 'Payout % must be between 0 and 100.';
+      if (state.staff_payout_pct < 0 || state.staff_payout_pct > 100)
+        return 'Payout % must be between 0 and 100.';
       if (!state.tax_label.trim()) return 'Tax label is required.';
       return null;
-    case 5:
-      if (state.age_gate_minimum < 18) return 'Minimum age must be at least 18.';
+    case 'compliance':
+      if (featureFlags.show_age_gate_step && state.age_gate_minimum < 18)
+        return 'Minimum age must be at least 18.';
       return null;
-    case 6:
-      if (state.service_tags.length === 0) return `At least one ${config.terminology.service_tag.toLowerCase()} is required.`;
+    case 'services':
+      if (state.service_tags.length === 0) return 'At least one option is required.';
       return null;
     default:
       return null;
@@ -109,16 +132,38 @@ function validateStep(step: number, state: WizardState, config: VerticalConfig):
 interface Props {
   slug: string;
   tenantName: string;
-  config: VerticalConfig;
+  initialServiceTags: string[];
 }
 
-export default function WizardShell({ slug, tenantName, config }: Props) {
+export default function WizardShell({ slug, tenantName, initialServiceTags }: Props) {
   const router = useRouter();
-  const [step, setStep] = useState(1);
-  const [state, setState] = useState<WizardState>(() => buildDefaultState(config, tenantName));
+  const { terminology, featureFlags, complianceFlags, sourceTemplateSlug } = useTenantConfig();
+
+  const steps = useMemo<StepKey[]>(() => {
+    const s: StepKey[] = [];
+    if (!sourceTemplateSlug) s.push('template');
+    s.push('identity', 'branding', 'booking', 'financial');
+
+    const hasAnyCompliance = Object.values(complianceFlags).some(v => v === true);
+    const hasAgeGate = featureFlags.show_age_gate_step;
+    if (hasAnyCompliance || hasAgeGate) s.push('compliance');
+
+    s.push('services', 'review');
+    return s;
+  }, [complianceFlags, featureFlags, sourceTemplateSlug]);
+
+  const [currentStep, setCurrentStep] = useState(0);
+  const [state, setState] = useState<WizardState>(() =>
+    buildDefaultState(featureFlags, tenantName, initialServiceTags)
+  );
   const [stepError, setStepError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
+
+  // Guard against the step array shrinking (e.g. after template selection removes
+  // the template step) leaving currentStep out of range.
+  const safeStep = Math.min(currentStep, steps.length - 1);
+  const stepKey = steps[safeStep];
 
   function update(updates: Partial<WizardState>) {
     setState(prev => ({ ...prev, ...updates }));
@@ -126,18 +171,26 @@ export default function WizardShell({ slug, tenantName, config }: Props) {
   }
 
   function handleNext() {
-    const err = validateStep(step, state, config);
+    const err = validateStep(stepKey, state, complianceFlags, featureFlags);
     if (err) {
       setStepError(err);
       return;
     }
     setStepError(null);
-    setStep(s => Math.min(s + 1, TOTAL_STEPS));
+    setCurrentStep(s => Math.min(s + 1, steps.length - 1));
   }
 
   function handleBack() {
     setStepError(null);
-    setStep(s => Math.max(s - 1, 1));
+    setCurrentStep(s => Math.max(s - 1, 0));
+  }
+
+  // The template picker stamps tenant_config server-side; refreshing re-runs the
+  // layout server component so the provider picks up the new config and the
+  // template step drops out of the array (currentStep 0 then points to Identity).
+  function handleTemplateSelected() {
+    setCurrentStep(0);
+    router.refresh();
   }
 
   async function handleLaunch() {
@@ -163,97 +216,78 @@ export default function WizardShell({ slug, tenantName, config }: Props) {
     }
   }
 
-  const stepProps = { state, onChange: update, config, error: stepError ?? undefined };
+  const stepProps = { state, onChange: update, error: stepError ?? undefined };
+  const isLastStep = safeStep === steps.length - 1;
 
   return (
     <div className="min-h-screen bg-zinc-950 flex flex-col items-center px-4 py-10">
       {/* Header */}
-      <div className="w-full max-w-lg mb-8 text-center">
+      <div className="w-full max-w-lg mb-6 text-center">
         <h1 className="text-white text-xl font-semibold">Set up your account</h1>
         <p className="text-zinc-500 text-sm mt-1">
-          Step {step} of {TOTAL_STEPS} — {getStepLabel(step, config)}
+          Step {safeStep + 1} of {steps.length} — {stepLabel(stepKey, terminology)}
         </p>
       </div>
 
-      {/* Step indicator */}
+      {/* Progress bar */}
       <div className="w-full max-w-lg mb-6">
-        <div className="flex items-center justify-between">
-          {Array.from({ length: TOTAL_STEPS }, (_, i) => {
-            const n = i + 1;
-            const done = n < step;
-            const current = n === step;
-            return (
-              <div key={n} className="flex flex-col items-center gap-1">
-                <div
-                  className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-medium transition-colors ${
-                    current
-                      ? 'bg-white text-zinc-900'
-                      : done
-                      ? 'bg-zinc-600 text-white'
-                      : 'bg-zinc-800 text-zinc-600'
-                  }`}
-                >
-                  {done ? '✓' : n}
-                </div>
-                <span className="text-[10px] text-zinc-600 hidden sm:block">
-                  {getStepLabel(n, config)}
-                </span>
-              </div>
-            );
-          })}
-        </div>
-        <div className="relative mt-2 h-px bg-zinc-800">
+        <div className="h-1.5 bg-zinc-800 rounded-full">
           <div
-            className="absolute inset-y-0 left-0 bg-zinc-500 transition-all"
-            style={{ width: `${((step - 1) / (TOTAL_STEPS - 1)) * 100}%` }}
+            className="h-full bg-green-500 rounded-full transition-all"
+            style={{ width: `${((safeStep + 1) / steps.length) * 100}%` }}
           />
         </div>
       </div>
 
       {/* Card */}
       <div className="w-full max-w-lg bg-zinc-900 rounded-xl border border-zinc-800 p-6 shadow-lg">
-        <h2 className="text-white font-medium mb-4">{getStepLabel(step, config)}</h2>
+        <h2 className="text-white font-medium mb-4">{stepLabel(stepKey, terminology)}</h2>
 
-        {step === 1 && <StepIdentity {...stepProps} />}
-        {step === 2 && <StepBranding {...stepProps} />}
-        {step === 3 && <StepBookingRules {...stepProps} />}
-        {step === 4 && <StepFinancial {...stepProps} />}
-        {step === 5 && <StepCompliance {...stepProps} />}
-        {step === 6 && <StepServices {...stepProps} />}
-        {step === 7 && <StepReview state={state} config={config} error={submitError ?? undefined} />}
+        {stepKey === 'template' && (
+          <StepTemplatePicker slug={slug} onSelected={handleTemplateSelected} />
+        )}
+        {stepKey === 'identity' && <StepIdentity {...stepProps} />}
+        {stepKey === 'branding' && <StepBranding {...stepProps} />}
+        {stepKey === 'booking' && <StepBookingRules {...stepProps} />}
+        {stepKey === 'financial' && <StepFinancial {...stepProps} />}
+        {stepKey === 'compliance' && <StepCompliance {...stepProps} />}
+        {stepKey === 'services' && <StepServices {...stepProps} />}
+        {stepKey === 'review' && <StepReview state={state} error={submitError ?? undefined} />}
 
-        <div className="flex justify-between mt-6 gap-3">
-          {step > 1 ? (
-            <button
-              type="button"
-              onClick={handleBack}
-              className="px-4 py-2 bg-zinc-800 hover:bg-zinc-700 text-white text-sm rounded-lg transition-colors"
-            >
-              Back
-            </button>
-          ) : (
-            <div />
-          )}
+        {stepKey !== 'template' && (
+          <div className="flex justify-between mt-6 gap-3">
+            {safeStep > 0 ? (
+              <button
+                type="button"
+                onClick={handleBack}
+                className="px-4 py-2 bg-zinc-800 hover:bg-zinc-700 text-white text-sm rounded-lg transition-colors"
+              >
+                Back
+              </button>
+            ) : (
+              <div />
+            )}
 
-          {step < TOTAL_STEPS ? (
-            <button
-              type="button"
-              onClick={handleNext}
-              className="px-6 py-2 bg-white text-zinc-900 text-sm font-medium rounded-lg hover:bg-zinc-100 transition-colors"
-            >
-              Next
-            </button>
-          ) : (
-            <button
-              type="button"
-              onClick={handleLaunch}
-              disabled={submitting}
-              className="px-6 py-2 bg-white text-zinc-900 text-sm font-medium rounded-lg hover:bg-zinc-100 transition-colors disabled:opacity-50"
-            >
-              {submitting ? 'Launching…' : 'Launch'}
-            </button>
-          )}
-        </div>
+            {!isLastStep ? (
+              <button
+                type="button"
+                onClick={handleNext}
+                className="px-6 py-2 bg-white text-zinc-900 text-sm font-medium rounded-lg hover:bg-zinc-100 transition-colors"
+              >
+                Next
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={handleLaunch}
+                disabled={submitting}
+                className="px-6 py-2 bg-white text-zinc-900 text-sm font-medium rounded-lg hover:bg-zinc-100 transition-colors disabled:opacity-50"
+              >
+                {submitting ? 'Launching…' : 'Launch'}
+              </button>
+            )}
+          </div>
+        )}
       </div>
     </div>
   );

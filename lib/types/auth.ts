@@ -1,4 +1,4 @@
-import type { VerticalId, ClientMode } from '@/lib/verticals/types';
+import type { VerticalId, ClientMode } from '@/lib/types/tenant-config';
 
 export type UserRole = 'agent' | 'staff' | 'client' | 'super_admin';
 

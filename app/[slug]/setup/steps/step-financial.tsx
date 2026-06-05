@@ -1,12 +1,10 @@
 'use client';
 
-import type { VerticalConfig } from '@/lib/verticals/types';
 import type { WizardState } from '../wizard-shell';
 
 interface Props {
   state: WizardState;
   onChange: (updates: Partial<WizardState>) => void;
-  config: VerticalConfig;
   error?: string;
 }
 

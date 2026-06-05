@@ -2,7 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase/server';
 import { checkAvailability } from '@/lib/availability/check';
 import { calculatePricing } from '@/lib/pricing/calculate';
-import { getVerticalConfig, isValidVertical } from '@/lib/verticals';
+import type { FeatureFlags } from '@/lib/types/tenant-config';
+import { DEFAULT_FEATURE_FLAGS } from '@/lib/types/tenant-config';
 import { notifyBookingRequest, sendWhatsApp } from '@/lib/notifications/dispatch';
 import { checkRateLimit } from '@/lib/rate-limit/book';
 
@@ -75,16 +76,21 @@ export async function POST(
     .eq('tenant_id', tenant.id)
     .single();
 
-  const verticalId = isValidVertical(tenant.vertical) ? tenant.vertical : 'adult_services';
-  const config = getVerticalConfig(verticalId);
+  const { data: tenantConfig } = await supabase
+    .from('tenant_config')
+    .select('feature_flags')
+    .eq('tenant_id', tenant.id)
+    .maybeSingle();
+
+  const featureFlags = (tenantConfig?.feature_flags as FeatureFlags | undefined) ?? DEFAULT_FEATURE_FLAGS;
 
   if (settings?.require_age_confirm && !body.age_confirmed) {
     return NextResponse.json({ error: 'Age confirmation required' }, { status: 400 });
   }
 
-  if (config.defaults.require_booking_notes && !body.booking_notes?.trim()) {
+  if (featureFlags.require_booking_notes && !body.booking_notes?.trim()) {
     return NextResponse.json(
-      { error: `${config.defaults.booking_notes_label} is required` },
+      { error: `${featureFlags.booking_notes_label} is required` },
       { status: 400 }
     );
   }

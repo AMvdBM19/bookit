@@ -1,15 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase/server';
 import { requireRole } from '@/lib/auth/session';
-import { getVerticalConfig } from '@/lib/verticals';
-import { resolveTenant } from '@/lib/auth/tenant';
+import type { FeatureFlags } from '@/lib/types/tenant-config';
+import { DEFAULT_FEATURE_FLAGS } from '@/lib/types/tenant-config';
 
-export async function POST(
-  request: NextRequest,
-  { params }: { params: Promise<{ slug: string }> }
-) {
-  const { slug } = await params;
-
+export async function POST(request: NextRequest) {
   let user;
   try {
     user = await requireRole(['agent']);
@@ -22,17 +17,18 @@ export async function POST(
     return NextResponse.json({ error: 'email and password required' }, { status: 400 });
   }
 
-  const tenant = await resolveTenant(slug);
-  if (!tenant) {
-    return NextResponse.json({ error: 'Tenant not found' }, { status: 404 });
-  }
-
-  const config = getVerticalConfig(tenant.vertical);
-  if (config.staff_require_pseudonym && !body.pseudonym) {
-    return NextResponse.json({ error: 'pseudonym required for this vertical' }, { status: 400 });
-  }
-
   const supabase = createServiceClient();
+
+  const { data: tenantConfig } = await supabase
+    .from('tenant_config')
+    .select('feature_flags')
+    .eq('tenant_id', user.tenantId)
+    .maybeSingle();
+
+  const featureFlags = (tenantConfig?.feature_flags as FeatureFlags | undefined) ?? DEFAULT_FEATURE_FLAGS;
+  if (featureFlags.staff_require_pseudonym && !body.pseudonym) {
+    return NextResponse.json({ error: 'pseudonym required for this template' }, { status: 400 });
+  }
 
   const { data: authData, error: authError } = await supabase.auth.admin.createUser({
     email: body.email,

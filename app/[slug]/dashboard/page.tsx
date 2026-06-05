@@ -1,6 +1,5 @@
 import { getAuthenticatedUser } from '@/lib/auth/session';
 import { resolveTenant } from '@/lib/auth/tenant';
-import { getVerticalConfig } from '@/lib/verticals';
 import { createClient } from '@/lib/supabase/server';
 import { redirect } from 'next/navigation';
 import StaffDashboard from './staff-dashboard';
@@ -17,7 +16,6 @@ export default async function DashboardPage({
   if (!user) redirect(`/${slug}/login`);
 
   const tenant = await resolveTenant(slug);
-  const config = getVerticalConfig(tenant?.vertical ?? 'adult_services');
 
   if (user.role === 'staff' && user.staffId) {
     const supabase = await createClient();
@@ -67,7 +65,6 @@ export default async function DashboardPage({
       <StaffDashboard
         slug={slug}
         tenantName={tenant?.name ?? slug}
-        config={config}
         pendingBookings={pendingBookings ?? []}
         upcomingBookings={upcomingBookings ?? []}
       />

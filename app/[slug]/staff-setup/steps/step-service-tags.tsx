@@ -1,17 +1,17 @@
 'use client';
 
-import type { VerticalConfig } from '@/lib/verticals/types';
+import { useTenantConfig } from '@/lib/context/tenant-config';
 import type { StaffWizardState } from '../wizard-shell';
 
 interface Props {
   state: StaffWizardState;
   onChange: (updates: Partial<StaffWizardState>) => void;
-  config: VerticalConfig;
   availableTags: Array<{ id: string; name: string }>;
   error?: string;
 }
 
-export default function StepServiceTags({ state, onChange, config, availableTags, error }: Props) {
+export default function StepServiceTags({ state, onChange, availableTags, error }: Props) {
+  const { terminology } = useTenantConfig();
   function toggleTag(tagId: string) {
     const current = state.selected_tag_ids;
     const next = current.includes(tagId)
@@ -23,14 +23,14 @@ export default function StepServiceTags({ state, onChange, config, availableTags
   return (
     <div className="space-y-4">
       <p className="text-xs text-zinc-500">
-        Select the {config.terminology.service_plural.toLowerCase()} you offer. At least one
+        Select the {terminology.service_tag.toLowerCase()} options you offer. At least one
         is required.
       </p>
 
       {availableTags.length === 0 ? (
         <p className="text-xs text-zinc-600 italic">
-          No {config.terminology.service_plural.toLowerCase()} have been set up yet. Ask your{' '}
-          {config.terminology.operator.toLowerCase()} to add them.
+          No {terminology.service_tag.toLowerCase()} options have been set up yet. Ask your{' '}
+          {terminology.operator.toLowerCase()} to add them.
         </p>
       ) : (
         <div className="flex flex-wrap gap-2">

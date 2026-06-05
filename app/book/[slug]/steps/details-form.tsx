@@ -1,7 +1,7 @@
 'use client';
 
 import type { CatalogSettings } from '../catalog-loader';
-import type { VerticalDefaults, VerticalTerminology } from '@/lib/verticals/types';
+import type { FeatureFlags } from '@/lib/types/tenant-config';
 
 interface Tag {
   id: string;
@@ -22,8 +22,7 @@ interface State {
 interface Props {
   slug: string;
   clientMode: 'guest' | 'account';
-  defaults: VerticalDefaults;
-  terminology: VerticalTerminology;
+  featureFlags: FeatureFlags;
   settings: CatalogSettings | null;
   staffTags: Tag[];
   state: State;
@@ -39,8 +38,7 @@ const labelCls = 'block text-xs text-zinc-400 mb-1';
 export default function DetailsForm({
   slug,
   clientMode,
-  defaults,
-  terminology,
+  featureFlags,
   settings,
   staffTags,
   state,
@@ -110,15 +108,15 @@ export default function DetailsForm({
 
       <div>
         <label className={labelCls} htmlFor="bookingNotes">
-          {defaults.booking_notes_label}{' '}
-          {defaults.require_booking_notes && <span className="text-red-400">*</span>}
+          {featureFlags.booking_notes_label}{' '}
+          {featureFlags.require_booking_notes && <span className="text-red-400">*</span>}
         </label>
         <textarea
           id="bookingNotes"
           value={state.bookingNotes}
           onChange={e => onChange({ bookingNotes: e.target.value })}
           className={inputCls + ' h-24 resize-none'}
-          placeholder={terminology.booking_notes_placeholder ?? ''}
+          placeholder={featureFlags.booking_notes_placeholder ?? ''}
           maxLength={1000}
         />
       </div>

@@ -1,22 +1,23 @@
 'use client';
 
 import { useState } from 'react';
-import type { VerticalConfig } from '@/lib/verticals/types';
+import { useTenantConfig } from '@/lib/context/tenant-config';
 import type { WizardState } from '../wizard-shell';
 
 interface Props {
   state: WizardState;
   onChange: (updates: Partial<WizardState>) => void;
-  config: VerticalConfig;
   error?: string;
 }
 
 const inputCls =
   'flex-1 bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-sm text-white placeholder-zinc-600 focus:outline-none focus:border-zinc-500';
 
-export default function StepServices({ state, onChange, config, error }: Props) {
+export default function StepServices({ state, onChange, error }: Props) {
+  const { terminology } = useTenantConfig();
   const [newTag, setNewTag] = useState('');
-  const serviceLabel = config.terminology.service_tag;
+  const serviceLabel = terminology.service_tag;
+  const servicePluralLower = `${terminology.service_tag.toLowerCase()} options`;
 
   function addTag() {
     const trimmed = newTag.trim();
@@ -39,8 +40,8 @@ export default function StepServices({ state, onChange, config, error }: Props) 
   return (
     <div className="space-y-4">
       <p className="text-xs text-zinc-500">
-        These {config.terminology.service_plural.toLowerCase()} are pre-populated from your
-        vertical. Edit, remove, or add your own. At least one is required.
+        These {servicePluralLower} are pre-populated from your industry template.
+        Edit, remove, or add your own. At least one is required.
       </p>
 
       <div className="flex flex-wrap gap-2">
@@ -61,7 +62,7 @@ export default function StepServices({ state, onChange, config, error }: Props) 
           </span>
         ))}
         {state.service_tags.length === 0 && (
-          <p className="text-xs text-zinc-600 italic">No {config.terminology.service_plural.toLowerCase()} yet.</p>
+          <p className="text-xs text-zinc-600 italic">No {servicePluralLower} yet.</p>
         )}
       </div>
 

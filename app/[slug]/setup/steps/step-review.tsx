@@ -1,11 +1,10 @@
 'use client';
 
-import type { VerticalConfig } from '@/lib/verticals/types';
+import { useTenantConfig } from '@/lib/context/tenant-config';
 import type { WizardState } from '../wizard-shell';
 
 interface Props {
   state: WizardState;
-  config: VerticalConfig;
   error?: string;
 }
 
@@ -20,9 +19,12 @@ function Row({ label, value }: { label: string; value: string | number | boolean
   );
 }
 
-export default function StepReview({ state, config, error }: Props) {
-  const isAdult = config.id === 'adult_services';
+export default function StepReview({ state, error }: Props) {
+  const { terminology, complianceFlags, featureFlags } = useTenantConfig();
   const agencyPct = Math.max(0, 100 - state.staff_payout_pct);
+
+  const hasAnyCompliance = Object.values(complianceFlags).some(v => v === true);
+  const showComplianceSection = hasAnyCompliance || featureFlags.show_age_gate_step;
 
   return (
     <div className="space-y-4">
@@ -36,9 +38,11 @@ export default function StepReview({ state, config, error }: Props) {
           Identity
         </h3>
         <div className="bg-zinc-900 rounded-lg border border-zinc-800 px-3">
-          <Row label={isAdult ? 'Agency Name' : 'Studio Name'} value={state.agency_display_name} />
-          {config.show_kvk_field && <Row label="KVK Number" value={state.kvk_number} />}
-          {config.show_license_field && <Row label="License Number" value={state.license_number} />}
+          <Row label="Business Name" value={state.agency_display_name} />
+          {complianceFlags.show_kvk_field && <Row label="KVK Number" value={state.kvk_number} />}
+          {complianceFlags.show_license_field && (
+            <Row label="License Number" value={state.license_number} />
+          )}
         </div>
       </section>
 
@@ -92,20 +96,28 @@ export default function StepReview({ state, config, error }: Props) {
         </div>
       </section>
 
-      <section>
-        <h3 className="text-xs font-medium text-zinc-400 uppercase tracking-wider mb-2">
-          Age Gate
-        </h3>
-        <div className="bg-zinc-900 rounded-lg border border-zinc-800 px-3">
-          <Row label="Minimum Age" value={state.age_gate_minimum} />
-          <Row label="Require Confirmation" value={state.require_age_confirm} />
-          {isAdult && <Row label="Require ID Upload" value={state.require_id_upload} />}
-        </div>
-      </section>
+      {showComplianceSection && (
+        <section>
+          <h3 className="text-xs font-medium text-zinc-400 uppercase tracking-wider mb-2">
+            Compliance
+          </h3>
+          <div className="bg-zinc-900 rounded-lg border border-zinc-800 px-3">
+            {featureFlags.show_age_gate_step && (
+              <>
+                <Row label="Minimum Age" value={state.age_gate_minimum} />
+                <Row label="Require Age Confirmation" value={state.require_age_confirm} />
+              </>
+            )}
+            {hasAnyCompliance && (
+              <Row label="Industry Requirements" value="Applied" />
+            )}
+          </div>
+        </section>
+      )}
 
       <section>
         <h3 className="text-xs font-medium text-zinc-400 uppercase tracking-wider mb-2">
-          {config.terminology.service_plural}
+          {terminology.service_tag}
         </h3>
         <div className="flex flex-wrap gap-2">
           {state.service_tags.map(tag => (

@@ -1,9 +1,14 @@
 import { headers } from 'next/headers';
 import { notFound, redirect } from 'next/navigation';
 import { resolveTenant } from '@/lib/auth/tenant';
-import { getVerticalConfig } from '@/lib/verticals';
+import { createServiceClient } from '@/lib/supabase/server';
 import { TenantProvider } from '@/lib/context/tenant';
-import { VerticalProvider } from '@/lib/context/vertical';
+import { TenantConfigProvider } from '@/lib/context/tenant-config';
+import {
+  DEFAULT_TERMINOLOGY,
+  DEFAULT_FEATURE_FLAGS,
+  DEFAULT_COMPLIANCE_FLAGS,
+} from '@/lib/types/tenant-config';
 
 export default async function TenantLayout({
   children,
@@ -31,11 +36,28 @@ export default async function TenantLayout({
     redirect(`/${slug}/setup`);
   }
 
-  const config = getVerticalConfig(tenant.vertical);
+  const supabaseAdmin = createServiceClient();
+  const { data: tenantConfig } = await supabaseAdmin
+    .from('tenant_config')
+    .select('terminology, feature_flags, compliance_flags, source_template_slug')
+    .eq('tenant_id', tenant.tenantId)
+    .single();
+
+  const terminology = tenantConfig?.terminology ?? DEFAULT_TERMINOLOGY;
+  const featureFlags = tenantConfig?.feature_flags ?? DEFAULT_FEATURE_FLAGS;
+  const complianceFlags = tenantConfig?.compliance_flags ?? DEFAULT_COMPLIANCE_FLAGS;
+  const sourceTemplateSlug = tenantConfig?.source_template_slug ?? null;
 
   return (
     <TenantProvider context={tenant}>
-      <VerticalProvider config={config}>{children}</VerticalProvider>
+      <TenantConfigProvider
+        terminology={terminology}
+        featureFlags={featureFlags}
+        complianceFlags={complianceFlags}
+        sourceTemplateSlug={sourceTemplateSlug}
+      >
+        {children}
+      </TenantConfigProvider>
     </TenantProvider>
   );
 }

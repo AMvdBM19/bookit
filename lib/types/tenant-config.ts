@@ -1,5 +1,12 @@
 // JSONB contract interfaces — shared between industry_templates and tenant_config
 
+// Core scalar aliases. `vertical` on tenants is now the free-form template slug
+// (kept as a column for back-compat); ClientMode / BookingConfirmMode remain
+// constrained unions used across settings and auth.
+export type VerticalId = string;
+export type ClientMode = 'account' | 'guest';
+export type BookingConfirmMode = 'staff_must_accept' | 'auto_confirm';
+
 export interface Terminology {
   staff: string;
   staff_plural: string;
@@ -31,8 +38,8 @@ export interface ComplianceFlags {
 }
 
 export interface DefaultSettings {
-  client_mode: 'account' | 'guest';
-  booking_confirm_mode: 'staff_must_accept' | 'auto_confirm';
+  client_mode: ClientMode;
+  booking_confirm_mode: BookingConfirmMode;
   client_approval_mode: 'manual' | 'auto';
   default_slot_minutes: number;
   deposit_pct: number;

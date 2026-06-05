@@ -1,9 +1,20 @@
 # Book-IT ERP
 
-Multi-vertical, multi-tenant appointment management platform.
+Multi-tenant, template-driven appointment management platform.
 
 Built with Next.js 14, Supabase, Tailwind CSS, Twilio/Meta WhatsApp.
 Developed by Monoliet.cloud.
+
+## Architecture
+
+One codebase, **data-driven industry templates**. The `industry_templates` table
+defines terminology, feature/compliance flags, default settings, and seed tags
+per industry. During onboarding an agent picks a template, which stamps a
+`tenant_config` row (terminology + feature/compliance flags) onto the tenant and
+seeds settings + service tags. The UI reads config at runtime via
+`useTenantConfig()` (client) or a `tenant_config` query (server/public widget),
+with safe defaults from `lib/types/tenant-config.ts`. Super admins manage
+templates and tenant configs from the `/super-admin` console.
 
 ## Development
 
@@ -82,5 +93,5 @@ container per host; do not horizontally scale without a shared store.
 
 ## Phase status
 
-See `CLAUDE.md` for architecture, key paths, and the full phase tracker (1–9
-complete). See Notion for the full spec.
+See `CLAUDE.md` for architecture, key paths, and the full phase tracker (1–9 and
+10A complete). See Notion for the full spec.

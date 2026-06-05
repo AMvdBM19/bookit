@@ -113,8 +113,8 @@ export default function BookingWidget({ slug, catalog }: Props) {
     if (!state.guestName.trim()) return 'Name is required.';
     if (!state.guestEmail.trim()) return 'Email is required.';
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(state.guestEmail)) return 'Enter a valid email.';
-    if (catalog.defaults.require_booking_notes && !state.bookingNotes.trim()) {
-      return `${catalog.defaults.booking_notes_label} is required.`;
+    if (catalog.featureFlags.require_booking_notes && !state.bookingNotes.trim()) {
+      return `${catalog.featureFlags.booking_notes_label} is required.`;
     }
     if (catalog.settings?.require_age_confirm && !state.ageConfirmed) {
       return `Please confirm you are at least ${catalog.settings.age_gate_minimum} years old.`;
@@ -289,8 +289,7 @@ export default function BookingWidget({ slug, catalog }: Props) {
               <DetailsForm
                 slug={slug}
                 clientMode={catalog.tenant.client_mode}
-                defaults={catalog.defaults}
-                terminology={catalog.terminology}
+                featureFlags={catalog.featureFlags}
                 settings={catalog.settings}
                 staffTags={staffTags}
                 state={{

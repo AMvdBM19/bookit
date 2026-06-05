@@ -1,12 +1,11 @@
 'use client';
 
-import type { VerticalConfig } from '@/lib/verticals/types';
+import { useTenantConfig } from '@/lib/context/tenant-config';
 import type { StaffWizardState } from '../wizard-shell';
 
 interface Props {
   state: StaffWizardState;
   onChange: (updates: Partial<StaffWizardState>) => void;
-  config: VerticalConfig;
   error?: string;
 }
 
@@ -24,10 +23,10 @@ const SOCIAL_FIELDS: Array<{ key: keyof StaffWizardState['social_links']; label:
   { key: 'website', label: 'Website', placeholder: 'https://...' },
 ];
 
-export default function StepProfile({ state, onChange, config, error }: Props) {
-  const isAdult = config.id === 'adult_services';
-  const nameLabel = isAdult ? 'Pseudonym' : 'Display Name';
-  const nameRequired = config.staff_require_pseudonym;
+export default function StepProfile({ state, onChange, error }: Props) {
+  const { terminology, featureFlags } = useTenantConfig();
+  const nameRequired = featureFlags.staff_require_pseudonym;
+  const nameLabel = nameRequired ? 'Pseudonym' : `${terminology.staff} Name`;
 
   function updateSocialLink(key: keyof StaffWizardState['social_links'], value: string) {
     onChange({ social_links: { ...state.social_links, [key]: value } });
@@ -53,7 +52,7 @@ export default function StepProfile({ state, onChange, config, error }: Props) {
           value={state.pseudonym}
           onChange={e => onChange({ pseudonym: e.target.value })}
           className={inputCls}
-          placeholder={isAdult ? 'Your working name' : 'Your display name'}
+          placeholder={nameRequired ? 'Your working name' : 'Your display name'}
         />
       </div>
 

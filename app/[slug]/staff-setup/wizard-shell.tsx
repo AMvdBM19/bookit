@@ -2,7 +2,8 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import type { VerticalConfig } from '@/lib/verticals/types';
+import { useTenantConfig } from '@/lib/context/tenant-config';
+import type { Terminology, FeatureFlags } from '@/lib/types/tenant-config';
 import StepProfile from './steps/step-profile';
 import StepServiceTags from './steps/step-service-tags';
 import StepSchedule from './steps/step-schedule';
@@ -33,12 +34,12 @@ export interface StaffWizardState {
 
 const TOTAL_STEPS = 4;
 
-function getStepLabel(step: number, config: VerticalConfig): string {
+function getStepLabel(step: number, terminology: Terminology): string {
   switch (step) {
     case 1:
       return 'Profile';
     case 2:
-      return config.terminology.service_plural;
+      return terminology.service_tag;
     case 3:
       return 'Schedule';
     case 4:
@@ -51,17 +52,18 @@ function getStepLabel(step: number, config: VerticalConfig): string {
 function validateStep(
   step: number,
   state: StaffWizardState,
-  config: VerticalConfig
+  terminology: Terminology,
+  featureFlags: FeatureFlags
 ): string | null {
   switch (step) {
     case 1:
-      if (config.staff_require_pseudonym && !state.pseudonym.trim())
-        return `${config.id === 'adult_services' ? 'Pseudonym' : 'Display name'} is required.`;
+      if (featureFlags.staff_require_pseudonym && !state.pseudonym.trim())
+        return `${terminology.staff} name is required.`;
       if (state.age !== null && state.age < 18) return 'Age must be at least 18.';
       return null;
     case 2:
       if (state.selected_tag_ids.length === 0)
-        return `Select at least one ${config.terminology.service_tag.toLowerCase()}.`;
+        return `Select at least one ${terminology.service_tag.toLowerCase()}.`;
       return null;
     case 3: {
       const enabled = state.schedule.filter(d => d.enabled);
@@ -82,7 +84,6 @@ interface Props {
   staffId: string;
   initialState: StaffWizardState;
   availableTags: Array<{ id: string; name: string }>;
-  config: VerticalConfig;
 }
 
 export default function StaffWizardShell({
@@ -90,9 +91,9 @@ export default function StaffWizardShell({
   staffId,
   initialState,
   availableTags,
-  config,
 }: Props) {
   const router = useRouter();
+  const { terminology, featureFlags } = useTenantConfig();
   const [step, setStep] = useState(1);
   const [state, setState] = useState<StaffWizardState>(initialState);
   const [stepError, setStepError] = useState<string | null>(null);
@@ -105,7 +106,7 @@ export default function StaffWizardShell({
   }
 
   function handleNext() {
-    const err = validateStep(step, state, config);
+    const err = validateStep(step, state, terminology, featureFlags);
     if (err) {
       setStepError(err);
       return;
@@ -142,14 +143,14 @@ export default function StaffWizardShell({
     }
   }
 
-  const stepProps = { state, onChange: update, config, error: stepError ?? undefined };
+  const stepProps = { state, onChange: update, error: stepError ?? undefined };
 
   return (
     <div className="min-h-screen bg-zinc-950 flex flex-col items-center px-4 py-10">
       <div className="w-full max-w-lg mb-8 text-center">
         <h1 className="text-white text-xl font-semibold">Complete your profile</h1>
         <p className="text-zinc-500 text-sm mt-1">
-          Step {step} of {TOTAL_STEPS} — {getStepLabel(step, config)}
+          Step {step} of {TOTAL_STEPS} — {getStepLabel(step, terminology)}
         </p>
       </div>
 
@@ -173,7 +174,7 @@ export default function StaffWizardShell({
                   {done ? '✓' : n}
                 </div>
                 <span className="text-[10px] text-zinc-600 hidden sm:block">
-                  {getStepLabel(n, config)}
+                  {getStepLabel(n, terminology)}
                 </span>
               </div>
             );
@@ -188,7 +189,7 @@ export default function StaffWizardShell({
       </div>
 
       <div className="w-full max-w-lg bg-zinc-900 rounded-xl border border-zinc-800 p-6 shadow-lg">
-        <h2 className="text-white font-medium mb-4">{getStepLabel(step, config)}</h2>
+        <h2 className="text-white font-medium mb-4">{getStepLabel(step, terminology)}</h2>
 
         {step === 1 && <StepProfile {...stepProps} />}
         {step === 2 && (
@@ -198,7 +199,6 @@ export default function StaffWizardShell({
         {step === 4 && (
           <StepReview
             state={state}
-            config={config}
             availableTags={availableTags}
             error={submitError ?? undefined}
           />
