@@ -108,7 +108,7 @@ async function resolveTenantSlug(slug: string): Promise<{
         apikey: serviceKey,
         Authorization: `Bearer ${serviceKey}`,
       },
-      next: { revalidate: 60 },
+      next: { revalidate: 5 },
     });
 
     if (!res.ok) return null;
