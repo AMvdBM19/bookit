@@ -1,4 +1,7 @@
 import type { VerticalId, ClientMode, BookingConfirmMode } from '@/lib/verticals/types';
+import type { TenantConfig, IndustryTemplate } from './tenant-config';
+
+export type { TenantConfig, IndustryTemplate };
 
 export interface Tenant {
   id: string;

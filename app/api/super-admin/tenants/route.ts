@@ -1,8 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase/server';
 import { validateSuperAdminKey } from '@/lib/auth/super-admin';
-import { getVerticalConfig, isValidVertical } from '@/lib/verticals';
-import type { VerticalId } from '@/lib/verticals/types';
+import type { DefaultSettings, FeatureFlags, SeedTag } from '@/lib/types/tenant-config';
 
 const RESERVED_SLUGS = [
   'super-admin',
@@ -137,14 +136,18 @@ export async function POST(request: NextRequest) {
 
   const name: string | undefined = body.name?.trim();
   const slug: string | undefined = body.slug?.trim()?.toLowerCase();
-  const vertical = body.vertical;
-  const clientMode = body.client_mode;
+  // template_slug is the new field; fall back to legacy `vertical` so the
+  // existing super-admin console keeps working until the 10A-2 UI swap.
+  const templateSlug: string | undefined = (body.template_slug ?? body.vertical)?.trim();
   const agentEmail: string | undefined = body.agent_email?.trim()?.toLowerCase();
   const agentPassword: string | undefined = body.agent_password;
+  const businessName: string | undefined = body.business_name?.trim();
+  const brandColor: string | undefined = body.brand_color?.trim();
+  const clientModeOverride = body.client_mode_override ?? body.client_mode;
 
-  if (!name || !slug || !vertical || !clientMode || !agentEmail || !agentPassword) {
+  if (!name || !slug || !templateSlug || !agentEmail || !agentPassword) {
     return NextResponse.json(
-      { error: 'name, slug, vertical, client_mode, agent_email, agent_password required' },
+      { error: 'name, slug, template_slug, agent_email, agent_password required' },
       { status: 400 }
     );
   }
@@ -160,12 +163,8 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Slug is reserved' }, { status: 400 });
   }
 
-  if (!isValidVertical(vertical)) {
-    return NextResponse.json({ error: 'Invalid vertical' }, { status: 400 });
-  }
-
-  if (clientMode !== 'guest' && clientMode !== 'account') {
-    return NextResponse.json({ error: 'client_mode must be guest or account' }, { status: 400 });
+  if (clientModeOverride && clientModeOverride !== 'guest' && clientModeOverride !== 'account') {
+    return NextResponse.json({ error: 'client_mode_override must be guest or account' }, { status: 400 });
   }
 
   if (agentPassword.length < 8) {
@@ -173,6 +172,26 @@ export async function POST(request: NextRequest) {
   }
 
   const supabase = createServiceClient();
+
+  // 1. Resolve the industry template (drives vertical, config, settings, tags).
+  const { data: template, error: templateError } = await supabase
+    .from('industry_templates')
+    .select('*')
+    .eq('slug', templateSlug)
+    .eq('is_active', true)
+    .maybeSingle();
+
+  if (templateError) {
+    console.error('[super-admin:tenants:create] template fetch error:', templateError);
+    return NextResponse.json({ error: 'Failed to load template' }, { status: 500 });
+  }
+  if (!template) {
+    return NextResponse.json({ error: 'Invalid or inactive template' }, { status: 400 });
+  }
+
+  const templateDefaults = template.default_settings as DefaultSettings;
+  const templateFlags = template.feature_flags as FeatureFlags;
+  const clientMode = clientModeOverride ?? templateDefaults.client_mode;
 
   // 2. Check slug not already taken
   const { data: existing } = await supabase
@@ -199,8 +218,6 @@ export async function POST(request: NextRequest) {
   }
 
   const authUserId = authData.user.id;
-  const verticalId = vertical as VerticalId;
-  const config = getVerticalConfig(verticalId);
 
   // Helper: cleanup auth user on any downstream failure
   async function cleanup(reason: string, status = 500) {
@@ -214,7 +231,7 @@ export async function POST(request: NextRequest) {
     .insert({
       name,
       slug,
-      vertical: verticalId,
+      vertical: template.slug,
       client_mode: clientMode,
       is_active: true,
       wizard_completed: false,
@@ -252,16 +269,19 @@ export async function POST(request: NextRequest) {
     return cleanup('Failed to create agent');
   }
 
-  // 7. Insert default tenant_settings (vertical defaults)
+  // 7. Insert default tenant_settings from the template's default_settings.
   const { error: settingsError } = await supabase.from('tenant_settings').insert({
     tenant_id: tenantId,
-    agency_display_name: name,
-    booking_confirm_mode: config.defaults.booking_confirm_mode,
-    default_slot_minutes: config.defaults.default_slot_minutes,
-    age_gate_minimum: config.defaults.age_gate_minimum ?? 18,
-    require_age_confirm: config.defaults.require_age_confirm,
-    pricing_enabled: config.defaults.pricing_enabled,
-    client_approval_mode: config.defaults.client_approval_mode,
+    agency_display_name: businessName || name,
+    brand_color: brandColor || '#2BB673',
+    booking_confirm_mode: templateDefaults.booking_confirm_mode,
+    default_slot_minutes: templateDefaults.default_slot_minutes,
+    client_approval_mode: templateDefaults.client_approval_mode,
+    deposit_pct: templateDefaults.deposit_pct,
+    deposit_required_above_minutes: templateDefaults.deposit_required_above_minutes,
+    age_gate_minimum: templateFlags.age_gate_minimum ?? 18,
+    require_age_confirm: templateFlags.show_age_gate_step,
+    show_price_to_client: templateFlags.show_price_to_client,
   });
 
   if (settingsError) {
@@ -270,7 +290,35 @@ export async function POST(request: NextRequest) {
     return cleanup('Failed to create tenant settings');
   }
 
-  // 8. Insert default notification templates
+  // 8. Insert tenant_config stamped from the template.
+  const { error: configError } = await supabase.from('tenant_config').insert({
+    tenant_id: tenantId,
+    source_template_slug: template.slug,
+    terminology: template.terminology,
+    feature_flags: template.feature_flags,
+    compliance_flags: template.compliance_flags,
+  });
+
+  if (configError) {
+    console.error('[super-admin:tenants:create] tenant_config insert error:', configError);
+    await supabase.from('tenants').delete().eq('id', tenantId);
+    return cleanup('Failed to create tenant config');
+  }
+
+  // 9. Seed service_tags from the template.
+  const seedTags = (template.seed_tags as SeedTag[]) ?? [];
+  if (seedTags.length > 0) {
+    const tagRows = seedTags.map((tag, i) => ({
+      tenant_id: tenantId,
+      name: tag.name,
+      description: tag.description ?? null,
+      extra_price: 0,
+      display_order: i,
+    }));
+    await supabase.from('service_tags').insert(tagRows);
+  }
+
+  // 10. Insert default notification templates
   const templates = defaultTemplates().map(t => ({
     tenant_id: tenantId,
     event_type: t.event_type,
