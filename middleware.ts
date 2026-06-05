@@ -1,7 +1,10 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { updateSession } from '@/lib/supabase/middleware';
 
-const PUBLIC_ROUTES = ['/login', '/auth/callback', '/change-password', '/setup', '/onboarding'];
+// Routes always reachable without authentication. Setup is intentionally NOT
+// here: it requires an authenticated agent, so unauthenticated hits redirect to
+// login (preventing the login↔setup redirect loop on new tenants).
+const PUBLIC_ROUTES = ['/login', '/auth/callback', '/change-password'];
 const BYPASS_PREFIXES = ['/api', '/book'];
 const SYSTEM_SLUGS = ['super-admin'];
 
@@ -51,20 +54,29 @@ export async function middleware(request: NextRequest) {
   const subPath = '/' + segments.slice(1).join('/');
   const isPublicRoute = PUBLIC_ROUTES.some(r => subPath === r || subPath.startsWith(r + '/'));
 
+  // Unauthenticated on a protected route → bounce to login (login itself is public).
   if (!user && !isPublicRoute) {
     const loginUrl = new URL(`/${slug}/login`, request.url);
     loginUrl.searchParams.set('redirect', pathname);
     return NextResponse.redirect(loginUrl);
   }
 
+  // Authenticated on a protected route → enforce the wizard gate both ways.
   if (user && !isPublicRoute) {
+    const onSetup = subPath === '/setup' || subPath.startsWith('/setup/');
+
+    // Wizard not finished → force into setup (setup/staff-setup are themselves exempt).
     if (
       !tenant.wizard_completed &&
-      !subPath.startsWith('/setup') &&
-      !subPath.startsWith('/change-password') &&
+      !onSetup &&
       !subPath.startsWith('/staff-setup')
     ) {
       return NextResponse.redirect(new URL(`/${slug}/setup`, request.url));
+    }
+
+    // Wizard finished but still on setup → send to dashboard.
+    if (tenant.wizard_completed && onSetup) {
+      return NextResponse.redirect(new URL(`/${slug}/dashboard`, request.url));
     }
   }
 

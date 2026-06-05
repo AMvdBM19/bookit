@@ -1,6 +1,6 @@
 'use client';
 
-import { Fragment, useCallback, useEffect, useState } from 'react';
+import { Fragment, useCallback, useEffect, useRef, useState } from 'react';
 import type {
   Terminology,
   FeatureFlags,
@@ -832,17 +832,18 @@ function TemplatesTab({ apiKey }: { apiKey: string }) {
     reload();
   }, [reload]);
 
-  async function deactivate(t: TemplateRow) {
-    if (!confirm(`Deactivate template "${t.label}"?`)) return;
+  async function toggleActive(t: TemplateRow) {
+    if (t.is_active && !confirm(`Deactivate template "${t.label}"?`)) return;
     setBusyId(t.id);
     try {
       const res = await fetch(`/api/super-admin/templates/${t.id}`, {
-        method: 'DELETE',
+        method: 'PATCH',
         headers: authHeaders(apiKey),
+        body: JSON.stringify({ is_active: !t.is_active }),
       });
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
-        alert(data.error ?? 'Failed to deactivate');
+        alert(data.error ?? 'Failed to update');
         return;
       }
       reload();
@@ -958,14 +959,18 @@ function TemplatesTab({ apiKey }: { apiKey: string }) {
                         >
                           Duplicate
                         </button>
-                        {t.is_active && !t.is_system && (
+                        {(!t.is_active || !t.is_system) && (
                           <button
                             type="button"
-                            onClick={() => deactivate(t)}
+                            onClick={() => toggleActive(t)}
                             disabled={busyId === t.id}
-                            className="text-xs px-2 py-1 bg-zinc-100 hover:bg-zinc-200 text-zinc-800 rounded disabled:opacity-50"
+                            className={`text-xs px-2 py-1 rounded disabled:opacity-50 ${
+                              t.is_active
+                                ? 'bg-zinc-100 hover:bg-zinc-200 text-zinc-800'
+                                : 'bg-emerald-600 hover:bg-emerald-700 text-white'
+                            }`}
                           >
-                            Deactivate
+                            {t.is_active ? 'Deactivate' : 'Activate'}
                           </button>
                         )}
                       </div>
@@ -1029,6 +1034,7 @@ function TemplateFormModal({
   const [seedTagsText, setSeedTagsText] = useState(
     (template?.seed_tags ?? []).map(t => t.name).join(', ')
   );
+  const [isActive, setIsActive] = useState(template?.is_active ?? true);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -1060,7 +1066,7 @@ function TemplateFormModal({
         ? await fetch(`/api/super-admin/templates/${template!.id}`, {
             method: 'PATCH',
             headers: authHeaders(apiKey),
-            body: JSON.stringify(payload),
+            body: JSON.stringify({ ...payload, is_active: isActive }),
           })
         : await fetch('/api/super-admin/templates', {
             method: 'POST',
@@ -1106,13 +1112,7 @@ function TemplateFormModal({
               />
             </Field>
             <Field label="Icon">
-              <input
-                type="text"
-                value={icon}
-                onChange={e => setIcon(e.target.value)}
-                className="w-full text-sm border border-zinc-300 rounded px-3 py-2 focus:outline-none focus:border-zinc-500"
-                maxLength={4}
-              />
+              <EmojiPicker value={icon} onChange={setIcon} />
             </Field>
             <Field label="Sort order">
               <input
@@ -1143,6 +1143,13 @@ function TemplateFormModal({
             />
           </Field>
 
+          {isEdit && (
+            <label className="flex items-center gap-2 text-xs text-zinc-700">
+              <input type="checkbox" checked={isActive} onChange={e => setIsActive(e.target.checked)} />
+              Active — shown in the tenant wizard &amp; create-tenant picker
+            </label>
+          )}
+
           <Section title="Terminology">
             <div className="grid grid-cols-2 gap-2">
               {TERMINOLOGY_KEYS.map(key => (
@@ -1170,7 +1177,19 @@ function TemplateFormModal({
                 />
               </Field>
               <Toggle label="Staff require pseudonym" checked={featureFlags.staff_require_pseudonym} onChange={v => setFeatureFlags({ ...featureFlags, staff_require_pseudonym: v })} />
-              <Toggle label="Deposits supported" checked={featureFlags.deposits_supported} onChange={v => setFeatureFlags({ ...featureFlags, deposits_supported: v })} />
+              <Toggle
+                label="Deposits supported"
+                checked={featureFlags.deposits_supported}
+                onChange={v => {
+                  setFeatureFlags({ ...featureFlags, deposits_supported: v });
+                  // Show deposit fields with sensible defaults when enabling; zero them out when disabling.
+                  setDefaultSettings(prev => ({
+                    ...prev,
+                    deposit_pct: v ? (prev.deposit_pct || 20) : 0,
+                    deposit_required_above_minutes: v ? (prev.deposit_required_above_minutes || 60) : 0,
+                  }));
+                }}
+              />
               <Toggle label="Show price to client" checked={featureFlags.show_price_to_client} onChange={v => setFeatureFlags({ ...featureFlags, show_price_to_client: v })} />
               <Toggle label="Require booking notes" checked={featureFlags.require_booking_notes} onChange={v => setFeatureFlags({ ...featureFlags, require_booking_notes: v })} />
               <Field label="Booking notes label">
@@ -1218,12 +1237,16 @@ function TemplateFormModal({
               <Field label="Default slot minutes">
                 <input type="number" value={defaultSettings.default_slot_minutes} onChange={e => setDefaultSettings({ ...defaultSettings, default_slot_minutes: Number(e.target.value) })} className="w-full text-sm border border-zinc-300 rounded px-2 py-1.5" />
               </Field>
-              <Field label="Deposit %">
-                <input type="number" value={defaultSettings.deposit_pct} onChange={e => setDefaultSettings({ ...defaultSettings, deposit_pct: Number(e.target.value) })} className="w-full text-sm border border-zinc-300 rounded px-2 py-1.5" />
-              </Field>
-              <Field label="Deposit above (min)">
-                <input type="number" value={defaultSettings.deposit_required_above_minutes} onChange={e => setDefaultSettings({ ...defaultSettings, deposit_required_above_minutes: Number(e.target.value) })} className="w-full text-sm border border-zinc-300 rounded px-2 py-1.5" />
-              </Field>
+              {featureFlags.deposits_supported && (
+                <>
+                  <Field label="Deposit %">
+                    <input type="number" value={defaultSettings.deposit_pct} onChange={e => setDefaultSettings({ ...defaultSettings, deposit_pct: Number(e.target.value) })} className="w-full text-sm border border-zinc-300 rounded px-2 py-1.5" />
+                  </Field>
+                  <Field label="Deposit above (min)">
+                    <input type="number" value={defaultSettings.deposit_required_above_minutes} onChange={e => setDefaultSettings({ ...defaultSettings, deposit_required_above_minutes: Number(e.target.value) })} className="w-full text-sm border border-zinc-300 rounded px-2 py-1.5" />
+                  </Field>
+                </>
+              )}
             </div>
           </Section>
 
@@ -1260,6 +1283,73 @@ function TemplateFormModal({
           </div>
         </form>
       </div>
+    </div>
+  );
+}
+
+// Curated set of business-relevant emojis for the template icon picker.
+const EMOJI_OPTIONS = [
+  '🏢', '💼', '🏪', '🏬', '🏥', '🏫', '🏦', '🏭', '🏗️',
+  '✂️', '💅', '💇', '💋', '🖊️', '🔧', '🔨', '🛠️', '⚙️', '🚗',
+  '🏋️', '🧘', '💆', '🩺', '🦷', '👁️', '❤️', '🧬',
+  '🍽️', '☕', '🍕', '🍰', '🥐', '🍺', '🍷',
+  '🎨', '📸', '🎵', '🎬', '📚', '✏️', '🎭', '🎪',
+  '💻', '📱', '🖥️', '🌐', '🤖', '🎮',
+  '⭐', '🌟', '🔥', '💎', '🎯', '🚀', '👑', '🌈',
+];
+
+function EmojiPicker({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    function onClickOutside(e: MouseEvent) {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    }
+    document.addEventListener('mousedown', onClickOutside);
+    return () => document.removeEventListener('mousedown', onClickOutside);
+  }, [open]);
+
+  return (
+    <div className="relative" ref={ref}>
+      <div className="flex items-center gap-1.5">
+        <button
+          type="button"
+          onClick={() => setOpen(o => !o)}
+          aria-label="Choose an emoji"
+          className="flex h-9 w-11 shrink-0 items-center justify-center text-xl border border-zinc-300 rounded hover:bg-zinc-50 focus:outline-none focus:border-zinc-500"
+        >
+          {value || '🏢'}
+        </button>
+        {/* Text input kept as a fallback for emojis not in the curated grid. */}
+        <input
+          type="text"
+          value={value}
+          onChange={e => onChange(e.target.value)}
+          maxLength={4}
+          className="w-full min-w-0 text-sm border border-zinc-300 rounded px-2 py-1.5 focus:outline-none focus:border-zinc-500"
+        />
+      </div>
+      {open && (
+        <div className="absolute z-20 mt-1 left-0 w-64 bg-white border border-zinc-200 rounded-lg shadow-lg p-2 grid grid-cols-8 gap-1">
+          {EMOJI_OPTIONS.map(emoji => (
+            <button
+              key={emoji}
+              type="button"
+              onClick={() => {
+                onChange(emoji);
+                setOpen(false);
+              }}
+              className={`flex h-7 w-7 items-center justify-center text-lg rounded hover:bg-zinc-100 ${
+                value === emoji ? 'bg-zinc-200' : ''
+              }`}
+            >
+              {emoji}
+            </button>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

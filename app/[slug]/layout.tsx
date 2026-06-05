@@ -1,6 +1,7 @@
 import { headers } from 'next/headers';
 import { notFound, redirect } from 'next/navigation';
 import { resolveTenant } from '@/lib/auth/tenant';
+import { getAuthenticatedUser } from '@/lib/auth/session';
 import { createServiceClient } from '@/lib/supabase/server';
 import { TenantProvider } from '@/lib/context/tenant';
 import { TenantConfigProvider } from '@/lib/context/tenant-config';
@@ -24,11 +25,17 @@ export default async function TenantLayout({
     notFound();
   }
 
-  // Middleware handles the wizard redirect as primary gate; this is the layout-level fallback.
+  // Middleware handles the wizard redirect as primary gate; this is the layout-level
+  // fallback. Only redirect *authenticated* users — unauthenticated visitors must be
+  // able to reach the login page (which lives under this layout via the (auth) group),
+  // otherwise login bounces to setup and setup bounces back to login: a redirect loop.
   const headersList = await headers();
   const nextUrl = headersList.get('next-url') ?? '';
+  const user = await getAuthenticatedUser();
   if (
+    user &&
     !tenant.wizardCompleted &&
+    !nextUrl.includes('/login') &&
     !nextUrl.includes('/setup') &&
     !nextUrl.includes('/change-password') &&
     !nextUrl.includes('/staff-setup')
