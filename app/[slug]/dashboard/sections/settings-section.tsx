@@ -154,7 +154,6 @@ export default function SettingsSection({ slug }: { slug: string }) {
   const { tenant, settings, integrations, locked_fields } = summary;
   const lockedSet = new Set(locked_fields);
   const wa = integrations.whatsapp;
-  const showDeposits = tenant?.vertical === 'tattoo';
 
   function isLocked(field: keyof Settings): boolean {
     return lockedSet.has(field);
@@ -270,7 +269,6 @@ export default function SettingsSection({ slug }: { slug: string }) {
               'booking_confirm_mode',
               'min_lead_time_hours',
               'max_booking_days_ahead',
-              'show_price_to_client',
               'reminder_lead_time_minutes',
             ])
           }
@@ -316,21 +314,6 @@ export default function SettingsSection({ slug }: { slug: string }) {
                   className={inputCls}
                 />
               </EditRow>
-              <EditRow label="Show price to client">
-                <label className="flex items-center gap-2 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={draft.show_price_to_client ?? false}
-                    onChange={e => patchDraft({ show_price_to_client: e.target.checked })}
-                  />
-                  <span className="text-sm text-zinc-700">Display pricing in the booking widget</span>
-                </label>
-              </EditRow>
-              <EditRow label={`Base rate / 30 min (${settings?.currency ?? 'EUR'})`} locked>
-                <p className="text-sm text-zinc-500">
-                  {settings?.currency} {settings?.base_rate_per_30min?.toFixed(2) ?? '—'}
-                </p>
-              </EditRow>
             </>
           ) : (
             <>
@@ -342,10 +325,6 @@ export default function SettingsSection({ slug }: { slug: string }) {
                     : `${terminology.staff} must accept`
                 }
               />
-              <Row
-                label="Base rate / 30 min"
-                value={`${settings?.currency ?? 'EUR'} ${settings?.base_rate_per_30min?.toFixed(2) ?? '—'}`}
-              />
               <Row label="Min lead time" value={`${settings?.min_lead_time_hours ?? '—'} h`} />
               <Row
                 label="Max booking window"
@@ -354,10 +333,6 @@ export default function SettingsSection({ slug }: { slug: string }) {
               <Row
                 label="Reminder lead time"
                 value={`${settings?.reminder_lead_time_minutes ?? '—'} min`}
-              />
-              <Row
-                label="Show price to client"
-                value={settings?.show_price_to_client ? 'Yes' : 'No'}
               />
               <Row label="Client mode" value={tenant?.client_mode} />
             </>
@@ -403,66 +378,6 @@ export default function SettingsSection({ slug }: { slug: string }) {
           )}
         </div>
       </section>
-
-      {/* Deposits (tattoo only) */}
-      {showDeposits && (
-        <section>
-          <SectionHeader
-            title="Deposits"
-            editing={editingSection === 'deposits'}
-            onEdit={() => startEdit('deposits')}
-            onCancel={cancelEdit}
-            onSave={() => saveSection(['deposit_pct', 'deposit_required_above_minutes'])}
-            saving={saving}
-          />
-          <div className="bg-white rounded-lg border border-zinc-200 px-4">
-            {editingSection === 'deposits' ? (
-              <>
-                <EditRow label="Deposit % of total">
-                  <input
-                    type="number"
-                    min={0}
-                    max={100}
-                    step={0.1}
-                    value={draft.deposit_pct ?? 0}
-                    onChange={e => patchDraft({ deposit_pct: Number(e.target.value) })}
-                    className={inputCls}
-                  />
-                </EditRow>
-                <EditRow label="Required for bookings over (minutes)">
-                  <input
-                    type="number"
-                    min={0}
-                    value={draft.deposit_required_above_minutes ?? 0}
-                    onChange={e =>
-                      patchDraft({ deposit_required_above_minutes: Number(e.target.value) })
-                    }
-                    className={inputCls}
-                  />
-                  <p className="text-[11px] text-zinc-500 mt-1">
-                    0 = always required when deposit % &gt; 0
-                  </p>
-                </EditRow>
-              </>
-            ) : (
-              <>
-                <Row
-                  label="Deposit %"
-                  value={settings?.deposit_pct != null ? `${settings.deposit_pct}%` : '0%'}
-                />
-                <Row
-                  label="Required above"
-                  value={
-                    settings?.deposit_required_above_minutes != null
-                      ? `${settings.deposit_required_above_minutes} min`
-                      : '—'
-                  }
-                />
-              </>
-            )}
-          </div>
-        </section>
-      )}
 
       {/* Integrations (read-only) */}
       <section>

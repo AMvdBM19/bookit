@@ -5,10 +5,11 @@ import { useTenantConfig } from '@/lib/context/tenant-config';
 import BookingsSection from './sections/bookings-section';
 import StaffSection from './sections/staff-section';
 import ClientsSection from './sections/clients-section';
+import PricingSection from './sections/pricing-section';
 import SettingsSection from './sections/settings-section';
 import TemplatesSection from './sections/templates-section';
 
-type Tab = 'bookings' | 'staff' | 'clients' | 'templates' | 'settings';
+type Tab = 'bookings' | 'staff' | 'clients' | 'pricing' | 'templates' | 'settings';
 
 interface Props {
   slug: string;
@@ -17,7 +18,7 @@ interface Props {
   clientMode: 'guest' | 'account';
 }
 
-const TAB_IDS: Tab[] = ['bookings', 'staff', 'clients', 'templates', 'settings'];
+const TAB_IDS: Tab[] = ['bookings', 'staff', 'clients', 'pricing', 'templates', 'settings'];
 
 export default function AgentDashboard({
   slug,
@@ -38,6 +39,8 @@ export default function AgentDashboard({
         return terminology.staff_plural;
       case 'clients':
         return terminology.client_plural;
+      case 'pricing':
+        return 'Pricing';
       case 'templates':
         return 'Templates';
       case 'settings':
@@ -97,6 +100,7 @@ export default function AgentDashboard({
           {tab === 'bookings' && <BookingsSection slug={slug} />}
           {tab === 'staff' && <StaffSection slug={slug} />}
           {tab === 'clients' && <ClientsSection slug={slug} clientMode={clientMode} />}
+          {tab === 'pricing' && <PricingSection slug={slug} />}
           {tab === 'templates' && <TemplatesSection slug={slug} />}
           {tab === 'settings' && <SettingsSection slug={slug} />}
         </div>

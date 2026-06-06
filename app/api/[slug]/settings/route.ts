@@ -16,6 +16,15 @@ const EDITABLE_FIELDS = [
   'require_age_confirm',
   'deposit_pct',
   'deposit_required_above_minutes',
+  // Pricing & finances (Phase 10B-1). currency, base_rate_per_30min and
+  // tax_rate_pct are intentionally excluded — they are locked after the wizard.
+  'pricing_enabled',
+  'staff_payout_pct',
+  'agency_share_pct',
+  'tax_label',
+  'tax_period',
+  'no_show_revenue_policy',
+  'no_show_partial_pct',
 ] as const;
 
 type EditableField = (typeof EDITABLE_FIELDS)[number];

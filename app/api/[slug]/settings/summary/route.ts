@@ -15,7 +15,7 @@ export async function GET() {
   const { data: settings } = await supabase
     .from('tenant_settings')
     .select(
-      'agency_display_name, logo_url, brand_color, booking_confirm_mode, base_rate_per_30min, currency, min_lead_time_hours, max_booking_days_ahead, age_gate_minimum, require_age_confirm, show_price_to_client, reminder_lead_time_minutes, deposit_pct, deposit_required_above_minutes'
+      'agency_display_name, logo_url, brand_color, booking_confirm_mode, base_rate_per_30min, currency, min_lead_time_hours, max_booking_days_ahead, age_gate_minimum, require_age_confirm, show_price_to_client, reminder_lead_time_minutes, deposit_pct, deposit_required_above_minutes, pricing_enabled, staff_payout_pct, agency_share_pct, tax_rate_pct, tax_label, tax_period, no_show_revenue_policy, no_show_partial_pct'
     )
     .eq('tenant_id', user.tenantId)
     .single();
