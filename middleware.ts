@@ -61,6 +61,27 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(loginUrl);
   }
 
+  // Authenticated user on a non-public route: verify they belong to this tenant.
+  // The user's tenant (set by the custom_access_token_hook under app_metadata,
+  // with a DB fallback) must match the tenant resolved from the URL slug. This
+  // prevents cross-tenant access where a user authenticated for tenant A browses
+  // /tenant-b/dashboard.
+  if (user && !isPublicRoute) {
+    const userTenantId = await resolveUserTenantId(user);
+
+    if (userTenantId && userTenantId !== tenant.id) {
+      // Authenticated, but for a different tenant. Redirect to their own tenant's
+      // equivalent page rather than leaking this tenant's shell.
+      const userTenantSlug = await resolveSlugById(userTenantId);
+      if (userTenantSlug) {
+        const targetPath = subPath === '/' ? '/dashboard' : subPath;
+        return NextResponse.redirect(new URL(`/${userTenantSlug}${targetPath}`, request.url));
+      }
+      // Cannot resolve their tenant slug → send to this tenant's login.
+      return NextResponse.redirect(new URL(`/${slug}/login`, request.url));
+    }
+  }
+
   // Authenticated on a protected route → enforce the wizard gate both ways.
   if (user && !isPublicRoute) {
     const onSetup = subPath === '/setup' || subPath.startsWith('/setup/');
@@ -114,6 +135,89 @@ async function resolveTenantSlug(slug: string): Promise<{
     if (!res.ok) return null;
     const data = await res.json();
     return data?.[0] ?? null;
+  } catch {
+    return null;
+  }
+}
+
+// Resolve the authenticated user's own tenant id. Fast path reads the claim the
+// custom_access_token_hook injects under app_metadata; the DB fallback mirrors
+// lib/auth/session.ts, because getUser() surfaces raw_app_meta_data which may not
+// carry that claim (e.g. seeded demo agents). Without the fallback the cross-tenant
+// check would silently no-op for those users.
+async function resolveUserTenantId(user: {
+  id: string;
+  email?: string;
+  app_metadata?: Record<string, unknown>;
+  user_metadata?: Record<string, unknown>;
+}): Promise<string | null> {
+  const claim =
+    (user.app_metadata?.tenant_id as string | undefined) ??
+    (user.user_metadata?.tenant_id as string | undefined);
+  if (claim) return claim;
+
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  if (!supabaseUrl || !serviceKey) return null;
+
+  const headers = { apikey: serviceKey, Authorization: `Bearer ${serviceKey}` };
+  const email = user.email ?? '';
+
+  async function lookup(path: string): Promise<string | null> {
+    try {
+      const res = await fetch(`${supabaseUrl}/rest/v1/${path}`, {
+        headers,
+        next: { revalidate: 5 },
+      });
+      if (!res.ok) return null;
+      const data = await res.json();
+      return data?.[0]?.tenant_id ?? null;
+    } catch {
+      return null;
+    }
+  }
+
+  if (email) {
+    const agentTenant = await lookup(
+      `agents?email=eq.${encodeURIComponent(email)}&select=tenant_id&limit=1`
+    );
+    if (agentTenant) return agentTenant;
+  }
+
+  const staffTenant = await lookup(
+    `staff?id=eq.${encodeURIComponent(user.id)}&select=tenant_id&limit=1`
+  );
+  if (staffTenant) return staffTenant;
+
+  if (email) {
+    const clientTenant = await lookup(
+      `clients?email=eq.${encodeURIComponent(email)}&select=tenant_id&limit=1`
+    );
+    if (clientTenant) return clientTenant;
+  }
+
+  return null;
+}
+
+async function resolveSlugById(tenantId: string): Promise<string | null> {
+  try {
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+    if (!supabaseUrl || !serviceKey) return null;
+
+    const url = `${supabaseUrl}/rest/v1/tenants?id=eq.${encodeURIComponent(tenantId)}&select=slug&limit=1`;
+
+    const res = await fetch(url, {
+      headers: {
+        apikey: serviceKey,
+        Authorization: `Bearer ${serviceKey}`,
+      },
+      next: { revalidate: 60 },
+    });
+
+    if (!res.ok) return null;
+    const data = await res.json();
+    return data?.[0]?.slug ?? null;
   } catch {
     return null;
   }

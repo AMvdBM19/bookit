@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
+import { useTenantConfig } from '@/lib/context/tenant-config';
 
 interface StaffRow {
   id: string;
@@ -48,6 +49,7 @@ const STATUS_BADGE: Record<string, string> = {
 };
 
 export default function StaffSection({ slug }: { slug: string }) {
+  const { terminology } = useTenantConfig();
   const [staff, setStaff] = useState<StaffRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -99,17 +101,17 @@ export default function StaffSection({ slug }: { slug: string }) {
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <h2 className="text-sm font-semibold text-zinc-900">Staff</h2>
+        <h2 className="text-sm font-semibold text-zinc-900">{terminology.staff_plural}</h2>
         <button
           type="button"
           onClick={() => setShowCreate(true)}
           className="text-xs px-3 py-1.5 bg-slate-900 hover:bg-slate-800 text-white rounded"
         >
-          + Add staff
+          + Add {terminology.staff}
         </button>
       </div>
 
-      {loading && <p className="text-sm text-zinc-500">Loading staff…</p>}
+      {loading && <p className="text-sm text-zinc-500">Loading {terminology.staff_plural.toLowerCase()}…</p>}
       {error && <p className="text-sm text-red-600">{error}</p>}
 
       {!loading && !error && (
@@ -130,7 +132,7 @@ export default function StaffSection({ slug }: { slug: string }) {
               {staff.length === 0 ? (
                 <tr>
                   <td colSpan={7} className="px-3 py-6 text-center text-zinc-500 text-sm">
-                    No staff yet.
+                    No {terminology.staff_plural.toLowerCase()} yet.
                   </td>
                 </tr>
               ) : (
@@ -249,6 +251,7 @@ function CreateStaffModal({
   onClose: () => void;
   onCreated: () => void;
 }) {
+  const { terminology } = useTenantConfig();
   const [email, setEmail] = useState('');
   const [pseudonym, setPseudonym] = useState('');
   const [password, setPassword] = useState('');
@@ -284,7 +287,7 @@ function CreateStaffModal({
     <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
       <div className="bg-white rounded-lg shadow-xl w-full max-w-sm p-6">
         <div className="flex items-center justify-between mb-4">
-          <h3 className="text-base font-semibold text-zinc-900">Add staff</h3>
+          <h3 className="text-base font-semibold text-zinc-900">Add {terminology.staff}</h3>
           <button
             type="button"
             onClick={onClose}
@@ -297,7 +300,7 @@ function CreateStaffModal({
 
         {success ? (
           <div className="rounded-lg bg-emerald-50 border border-emerald-200 p-3 text-sm text-emerald-800">
-            Staff created. They can sign in with the password you set, then they&apos;ll be prompted
+            {terminology.staff} created. They can sign in with the password you set, then they&apos;ll be prompted
             to change it on first login.
           </div>
         ) : (

@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useTenantConfig } from '@/lib/context/tenant-config';
 import BookingsSection from './sections/bookings-section';
 import StaffSection from './sections/staff-section';
 import ClientsSection from './sections/clients-section';
@@ -16,13 +17,7 @@ interface Props {
   clientMode: 'guest' | 'account';
 }
 
-const TABS: Array<{ id: Tab; label: string }> = [
-  { id: 'bookings', label: 'Bookings' },
-  { id: 'staff', label: 'Staff' },
-  { id: 'clients', label: 'Clients' },
-  { id: 'templates', label: 'Templates' },
-  { id: 'settings', label: 'Settings' },
-];
+const TAB_IDS: Tab[] = ['bookings', 'staff', 'clients', 'templates', 'settings'];
 
 export default function AgentDashboard({
   slug,
@@ -30,9 +25,25 @@ export default function AgentDashboard({
   agentEmail,
   clientMode,
 }: Props) {
+  const { terminology } = useTenantConfig();
   const [tab, setTab] = useState<Tab>('bookings');
 
-  const clientsLabel = clientMode === 'guest' ? 'Guests' : 'Clients';
+  // Tab/header labels follow the tenant's configured terminology; Templates and
+  // Settings are system concepts and stay fixed.
+  function labelFor(id: Tab): string {
+    switch (id) {
+      case 'bookings':
+        return terminology.booking_plural;
+      case 'staff':
+        return terminology.staff_plural;
+      case 'clients':
+        return terminology.client_plural;
+      case 'templates':
+        return 'Templates';
+      case 'settings':
+        return 'Settings';
+    }
+  }
 
   return (
     <div className="min-h-screen bg-zinc-50 flex">
@@ -44,14 +55,14 @@ export default function AgentDashboard({
         </div>
 
         <nav className="flex-1 px-2 py-3 space-y-1">
-          {TABS.map(t => {
-            const active = tab === t.id;
-            const label = t.id === 'clients' ? clientsLabel : t.label;
+          {TAB_IDS.map(id => {
+            const active = tab === id;
+            const label = labelFor(id);
             return (
               <button
-                key={t.id}
+                key={id}
                 type="button"
-                onClick={() => setTab(t.id)}
+                onClick={() => setTab(id)}
                 className={`w-full text-left px-3 py-2 text-sm rounded transition-colors ${
                   active
                     ? 'bg-slate-800 text-white'
@@ -78,7 +89,7 @@ export default function AgentDashboard({
       <main className="flex-1 min-w-0">
         <header className="bg-white border-b border-zinc-200 px-6 py-4">
           <h1 className="text-base font-semibold text-zinc-900">
-            {tab === 'clients' ? clientsLabel : TABS.find(t => t.id === tab)?.label}
+            {labelFor(tab)}
           </h1>
         </header>
 

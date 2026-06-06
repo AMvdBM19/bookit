@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
+import { useTenantConfig } from '@/lib/context/tenant-config';
 
 interface Guest {
   id: string;
@@ -59,6 +60,7 @@ export default function ClientsSection({ slug, clientMode }: Props) {
 /* -------------------- Guest mode -------------------- */
 
 function GuestList({ slug }: { slug: string }) {
+  const { terminology } = useTenantConfig();
   const [guests, setGuests] = useState<Guest[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -86,12 +88,12 @@ function GuestList({ slug }: { slug: string }) {
     reload();
   }, [reload]);
 
-  if (loading) return <p className="text-sm text-zinc-500">Loading guests…</p>;
+  if (loading) return <p className="text-sm text-zinc-500">Loading {terminology.client_plural.toLowerCase()}…</p>;
   if (error) return <p className="text-sm text-red-600">{error}</p>;
 
   return (
     <div className="space-y-4">
-      <h2 className="text-sm font-semibold text-zinc-900">Guests</h2>
+      <h2 className="text-sm font-semibold text-zinc-900">{terminology.client_plural}</h2>
 
       <div className="border border-zinc-200 rounded-lg overflow-hidden bg-white">
         <table className="w-full text-sm">
@@ -100,7 +102,7 @@ function GuestList({ slug }: { slug: string }) {
               <th className="px-3 py-2">Name</th>
               <th className="px-3 py-2">Email</th>
               <th className="px-3 py-2">Phone</th>
-              <th className="px-3 py-2">Bookings</th>
+              <th className="px-3 py-2">{terminology.booking_plural}</th>
               <th className="px-3 py-2">Last seen</th>
               <th className="px-3 py-2 text-right">Actions</th>
             </tr>
@@ -109,7 +111,7 @@ function GuestList({ slug }: { slug: string }) {
             {guests.length === 0 ? (
               <tr>
                 <td colSpan={6} className="px-3 py-6 text-center text-zinc-500 text-sm">
-                  No guests yet.
+                  No {terminology.client_plural.toLowerCase()} yet.
                 </td>
               </tr>
             ) : (
@@ -170,6 +172,7 @@ function BlockGuestModal({
   onClose: () => void;
   onBlocked: () => void;
 }) {
+  const { terminology } = useTenantConfig();
   const [reason, setReason] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -201,7 +204,7 @@ function BlockGuestModal({
     <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
       <div className="bg-white rounded-lg shadow-xl w-full max-w-sm p-6">
         <div className="flex items-center justify-between mb-4">
-          <h3 className="text-base font-semibold text-zinc-900">Block guest</h3>
+          <h3 className="text-base font-semibold text-zinc-900">Block {terminology.client.toLowerCase()}</h3>
           <button
             type="button"
             onClick={onClose}
@@ -258,6 +261,7 @@ function BlockGuestModal({
 /* -------------------- Account mode -------------------- */
 
 function ClientList({ slug }: { slug: string }) {
+  const { terminology } = useTenantConfig();
   const [clients, setClients] = useState<Client[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -304,12 +308,12 @@ function ClientList({ slug }: { slug: string }) {
     }
   }
 
-  if (loading) return <p className="text-sm text-zinc-500">Loading clients…</p>;
+  if (loading) return <p className="text-sm text-zinc-500">Loading {terminology.client_plural.toLowerCase()}…</p>;
   if (error) return <p className="text-sm text-red-600">{error}</p>;
 
   return (
     <div className="space-y-4">
-      <h2 className="text-sm font-semibold text-zinc-900">Clients</h2>
+      <h2 className="text-sm font-semibold text-zinc-900">{terminology.client_plural}</h2>
 
       <div className="border border-zinc-200 rounded-lg overflow-hidden bg-white">
         <table className="w-full text-sm">
@@ -327,7 +331,7 @@ function ClientList({ slug }: { slug: string }) {
             {clients.length === 0 ? (
               <tr>
                 <td colSpan={6} className="px-3 py-6 text-center text-zinc-500 text-sm">
-                  No clients yet.
+                  No {terminology.client_plural.toLowerCase()} yet.
                 </td>
               </tr>
             ) : (

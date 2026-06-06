@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
+import { useTenantConfig } from '@/lib/context/tenant-config';
 
 interface Tenant {
   name: string;
@@ -70,6 +71,7 @@ function EditRow({
 }
 
 export default function SettingsSection({ slug }: { slug: string }) {
+  const { terminology } = useTenantConfig();
   const [summary, setSummary] = useState<Summary | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -283,7 +285,7 @@ export default function SettingsSection({ slug }: { slug: string }) {
                   onChange={e => patchDraft({ booking_confirm_mode: e.target.value })}
                   className={inputCls}
                 >
-                  <option value="staff_must_accept">Staff must accept</option>
+                  <option value="staff_must_accept">{terminology.staff} must accept</option>
                   <option value="auto_confirm">Auto-confirm</option>
                 </select>
               </EditRow>
@@ -337,7 +339,7 @@ export default function SettingsSection({ slug }: { slug: string }) {
                 value={
                   settings?.booking_confirm_mode === 'auto_confirm'
                     ? 'Auto-confirm'
-                    : 'Staff must accept'
+                    : `${terminology.staff} must accept`
                 }
               />
               <Row

@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
+import { useTenantConfig } from '@/lib/context/tenant-config';
 
 interface JoinObj {
   pseudonym?: string;
@@ -79,6 +80,7 @@ function StatusBadge({ status }: { status: string }) {
 }
 
 export default function BookingsSection({ slug }: { slug: string }) {
+  const { terminology } = useTenantConfig();
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -159,7 +161,7 @@ export default function BookingsSection({ slug }: { slug: string }) {
     .slice(0, 30);
 
   if (loading) {
-    return <p className="text-sm text-zinc-500">Loading bookings…</p>;
+    return <p className="text-sm text-zinc-500">Loading {terminology.booking_plural.toLowerCase()}…</p>;
   }
   if (error) {
     return <p className="text-sm text-red-600">{error}</p>;
@@ -186,8 +188,8 @@ export default function BookingsSection({ slug }: { slug: string }) {
               <thead className="bg-zinc-50 border-b border-zinc-200">
                 <tr className="text-left text-[11px] font-medium uppercase tracking-wider text-zinc-500">
                   <th className="px-3 py-2">Ref</th>
-                  <th className="px-3 py-2">Staff</th>
-                  <th className="px-3 py-2">Client</th>
+                  <th className="px-3 py-2">{terminology.staff}</th>
+                  <th className="px-3 py-2">{terminology.client}</th>
                   <th className="px-3 py-2">When</th>
                   <th className="px-3 py-2">Tags</th>
                   <th className="px-3 py-2">Requested</th>
@@ -294,14 +296,14 @@ export default function BookingsSection({ slug }: { slug: string }) {
       <section>
         <h2 className="text-sm font-semibold text-zinc-900 mb-3">Upcoming (next 14 days)</h2>
         {upcoming.length === 0 ? (
-          <p className="text-sm text-zinc-500">No upcoming bookings.</p>
+          <p className="text-sm text-zinc-500">No upcoming {terminology.booking_plural.toLowerCase()}.</p>
         ) : (
           <div className="border border-zinc-200 rounded-lg overflow-hidden bg-white">
             <table className="w-full text-sm">
               <thead className="bg-zinc-50 border-b border-zinc-200">
                 <tr className="text-left text-[11px] font-medium uppercase tracking-wider text-zinc-500">
-                  <th className="px-3 py-2">Staff</th>
-                  <th className="px-3 py-2">Client</th>
+                  <th className="px-3 py-2">{terminology.staff}</th>
+                  <th className="px-3 py-2">{terminology.client}</th>
                   <th className="px-3 py-2">Date</th>
                   <th className="px-3 py-2">Time</th>
                 </tr>
@@ -327,14 +329,14 @@ export default function BookingsSection({ slug }: { slug: string }) {
       <section>
         <h2 className="text-sm font-semibold text-zinc-900 mb-3">Past (last 30)</h2>
         {past.length === 0 ? (
-          <p className="text-sm text-zinc-500">No past bookings.</p>
+          <p className="text-sm text-zinc-500">No past {terminology.booking_plural.toLowerCase()}.</p>
         ) : (
           <div className="border border-zinc-200 rounded-lg overflow-hidden bg-white">
             <table className="w-full text-sm">
               <thead className="bg-zinc-50 border-b border-zinc-200">
                 <tr className="text-left text-[11px] font-medium uppercase tracking-wider text-zinc-500">
-                  <th className="px-3 py-2">Staff</th>
-                  <th className="px-3 py-2">Client</th>
+                  <th className="px-3 py-2">{terminology.staff}</th>
+                  <th className="px-3 py-2">{terminology.client}</th>
                   <th className="px-3 py-2">Date</th>
                   <th className="px-3 py-2">Status</th>
                 </tr>
