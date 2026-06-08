@@ -82,6 +82,14 @@ export async function middleware(request: NextRequest) {
     }
   }
 
+  // Bare slug path (e.g. /beauty) has no page — redirect to dashboard or login
+  if (subPath === '/') {
+    if (user) {
+      return NextResponse.redirect(new URL(`/${slug}/dashboard`, request.url));
+    }
+    return NextResponse.redirect(new URL(`/${slug}/login`, request.url));
+  }
+
   // Authenticated on a protected route → enforce the wizard gate both ways.
   if (user && !isPublicRoute) {
     const onSetup = subPath === '/setup' || subPath.startsWith('/setup/');

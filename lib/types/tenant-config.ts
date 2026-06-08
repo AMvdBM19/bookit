@@ -16,6 +16,7 @@ export interface Terminology {
   booking_plural: string;
   operator: string;
   service_tag: string;
+  base_price_label: string;
 }
 
 export interface FeatureFlags {
@@ -86,7 +87,7 @@ export interface TenantConfig {
 // Validation helpers
 export const TERMINOLOGY_KEYS: (keyof Terminology)[] = [
   'staff', 'staff_plural', 'client', 'client_plural',
-  'booking', 'booking_plural', 'operator', 'service_tag'
+  'booking', 'booking_plural', 'operator', 'service_tag', 'base_price_label'
 ];
 
 export const FEATURE_FLAG_KEYS: (keyof FeatureFlags)[] = [
@@ -109,6 +110,7 @@ export const DEFAULT_TERMINOLOGY: Terminology = {
   booking_plural: 'Bookings',
   operator: 'Manager',
   service_tag: 'Service',
+  base_price_label: 'Base booking',
 };
 
 export const DEFAULT_FEATURE_FLAGS: FeatureFlags = {

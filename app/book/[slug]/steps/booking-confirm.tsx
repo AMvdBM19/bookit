@@ -25,6 +25,7 @@ interface Props {
   brandColor: string;
   isGuestMode: boolean;
   depositsSupported: boolean;
+  basePriceLabel: string;
 }
 
 function formatDate(dateStr: string): string {
@@ -62,6 +63,7 @@ export default function BookingConfirm({
   brandColor,
   isGuestMode,
   depositsSupported,
+  basePriceLabel,
 }: Props) {
   const showPrice = settings?.show_price_to_client ?? false;
   const baseRate = settings?.base_rate_per_30min ?? 60;
@@ -126,7 +128,7 @@ export default function BookingConfirm({
           <section className="rounded-lg border border-zinc-800 bg-zinc-900 p-4 space-y-1.5">
             <div className="flex justify-between gap-4">
               <span className="text-xs text-zinc-500">
-                Base booking ({formatDuration(duration)})
+                {basePriceLabel} ({formatDuration(duration)})
               </span>
               <span className="text-xs text-white">
                 {sym}{baseTotal.toFixed(2)}

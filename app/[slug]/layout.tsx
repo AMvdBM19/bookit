@@ -35,7 +35,7 @@ export default async function TenantLayout({
     .eq('tenant_id', tenant.tenantId)
     .single();
 
-  const terminology = tenantConfig?.terminology ?? DEFAULT_TERMINOLOGY;
+  const terminology = { ...DEFAULT_TERMINOLOGY, ...(tenantConfig?.terminology as Partial<typeof DEFAULT_TERMINOLOGY> | undefined) };
   const featureFlags = tenantConfig?.feature_flags ?? DEFAULT_FEATURE_FLAGS;
   const complianceFlags = tenantConfig?.compliance_flags ?? DEFAULT_COMPLIANCE_FLAGS;
   const sourceTemplateSlug = tenantConfig?.source_template_slug ?? null;

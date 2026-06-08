@@ -30,6 +30,7 @@ interface Props {
   brandColor: string;
   validationError: string | null;
   durationMinutes: number;
+  basePriceLabel: string;
 }
 
 const CURRENCY_SYMBOLS: Record<string, string> = {
@@ -51,6 +52,7 @@ export default function DetailsForm({
   brandColor,
   validationError,
   durationMinutes,
+  basePriceLabel,
 }: Props) {
   const showPrice = settings?.show_price_to_client ?? false;
   const sym = CURRENCY_SYMBOLS[settings?.currency ?? 'EUR'] ?? settings?.currency ?? 'EUR';
@@ -130,7 +132,7 @@ export default function DetailsForm({
         return (
           <div className="rounded-lg border border-zinc-800 bg-zinc-800 p-3 space-y-1.5">
             <div className="flex justify-between text-xs">
-              <span className="text-zinc-400">Base booking</span>
+              <span className="text-zinc-400">{basePriceLabel}</span>
               <span className="text-zinc-300">{sym}{baseTotal.toFixed(2)}</span>
             </div>
             {selectedExtras.map(t => (

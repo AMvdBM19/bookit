@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase/server';
 import { checkAvailability } from '@/lib/availability/check';
 
+export const dynamic = 'force-dynamic';
+
 function addMinutes(time: string, minutes: number): string {
   const [h, m] = time.split(':').map(Number);
   const totalMinutes = h * 60 + m + minutes;

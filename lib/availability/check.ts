@@ -59,13 +59,15 @@ export async function checkAvailability(
   }
 
   const bookedSlots = (bookingsRes.data ?? []).map(b => ({
-    start: b.slot_start as string,
-    end: b.slot_end as string,
+    start: (b.slot_start as string).slice(0, 5),
+    end: (b.slot_end as string).slice(0, 5),
   }));
 
   const freeSlots: TimeSlot[] = [];
   for (const block of scheduleBlocks) {
-    const fragments = subtractBookings(block.start_time, block.end_time, bookedSlots);
+    const start = (block.start_time as string).slice(0, 5);
+    const end = (block.end_time as string).slice(0, 5);
+    const fragments = subtractBookings(start, end, bookedSlots);
     freeSlots.push(...fragments);
   }
 

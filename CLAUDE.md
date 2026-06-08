@@ -86,9 +86,9 @@ Phase 8: ✅ Super admin console, WordPress hardening, accumulated cleanup
 Phase 9: ✅ Widget polish, deposit scaffold, rate limiting, settings edit
 Phase 10A-1: ✅ industry_templates + tenant_config tables, APIs, TenantConfigProvider
 Phase 10A-2: ✅ Codebase swap to data-driven templates, wizard redesign, old vertical system removed
+Phase 10C: ✅ Catalog caching fix, deposits feature flag, logout, calendar buttons, widget pricing, staff dashboard editing
+Phase 10C-2: ✅ Staff login fix (hard nav), time format fix (HH:MM), base_price_label terminology, root slug redirect
 
-## Deposits (tattoo only)
-Migration `supabase/migrations/20260603000004_deposits.sql` adds
-`deposit_pct` and `deposit_required_above_minutes` to `tenant_settings`.
-Widget shows a deposit notice when vertical=tattoo AND deposit_pct>0 AND duration>deposit_required_above_minutes.
+## Deposits
+Widget shows a deposit notice when deposits_supported flag is true AND deposit_pct>0 AND duration>deposit_required_above_minutes.
 No payment processing yet — informational scaffolding only.

@@ -314,6 +314,7 @@ export default function BookingWidget({ slug, catalog }: Props) {
                 brandColor={brandColor}
                 validationError={state.validationError}
                 durationMinutes={slotDurationMinutes()}
+                basePriceLabel={catalog.terminology.base_price_label}
               />
               <div className="flex justify-between gap-2 pt-2">
                 <button
@@ -354,6 +355,7 @@ export default function BookingWidget({ slug, catalog }: Props) {
                   brandColor={brandColor}
                   isGuestMode={!isAccountMode}
                   depositsSupported={catalog.featureFlags.deposits_supported}
+                  basePriceLabel={catalog.terminology.base_price_label}
                 />
                 <div className="flex justify-between gap-2 pt-2">
                   <button

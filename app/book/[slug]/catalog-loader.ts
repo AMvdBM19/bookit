@@ -131,7 +131,7 @@ export async function loadCatalog(slug: string): Promise<Catalog | null> {
     .eq('tenant_id', tenant.id)
     .maybeSingle();
 
-  const terminology = (tenantConfig?.terminology as Terminology | undefined) ?? DEFAULT_TERMINOLOGY;
+  const terminology = { ...DEFAULT_TERMINOLOGY, ...(tenantConfig?.terminology as Partial<Terminology> | undefined) };
   const featureFlags = (tenantConfig?.feature_flags as FeatureFlags | undefined) ?? DEFAULT_FEATURE_FLAGS;
 
   return {

@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { createClient } from '@/lib/supabase/client';
 import { useTenantConfig } from '@/lib/context/tenant-config';
 import BookingsSection from './sections/bookings-section';
 import StaffSection from './sections/staff-section';
@@ -79,12 +80,22 @@ export default function AgentDashboard({
         </nav>
 
         <div className="px-2 py-3 border-t border-slate-800">
-          <a
-            href={`/${slug}/logout`}
-            className="block px-3 py-2 text-sm text-slate-400 hover:bg-slate-800/50 hover:text-white rounded transition-colors"
+          <button
+            type="button"
+            onClick={async () => {
+              const supabase = createClient();
+              await supabase.auth.signOut();
+              window.location.href = `/${slug}/login`;
+            }}
+            className="w-full text-left px-3 py-2 text-sm text-slate-400 hover:bg-slate-800/50 hover:text-white rounded transition-colors flex items-center gap-2"
           >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+              <polyline points="16 17 21 12 16 7" />
+              <line x1="21" y1="12" x2="9" y2="12" />
+            </svg>
             Sign out
-          </a>
+          </button>
         </div>
       </aside>
 
