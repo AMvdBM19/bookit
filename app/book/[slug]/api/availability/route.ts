@@ -28,17 +28,21 @@ export async function GET(
 
   const supabase = createServiceClient();
 
-  const { data: tenant } = await supabase
+  const { data: tenant, error: tenantError } = await supabase
     .from('tenants')
     .select('id, is_active')
     .eq('slug', slug)
     .single();
 
+  if (tenantError) {
+    console.error('[availability] Tenant query error:', tenantError.message);
+  }
+
   if (!tenant || !tenant.is_active) {
     return NextResponse.json({ error: 'Not found' }, { status: 404 });
   }
 
-  const { data: staff } = await supabase
+  const { data: staff, error: staffError } = await supabase
     .from('staff')
     .select('id')
     .eq('id', staffId)
@@ -46,15 +50,23 @@ export async function GET(
     .eq('status', 'active')
     .single();
 
+  if (staffError) {
+    console.error('[availability] Staff query error:', staffError.message);
+  }
+
   if (!staff) {
     return NextResponse.json({ error: 'Staff not found' }, { status: 404 });
   }
 
-  const { data: settings } = await supabase
+  const { data: settings, error: settingsError } = await supabase
     .from('tenant_settings')
     .select('default_slot_minutes, min_lead_time_hours, max_booking_days_ahead')
     .eq('tenant_id', tenant.id)
     .single();
+
+  if (settingsError) {
+    console.error('[availability] Settings query error:', settingsError.message);
+  }
 
   const slotMinutes = settings?.default_slot_minutes ?? 30;
   const minLeadHours = settings?.min_lead_time_hours ?? 2;

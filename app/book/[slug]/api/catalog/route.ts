@@ -6,9 +6,14 @@ export async function GET(
   { params }: { params: Promise<{ slug: string }> }
 ) {
   const { slug } = await params;
-  const catalog = await loadCatalog(slug);
-  if (!catalog) {
-    return NextResponse.json({ error: 'Not found' }, { status: 404 });
+  try {
+    const catalog = await loadCatalog(slug);
+    if (!catalog) {
+      return NextResponse.json({ error: 'Not found' }, { status: 404 });
+    }
+    return NextResponse.json(catalog);
+  } catch (err) {
+    console.error('[catalog API] Unhandled error:', err);
+    return NextResponse.json({ error: 'Internal error' }, { status: 500 });
   }
-  return NextResponse.json(catalog);
 }

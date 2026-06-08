@@ -48,15 +48,19 @@ export interface Catalog {
 export async function loadCatalog(slug: string): Promise<Catalog | null> {
   const supabase = createServiceClient();
 
-  const { data: tenant } = await supabase
+  const { data: tenant, error: tenantError } = await supabase
     .from('tenants')
     .select('id, name, vertical, client_mode, is_active')
     .eq('slug', slug)
     .single();
 
+  if (tenantError) {
+    console.error('[catalog] Tenant query error:', tenantError.message);
+  }
+
   if (!tenant || !tenant.is_active) return null;
 
-  const { data: settings } = await supabase
+  const { data: settings, error: settingsError } = await supabase
     .from('tenant_settings')
     .select(
       'brand_color, agency_display_name, logo_url, show_price_to_client, base_rate_per_30min, age_gate_minimum, require_age_confirm, booking_confirm_mode, default_slot_minutes, min_lead_time_hours, currency, deposit_pct, deposit_required_above_minutes'
@@ -64,44 +68,55 @@ export async function loadCatalog(slug: string): Promise<Catalog | null> {
     .eq('tenant_id', tenant.id)
     .single();
 
-  const { data: staffList } = await supabase
+  if (settingsError) {
+    console.error('[catalog] Settings query error:', settingsError.message);
+  }
+
+  const { data: staffRows, error: staffError } = await supabase
     .from('staff')
-    .select(`
-      id, pseudonym, bio, photo_urls, social_links, gender, nationality, age, languages,
-      staff_service_tags(tag_id, service_tags(id, name, extra_price))
-    `)
+    .select('id, pseudonym, bio, photo_urls, social_links, gender, nationality, age, languages')
     .eq('tenant_id', tenant.id)
     .eq('status', 'active')
     .eq('wizard_completed', true);
 
-  const staff: CatalogStaff[] = (staffList ?? []).map(s => {
-    const tagJoins = s.staff_service_tags as unknown as Array<{
-      tag_id: string;
-      service_tags:
-        | { id: string; name: string; extra_price: number | null }
-        | Array<{ id: string; name: string; extra_price: number | null }>
-        | null;
-    }>;
-    const tags = (tagJoins ?? [])
-      .map(t => {
-        const tag = Array.isArray(t.service_tags) ? t.service_tags[0] : t.service_tags;
-        return tag ? { id: tag.id, name: tag.name, extra_price: tag.extra_price ?? 0 } : null;
-      })
-      .filter((x): x is { id: string; name: string; extra_price: number } => x !== null);
+  if (staffError) {
+    console.error('[catalog] Staff query error:', staffError.message);
+  }
 
-    return {
-      id: s.id,
-      pseudonym: s.pseudonym,
-      bio: s.bio,
-      photo_urls: s.photo_urls,
-      social_links: (s.social_links ?? {}) as Record<string, string>,
-      gender: s.gender,
-      nationality: s.nationality,
-      age: s.age,
-      languages: s.languages,
-      tags,
-    };
-  });
+  const staffIds = (staffRows ?? []).map(s => s.id);
+  const staffTagMap: Record<string, Array<{ id: string; name: string; extra_price: number }>> = {};
+
+  if (staffIds.length > 0) {
+    const { data: tagJoins, error: tagError } = await supabase
+      .from('staff_service_tags')
+      .select('staff_id, tag_id, service_tags(id, name, extra_price)')
+      .in('staff_id', staffIds);
+
+    if (tagError) {
+      console.error('[catalog] Staff tags query error:', tagError.message);
+    }
+
+    for (const join of tagJoins ?? []) {
+      const tag = Array.isArray(join.service_tags) ? join.service_tags[0] : join.service_tags;
+      if (tag) {
+        if (!staffTagMap[join.staff_id]) staffTagMap[join.staff_id] = [];
+        staffTagMap[join.staff_id].push({ id: tag.id, name: tag.name, extra_price: tag.extra_price ?? 0 });
+      }
+    }
+  }
+
+  const staff: CatalogStaff[] = (staffRows ?? []).map(s => ({
+    id: s.id,
+    pseudonym: s.pseudonym,
+    bio: s.bio,
+    photo_urls: s.photo_urls,
+    social_links: (s.social_links ?? {}) as Record<string, string>,
+    gender: s.gender,
+    nationality: s.nationality,
+    age: s.age,
+    languages: s.languages,
+    tags: staffTagMap[s.id] ?? [],
+  }));
 
   const { data: allTags } = await supabase
     .from('service_tags')
