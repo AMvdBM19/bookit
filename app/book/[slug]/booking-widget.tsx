@@ -183,6 +183,13 @@ export default function BookingWidget({ slug, catalog }: Props) {
     });
   }
 
+  function slotDurationMinutes(): number {
+    if (!state.selectedSlot) return 0;
+    const [sh, sm] = state.selectedSlot.start.split(':').map(Number);
+    const [eh, em] = state.selectedSlot.end.split(':').map(Number);
+    return eh * 60 + em - (sh * 60 + sm);
+  }
+
   const headerName =
     catalog.settings?.agency_display_name ?? catalog.tenant.name;
   const bookingLabel = catalog.terminology.booking;
@@ -239,6 +246,8 @@ export default function BookingWidget({ slug, catalog }: Props) {
               staffPluralLower={catalog.terminology.staff_plural.toLowerCase()}
               onSelect={handleSelectStaff}
               brandColor={brandColor}
+              showPrice={catalog.settings?.show_price_to_client ?? false}
+              currency={catalog.settings?.currency ?? 'EUR'}
             />
           )}
 
@@ -304,6 +313,7 @@ export default function BookingWidget({ slug, catalog }: Props) {
                 onChange={u => update({ ...u, validationError: null })}
                 brandColor={brandColor}
                 validationError={state.validationError}
+                durationMinutes={slotDurationMinutes()}
               />
               <div className="flex justify-between gap-2 pt-2">
                 <button
@@ -343,7 +353,7 @@ export default function BookingWidget({ slug, catalog }: Props) {
                   onSubmit={handleSubmit}
                   brandColor={brandColor}
                   isGuestMode={!isAccountMode}
-                  vertical={catalog.tenant.vertical}
+                  depositsSupported={catalog.featureFlags.deposits_supported}
                 />
                 <div className="flex justify-between gap-2 pt-2">
                   <button

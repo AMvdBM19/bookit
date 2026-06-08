@@ -29,7 +29,12 @@ interface Props {
   onChange: (updates: Partial<State>) => void;
   brandColor: string;
   validationError: string | null;
+  durationMinutes: number;
 }
+
+const CURRENCY_SYMBOLS: Record<string, string> = {
+  EUR: '€', USD: '$', GBP: '£',
+};
 
 const inputCls =
   'w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-sm text-white placeholder-zinc-600 focus:outline-none focus:border-zinc-500';
@@ -45,7 +50,11 @@ export default function DetailsForm({
   onChange,
   brandColor,
   validationError,
+  durationMinutes,
 }: Props) {
+  const showPrice = settings?.show_price_to_client ?? false;
+  const sym = CURRENCY_SYMBOLS[settings?.currency ?? 'EUR'] ?? settings?.currency ?? 'EUR';
+
   function toggleTag(tagId: string) {
     const next = state.selectedTagIds.includes(tagId)
       ? state.selectedTagIds.filter(id => id !== tagId)
@@ -99,12 +108,44 @@ export default function DetailsForm({
                   style={selected ? { backgroundColor: brandColor } : undefined}
                 >
                   {tag.name}
+                  {showPrice && tag.extra_price > 0 && (
+                    <span className={selected ? 'opacity-75 ml-1' : 'text-zinc-500 ml-1'}>
+                      +{sym}{tag.extra_price}
+                    </span>
+                  )}
                 </button>
               );
             })}
           </div>
         </div>
       )}
+
+      {showPrice && durationMinutes > 0 && (() => {
+        const baseRate = settings?.base_rate_per_30min ?? 0;
+        const slots30 = durationMinutes / 30;
+        const baseTotal = baseRate * slots30;
+        const selectedExtras = staffTags.filter(t => state.selectedTagIds.includes(t.id));
+        const extrasTotal = selectedExtras.reduce((sum, t) => sum + (t.extra_price ?? 0), 0);
+        const subtotal = baseTotal + extrasTotal;
+        return (
+          <div className="rounded-lg border border-zinc-800 bg-zinc-800 p-3 space-y-1.5">
+            <div className="flex justify-between text-xs">
+              <span className="text-zinc-400">Base booking</span>
+              <span className="text-zinc-300">{sym}{baseTotal.toFixed(2)}</span>
+            </div>
+            {selectedExtras.map(t => (
+              <div key={t.id} className="flex justify-between text-xs">
+                <span className="text-zinc-400">{t.name}</span>
+                <span className="text-zinc-300">+{sym}{t.extra_price.toFixed(2)}</span>
+              </div>
+            ))}
+            <div className="flex justify-between text-sm pt-1.5 border-t border-zinc-700">
+              <span className="text-white font-medium">Subtotal</span>
+              <span className="font-medium" style={{ color: brandColor }}>{sym}{subtotal.toFixed(2)}</span>
+            </div>
+          </div>
+        );
+      })()}
 
       <div>
         <label className={labelCls} htmlFor="bookingNotes">

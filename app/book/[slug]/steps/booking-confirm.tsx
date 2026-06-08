@@ -8,6 +8,10 @@ interface Tag {
   extra_price: number;
 }
 
+const CURRENCY_SYMBOLS: Record<string, string> = {
+  EUR: '€', USD: '$', GBP: '£',
+};
+
 interface Props {
   staff: CatalogStaff;
   date: string;
@@ -20,7 +24,7 @@ interface Props {
   onSubmit: () => void;
   brandColor: string;
   isGuestMode: boolean;
-  vertical: string;
+  depositsSupported: boolean;
 }
 
 function formatDate(dateStr: string): string {
@@ -57,7 +61,7 @@ export default function BookingConfirm({
   onSubmit,
   brandColor,
   isGuestMode,
-  vertical,
+  depositsSupported,
 }: Props) {
   const showPrice = settings?.show_price_to_client ?? false;
   const baseRate = settings?.base_rate_per_30min ?? 60;
@@ -71,7 +75,7 @@ export default function BookingConfirm({
   const depositPct = settings?.deposit_pct ?? 0;
   const depositThreshold = settings?.deposit_required_above_minutes ?? 0;
   const depositApplies =
-    vertical === 'tattoo' &&
+    depositsSupported &&
     depositPct > 0 &&
     duration > depositThreshold;
   const depositAmount = depositApplies ? totalPrice * (depositPct / 100) : 0;
@@ -116,36 +120,45 @@ export default function BookingConfirm({
         )}
       </section>
 
-      {showPrice && (
-        <section className="rounded-lg border border-zinc-800 bg-zinc-900 p-4 space-y-1.5">
-          <div className="flex justify-between gap-4">
-            <span className="text-xs text-zinc-500">
-              Base ({formatDuration(duration)})
-            </span>
-            <span className="text-xs text-white">
-              {currency} {baseTotal.toFixed(2)}
-            </span>
-          </div>
-          {tagExtrasTotal > 0 && (
+      {showPrice && (() => {
+        const sym = CURRENCY_SYMBOLS[currency] ?? currency;
+        return (
+          <section className="rounded-lg border border-zinc-800 bg-zinc-900 p-4 space-y-1.5">
             <div className="flex justify-between gap-4">
-              <span className="text-xs text-zinc-500">Service extras</span>
+              <span className="text-xs text-zinc-500">
+                Base booking ({formatDuration(duration)})
+              </span>
               <span className="text-xs text-white">
-                {currency} {tagExtrasTotal.toFixed(2)}
+                {sym}{baseTotal.toFixed(2)}
               </span>
             </div>
-          )}
-          <div className="flex justify-between gap-4 pt-1.5 border-t border-zinc-800">
-            <span className="text-sm text-white font-medium">Total</span>
-            <span className="text-sm text-white font-medium">
-              {currency} {totalPrice.toFixed(2)}
-            </span>
-          </div>
-        </section>
-      )}
+            {selectedTags.filter(t => t.extra_price > 0).map(t => (
+              <div key={t.id} className="flex justify-between gap-4">
+                <span className="text-xs text-zinc-500">{t.name}</span>
+                <span className="text-xs text-white">
+                  +{sym}{t.extra_price.toFixed(2)}
+                </span>
+              </div>
+            ))}
+            <div className="flex justify-between gap-4 pt-1.5 border-t border-zinc-800">
+              <span className="text-sm text-white font-medium">Total</span>
+              <span className="text-sm text-white font-medium">
+                {sym}{totalPrice.toFixed(2)}
+              </span>
+            </div>
+            {depositApplies && (
+              <div className="flex justify-between gap-4 pt-1 text-amber-400">
+                <span className="text-xs">Deposit required ({depositPct}%)</span>
+                <span className="text-xs font-medium">{sym}{depositAmount.toFixed(2)}</span>
+              </div>
+            )}
+          </section>
+        );
+      })()}
 
       {depositApplies && (
-        <div className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-xs text-amber-800">
-          A deposit of {currency} {depositAmount.toFixed(2)} ({depositPct}%) is required to
+        <div className="rounded-lg border border-amber-800/50 bg-amber-950/30 p-3 text-xs text-amber-300">
+          A deposit of {CURRENCY_SYMBOLS[currency] ?? currency}{depositAmount.toFixed(2)} ({depositPct}%) is required to
           confirm this booking. Payment link will be sent after confirmation.
         </div>
       )}

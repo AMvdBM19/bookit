@@ -2,6 +2,8 @@ import { notFound } from 'next/navigation';
 import { loadCatalog } from './catalog-loader';
 import BookingWidget from './booking-widget';
 
+export const dynamic = 'force-dynamic';
+
 export default async function BookingPage({
   params,
 }: {

@@ -2,12 +2,18 @@
 
 import type { CatalogStaff } from '../catalog-loader';
 
+const CURRENCY_SYMBOLS: Record<string, string> = {
+  EUR: '€', USD: '$', GBP: '£',
+};
+
 interface Props {
   staff: CatalogStaff[];
   staffLabel: string;
   staffPluralLower: string;
   onSelect: (id: string) => void;
   brandColor: string;
+  showPrice: boolean;
+  currency: string;
 }
 
 function getInitial(name: string): string {
@@ -83,7 +89,10 @@ export default function StaffBrowse({
   staffPluralLower,
   onSelect,
   brandColor,
+  showPrice,
+  currency,
 }: Props) {
+  const sym = CURRENCY_SYMBOLS[currency] ?? currency;
   if (staff.length === 0) {
     return (
       <div className="rounded-lg border border-zinc-800 bg-zinc-900 p-6 text-center">
@@ -138,6 +147,9 @@ export default function StaffBrowse({
                         className="bg-zinc-800 border border-zinc-700 rounded-full px-2 py-0.5 text-[11px] text-zinc-300"
                       >
                         {t.name}
+                        {showPrice && t.extra_price > 0 && (
+                          <span className="text-zinc-500 ml-1">+{sym}{t.extra_price}</span>
+                        )}
                       </span>
                     ))}
                     {s.tags.length > 4 && (

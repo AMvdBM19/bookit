@@ -22,7 +22,7 @@ export default async function DashboardPage({
 
     const { data: staff } = await supabase
       .from('staff')
-      .select('id, pseudonym, bio, wizard_completed, staff_service_tags(service_tags(name))')
+      .select('id, pseudonym, bio, gender, nationality, age, languages, social_links, wizard_completed, staff_service_tags(service_tags(id, name))')
       .eq('id', user.staffId)
       .single();
 
@@ -36,6 +36,13 @@ export default async function DashboardPage({
       .eq('staff_id', user.staffId)
       .eq('tenant_id', user.tenantId)
       .order('day_of_week');
+
+    const { data: tenantTags } = await supabase
+      .from('service_tags')
+      .select('id, name')
+      .eq('tenant_id', user.tenantId)
+      .eq('is_active', true)
+      .order('display_order');
 
     const { data: pendingBookings } = await supabase
       .from('bookings')
@@ -69,20 +76,32 @@ export default async function DashboardPage({
       .order('slot_date', { ascending: true });
 
     const tagJoins = staff?.staff_service_tags as unknown as Array<{
-      service_tags: { name: string } | Array<{ name: string }> | null;
+      service_tags: { id: string; name: string } | Array<{ id: string; name: string }> | null;
     }> ?? [];
-    const staffTags = tagJoins
+    const staffTagIds = tagJoins
+      .map(t => {
+        const tag = Array.isArray(t.service_tags) ? t.service_tags[0] : t.service_tags;
+        return tag?.id ?? null;
+      })
+      .filter((id): id is string => id !== null);
+    const staffTagNames = tagJoins
       .map(t => {
         const tag = Array.isArray(t.service_tags) ? t.service_tags[0] : t.service_tags;
         return tag?.name ?? null;
       })
       .filter((n): n is string => n !== null);
 
+    const rawSchedule = (schedule ?? []).map(s => ({
+      day_of_week: s.day_of_week,
+      start_time: s.start_time?.slice(0, 5) ?? '09:00',
+      end_time: s.end_time?.slice(0, 5) ?? '17:00',
+    }));
+
     const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-    const scheduleDisplay = (schedule ?? []).map(s => ({
+    const scheduleDisplay = rawSchedule.map(s => ({
       day: dayNames[s.day_of_week] ?? `Day ${s.day_of_week}`,
-      start: s.start_time?.slice(0, 5) ?? '',
-      end: s.end_time?.slice(0, 5) ?? '',
+      start: s.start_time,
+      end: s.end_time,
     }));
 
     return (
@@ -94,9 +113,17 @@ export default async function DashboardPage({
         staffProfile={{
           pseudonym: staff?.pseudonym ?? 'Staff',
           bio: staff?.bio ?? null,
-          tags: staffTags,
+          gender: staff?.gender ?? null,
+          nationality: staff?.nationality ?? null,
+          age: staff?.age ?? null,
+          languages: staff?.languages ?? [],
+          socialLinks: (staff?.social_links ?? {}) as Record<string, string>,
+          tags: staffTagNames,
+          tagIds: staffTagIds,
           schedule: scheduleDisplay,
+          rawSchedule,
         }}
+        tenantTags={(tenantTags ?? []).map(t => ({ id: t.id, name: t.name }))}
       />
     );
   }
