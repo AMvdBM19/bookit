@@ -2,18 +2,86 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ============================================================================
+   Semantic design tokens — light is the base, .dark flips the values.
+   Stored as space-separated RGB triplets so Tailwind's <alpha-value> works
+   (e.g. bg-surface/50). Neutral surfaces/text/borders use these tokens;
+   status + brand colors keep explicit dark: variants where they must stay
+   "colored". The public booking widget is intentionally always-dark and
+   opts out by hardcoding its own zinc palette.
+   ============================================================================ */
 :root {
-  --background: #ffffff;
-  --foreground: #09090b;
+  --canvas: 250 250 250;        /* zinc-50  */
+  --surface: 255 255 255;       /* white    */
+  --elevated: 244 244 245;      /* zinc-100 */
+  --sunken: 228 228 231;        /* zinc-200 */
+
+  --border: 228 228 231;        /* zinc-200 */
+  --border-strong: 212 212 216; /* zinc-300 */
+
+  --fg: 24 24 27;               /* zinc-900 */
+  --fg-muted: 113 113 122;      /* zinc-500 */
+  --fg-subtle: 161 161 170;     /* zinc-400 */
+
+  --sidebar: 15 23 42;          /* slate-900 */
+  --sidebar-fg: 248 250 252;    /* slate-50  */
+  --sidebar-muted: 148 163 184; /* slate-400 */
+  --sidebar-hover: 30 41 59;    /* slate-800 */
+  --sidebar-active: 51 65 85;   /* slate-700 */
+  --sidebar-border: 30 41 59;   /* slate-800 */
+
+  --ring: 113 113 122;          /* zinc-500 */
+}
+
+.dark {
+  --canvas: 9 9 11;             /* zinc-950 */
+  --surface: 24 24 27;          /* zinc-900 */
+  --elevated: 39 39 42;         /* zinc-800 */
+  --sunken: 63 63 70;           /* zinc-700 */
+
+  --border: 39 39 42;           /* zinc-800 */
+  --border-strong: 63 63 70;    /* zinc-700 */
+
+  --fg: 250 250 250;            /* zinc-50  */
+  --fg-muted: 161 161 170;      /* zinc-400 */
+  --fg-subtle: 113 113 122;     /* zinc-500 */
+
+  --sidebar: 9 9 11;            /* zinc-950 */
+  --sidebar-fg: 250 250 250;    /* zinc-50  */
+  --sidebar-muted: 161 161 170; /* zinc-400 */
+  --sidebar-hover: 39 39 42;    /* zinc-800 */
+  --sidebar-active: 39 39 42;   /* zinc-800 */
+  --sidebar-border: 39 39 42;   /* zinc-800 */
+
+  --ring: 161 161 170;          /* zinc-400 */
+}
+
+html {
+  color-scheme: light;
+}
+html.dark {
+  color-scheme: dark;
 }
 
 body {
-  color: var(--foreground);
-  background: var(--background);
+  background-color: rgb(var(--canvas));
+  color: rgb(var(--fg));
 }
 
 @layer utilities {
   .text-balance {
     text-wrap: balance;
+  }
+}
+
+/* Respect users who prefer reduced motion. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
   }
 }

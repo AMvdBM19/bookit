@@ -24,12 +24,16 @@ interface Client {
 }
 
 const CLIENT_STATUS_COLORS: Record<string, string> = {
-  approved: 'bg-emerald-100 text-emerald-800 border-emerald-200',
-  pending: 'bg-amber-100 text-amber-800 border-amber-200',
-  unverified: 'bg-zinc-100 text-zinc-700 border-zinc-200',
-  suspended: 'bg-red-100 text-red-800 border-red-200',
-  rejected: 'bg-zinc-200 text-zinc-700 border-zinc-300',
+  approved: 'bg-emerald-100 text-emerald-800 border-emerald-200 dark:bg-emerald-500/15 dark:text-emerald-400 dark:border-emerald-500/30',
+  pending: 'bg-amber-100 text-amber-800 border-amber-200 dark:bg-amber-500/15 dark:text-amber-400 dark:border-amber-500/30',
+  unverified: 'bg-elevated text-fg-muted border-border',
+  suspended: 'bg-red-100 text-red-800 border-red-200 dark:bg-red-500/15 dark:text-red-400 dark:border-red-500/30',
+  rejected: 'bg-sunken text-fg-muted border-border-strong',
 };
+
+const tableWrap = 'border border-border rounded-lg overflow-hidden bg-surface';
+const theadCls = 'bg-elevated border-b border-border';
+const thCls = 'text-left text-[11px] font-medium uppercase tracking-wider text-fg-muted';
 
 function formatDateTime(iso: string) {
   return new Date(iso).toLocaleString('en-GB', {
@@ -88,62 +92,64 @@ function GuestList({ slug }: { slug: string }) {
     reload();
   }, [reload]);
 
-  if (loading) return <p className="text-sm text-zinc-500">Loading {terminology.client_plural.toLowerCase()}…</p>;
-  if (error) return <p className="text-sm text-red-600">{error}</p>;
+  if (loading) return <p className="text-sm text-fg-muted">Loading {terminology.client_plural.toLowerCase()}…</p>;
+  if (error) return <p className="text-sm text-red-500">{error}</p>;
 
   return (
     <div className="space-y-4">
-      <h2 className="text-sm font-semibold text-zinc-900">{terminology.client_plural}</h2>
+      <h2 className="text-sm font-semibold text-fg">{terminology.client_plural}</h2>
 
-      <div className="border border-zinc-200 rounded-lg overflow-hidden bg-white">
-        <table className="w-full text-sm">
-          <thead className="bg-zinc-50 border-b border-zinc-200">
-            <tr className="text-left text-[11px] font-medium uppercase tracking-wider text-zinc-500">
-              <th className="px-3 py-2">Name</th>
-              <th className="px-3 py-2">Email</th>
-              <th className="px-3 py-2">Phone</th>
-              <th className="px-3 py-2">{terminology.booking_plural}</th>
-              <th className="px-3 py-2">Last seen</th>
-              <th className="px-3 py-2 text-right">Actions</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-zinc-200">
-            {guests.length === 0 ? (
-              <tr>
-                <td colSpan={6} className="px-3 py-6 text-center text-zinc-500 text-sm">
-                  No {terminology.client_plural.toLowerCase()} yet.
-                </td>
+      <div className={tableWrap}>
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm min-w-[640px]">
+            <thead className={theadCls}>
+              <tr className={thCls}>
+                <th className="px-3 py-2">Name</th>
+                <th className="px-3 py-2">Email</th>
+                <th className="px-3 py-2">Phone</th>
+                <th className="px-3 py-2">{terminology.booking_plural}</th>
+                <th className="px-3 py-2">Last seen</th>
+                <th className="px-3 py-2 text-right">Actions</th>
               </tr>
-            ) : (
-              guests.map(g => (
-                <tr key={g.id} className={`hover:bg-zinc-50 ${g.is_blocked ? 'opacity-60' : ''}`}>
-                  <td className="px-3 py-3 text-zinc-900">{g.name}</td>
-                  <td className="px-3 py-3 text-zinc-700">{g.email}</td>
-                  <td className="px-3 py-3 text-zinc-700">{g.phone ?? '—'}</td>
-                  <td className="px-3 py-3 text-zinc-700">{g.booking_count}</td>
-                  <td className="px-3 py-3 text-[11px] text-zinc-500">
-                    {formatDateTime(g.last_seen_at)}
-                  </td>
-                  <td className="px-3 py-3 text-right">
-                    {g.is_blocked ? (
-                      <span className="inline-block px-2 py-0.5 text-[10px] font-medium uppercase tracking-wider rounded border bg-red-100 text-red-800 border-red-200">
-                        Blocked
-                      </span>
-                    ) : (
-                      <button
-                        type="button"
-                        onClick={() => setBlockTarget(g)}
-                        className="text-xs px-2 py-1 bg-zinc-100 hover:bg-red-100 hover:text-red-800 text-zinc-800 rounded"
-                      >
-                        Block
-                      </button>
-                    )}
+            </thead>
+            <tbody className="divide-y divide-border">
+              {guests.length === 0 ? (
+                <tr>
+                  <td colSpan={6} className="px-3 py-6 text-center text-fg-muted text-sm">
+                    No {terminology.client_plural.toLowerCase()} yet.
                   </td>
                 </tr>
-              ))
-            )}
-          </tbody>
-        </table>
+              ) : (
+                guests.map(g => (
+                  <tr key={g.id} className={`hover:bg-elevated ${g.is_blocked ? 'opacity-60' : ''}`}>
+                    <td className="px-3 py-3 text-fg">{g.name}</td>
+                    <td className="px-3 py-3 text-fg-muted">{g.email}</td>
+                    <td className="px-3 py-3 text-fg-muted">{g.phone ?? '—'}</td>
+                    <td className="px-3 py-3 text-fg-muted">{g.booking_count}</td>
+                    <td className="px-3 py-3 text-[11px] text-fg-muted">
+                      {formatDateTime(g.last_seen_at)}
+                    </td>
+                    <td className="px-3 py-3 text-right">
+                      {g.is_blocked ? (
+                        <span className="inline-block px-2 py-0.5 text-[10px] font-medium uppercase tracking-wider rounded border bg-red-100 text-red-800 border-red-200 dark:bg-red-500/15 dark:text-red-400 dark:border-red-500/30">
+                          Blocked
+                        </span>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={() => setBlockTarget(g)}
+                          className="text-xs px-2 py-1 bg-elevated hover:bg-red-100 hover:text-red-800 dark:hover:bg-red-500/20 dark:hover:text-red-400 text-fg rounded transition-colors"
+                        >
+                          Block
+                        </button>
+                      )}
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
       </div>
 
       {blockTarget && (
@@ -202,27 +208,27 @@ function BlockGuestModal({
 
   return (
     <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
-      <div className="bg-white rounded-lg shadow-xl w-full max-w-sm p-6">
+      <div className="bg-surface border border-border rounded-lg shadow-xl w-full max-w-sm p-6">
         <div className="flex items-center justify-between mb-4">
-          <h3 className="text-base font-semibold text-zinc-900">Block {terminology.client.toLowerCase()}</h3>
+          <h3 className="text-base font-semibold text-fg">Block {terminology.client.toLowerCase()}</h3>
           <button
             type="button"
             onClick={onClose}
-            className="text-zinc-500 hover:text-zinc-900"
+            className="text-fg-muted hover:text-fg"
             aria-label="Close"
           >
             ✕
           </button>
         </div>
 
-        <p className="text-sm text-zinc-700 mb-3">
-          Block <span className="font-medium">{guest.name}</span> ({guest.email}) from making new
+        <p className="text-sm text-fg-muted mb-3">
+          Block <span className="font-medium text-fg">{guest.name}</span> ({guest.email}) from making new
           bookings? Existing bookings are not affected.
         </p>
 
         <form onSubmit={submit} className="space-y-3">
           <div>
-            <label className="block text-xs text-zinc-600 mb-1" htmlFor="block-reason">
+            <label className="block text-xs text-fg-muted mb-1" htmlFor="block-reason">
               Reason (optional)
             </label>
             <input
@@ -230,24 +236,24 @@ function BlockGuestModal({
               type="text"
               value={reason}
               onChange={e => setReason(e.target.value)}
-              className="w-full text-sm border border-zinc-300 rounded px-3 py-2 focus:outline-none focus:border-zinc-500"
+              className="w-full text-sm bg-elevated border border-border rounded px-3 py-2 text-fg focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus:border-border-strong"
               placeholder="Internal note"
             />
           </div>
-          {error && <p className="text-xs text-red-600">{error}</p>}
+          {error && <p className="text-xs text-red-500">{error}</p>}
           <div className="flex justify-end gap-2 pt-2">
             <button
               type="button"
               onClick={onClose}
               disabled={submitting}
-              className="text-sm px-3 py-1.5 text-zinc-700 hover:bg-zinc-100 rounded"
+              className="text-sm px-3 py-1.5 text-fg-muted hover:bg-elevated rounded"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={submitting}
-              className="text-sm px-4 py-1.5 bg-red-600 hover:bg-red-700 text-white rounded disabled:opacity-50"
+              className="text-sm px-4 py-1.5 bg-red-600 hover:bg-red-500 text-white rounded disabled:opacity-50"
             >
               {submitting ? 'Blocking…' : 'Block'}
             </button>
@@ -308,82 +314,84 @@ function ClientList({ slug }: { slug: string }) {
     }
   }
 
-  if (loading) return <p className="text-sm text-zinc-500">Loading {terminology.client_plural.toLowerCase()}…</p>;
-  if (error) return <p className="text-sm text-red-600">{error}</p>;
+  if (loading) return <p className="text-sm text-fg-muted">Loading {terminology.client_plural.toLowerCase()}…</p>;
+  if (error) return <p className="text-sm text-red-500">{error}</p>;
 
   return (
     <div className="space-y-4">
-      <h2 className="text-sm font-semibold text-zinc-900">{terminology.client_plural}</h2>
+      <h2 className="text-sm font-semibold text-fg">{terminology.client_plural}</h2>
 
-      <div className="border border-zinc-200 rounded-lg overflow-hidden bg-white">
-        <table className="w-full text-sm">
-          <thead className="bg-zinc-50 border-b border-zinc-200">
-            <tr className="text-left text-[11px] font-medium uppercase tracking-wider text-zinc-500">
-              <th className="px-3 py-2">Name</th>
-              <th className="px-3 py-2">Email</th>
-              <th className="px-3 py-2">Phone</th>
-              <th className="px-3 py-2">Status</th>
-              <th className="px-3 py-2">Joined</th>
-              <th className="px-3 py-2 text-right">Actions</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-zinc-200">
-            {clients.length === 0 ? (
-              <tr>
-                <td colSpan={6} className="px-3 py-6 text-center text-zinc-500 text-sm">
-                  No {terminology.client_plural.toLowerCase()} yet.
-                </td>
+      <div className={tableWrap}>
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm min-w-[640px]">
+            <thead className={theadCls}>
+              <tr className={thCls}>
+                <th className="px-3 py-2">Name</th>
+                <th className="px-3 py-2">Email</th>
+                <th className="px-3 py-2">Phone</th>
+                <th className="px-3 py-2">Status</th>
+                <th className="px-3 py-2">Joined</th>
+                <th className="px-3 py-2 text-right">Actions</th>
               </tr>
-            ) : (
-              clients.map(c => {
-                const busy = busyId === c.id;
-                return (
-                  <tr key={c.id} className="hover:bg-zinc-50">
-                    <td className="px-3 py-3 text-zinc-900">{c.display_name}</td>
-                    <td className="px-3 py-3 text-zinc-700">{c.email}</td>
-                    <td className="px-3 py-3 text-zinc-700">{c.phone ?? '—'}</td>
-                    <td className="px-3 py-3">
-                      <span
-                        className={`inline-block px-2 py-0.5 text-[10px] font-medium uppercase tracking-wider rounded border ${
-                          CLIENT_STATUS_COLORS[c.status] ?? CLIENT_STATUS_COLORS.unverified
-                        }`}
-                      >
-                        {c.status}
-                      </span>
-                    </td>
-                    <td className="px-3 py-3 text-[11px] text-zinc-500">
-                      {formatDate(c.created_at)}
-                    </td>
-                    <td className="px-3 py-3 text-right">
-                      <div className="flex justify-end gap-1">
-                        {c.status !== 'approved' && (
-                          <button
-                            type="button"
-                            onClick={() => setStatus(c, 'approved')}
-                            disabled={busy}
-                            className="text-xs px-2 py-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded disabled:opacity-50"
-                          >
-                            Approve
-                          </button>
-                        )}
-                        {c.status !== 'suspended' && (
-                          <button
-                            type="button"
-                            onClick={() => setStatus(c, 'suspended')}
-                            disabled={busy}
-                            className="text-xs px-2 py-1 bg-zinc-200 hover:bg-zinc-300 text-zinc-800 rounded disabled:opacity-50"
-                          >
-                            Suspend
-                          </button>
-                        )}
-                      </div>
-                    </td>
-                  </tr>
-                );
-              })
-            )}
-          </tbody>
-        </table>
+            </thead>
+            <tbody className="divide-y divide-border">
+              {clients.length === 0 ? (
+                <tr>
+                  <td colSpan={6} className="px-3 py-6 text-center text-fg-muted text-sm">
+                    No {terminology.client_plural.toLowerCase()} yet.
+                  </td>
+                </tr>
+              ) : (
+                clients.map(c => {
+                  const busy = busyId === c.id;
+                  return (
+                    <tr key={c.id} className="hover:bg-elevated">
+                      <td className="px-3 py-3 text-fg">{c.display_name}</td>
+                      <td className="px-3 py-3 text-fg-muted">{c.email}</td>
+                      <td className="px-3 py-3 text-fg-muted">{c.phone ?? '—'}</td>
+                      <td className="px-3 py-3">
+                        <span
+                          className={`inline-block px-2 py-0.5 text-[10px] font-medium uppercase tracking-wider rounded border ${
+                            CLIENT_STATUS_COLORS[c.status] ?? CLIENT_STATUS_COLORS.unverified
+                          }`}
+                        >
+                          {c.status}
+                        </span>
+                      </td>
+                      <td className="px-3 py-3 text-[11px] text-fg-muted">
+                        {formatDate(c.created_at)}
+                      </td>
+                      <td className="px-3 py-3 text-right">
+                        <div className="flex justify-end gap-1">
+                          {c.status !== 'approved' && (
+                            <button
+                              type="button"
+                              onClick={() => setStatus(c, 'approved')}
+                              disabled={busy}
+                              className="text-xs px-2 py-1 bg-emerald-600 hover:bg-emerald-500 text-white rounded disabled:opacity-50"
+                            >
+                              Approve
+                            </button>
+                          )}
+                          {c.status !== 'suspended' && (
+                            <button
+                              type="button"
+                              onClick={() => setStatus(c, 'suspended')}
+                              disabled={busy}
+                              className="text-xs px-2 py-1 bg-elevated hover:bg-sunken text-fg rounded disabled:opacity-50"
+                            >
+                              Suspend
+                            </button>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })
+              )}
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
   );

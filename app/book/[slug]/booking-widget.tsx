@@ -285,7 +285,7 @@ export default function BookingWidget({ slug, catalog }: Props) {
                   type="button"
                   onClick={handleProceedToDetails}
                   disabled={!state.selectedSlot}
-                  className="px-6 py-2 bg-white text-zinc-900 text-xs font-medium rounded-lg hover:bg-zinc-100 transition-colors disabled:opacity-50"
+                  className="px-6 py-2 bg-white text-zinc-900 text-xs font-medium rounded-lg hover:bg-zinc-100 transition-colors disabled:opacity-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-white/40"
                 >
                   Continue
                 </button>

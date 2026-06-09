@@ -43,9 +43,9 @@ function initialOf(name: string): string {
 }
 
 const STATUS_BADGE: Record<string, string> = {
-  active: 'bg-emerald-100 text-emerald-800 border-emerald-200',
-  inactive: 'bg-zinc-200 text-zinc-700 border-zinc-300',
-  offline: 'bg-amber-100 text-amber-800 border-amber-200',
+  active: 'bg-emerald-100 text-emerald-800 border-emerald-200 dark:bg-emerald-500/15 dark:text-emerald-400 dark:border-emerald-500/30',
+  inactive: 'bg-sunken text-fg-muted border-border-strong',
+  offline: 'bg-amber-100 text-amber-800 border-amber-200 dark:bg-amber-500/15 dark:text-amber-400 dark:border-amber-500/30',
 };
 
 export default function StaffSection({ slug }: { slug: string }) {
@@ -101,24 +101,25 @@ export default function StaffSection({ slug }: { slug: string }) {
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <h2 className="text-sm font-semibold text-zinc-900">{terminology.staff_plural}</h2>
+        <h2 className="text-sm font-semibold text-fg">{terminology.staff_plural}</h2>
         <button
           type="button"
           onClick={() => setShowCreate(true)}
-          className="text-xs px-3 py-1.5 bg-slate-900 hover:bg-slate-800 text-white rounded"
+          className="text-xs px-3 py-1.5 bg-fg text-canvas rounded hover:opacity-90 transition-opacity"
         >
           + Add {terminology.staff}
         </button>
       </div>
 
-      {loading && <p className="text-sm text-zinc-500">Loading {terminology.staff_plural.toLowerCase()}…</p>}
-      {error && <p className="text-sm text-red-600">{error}</p>}
+      {loading && <p className="text-sm text-fg-muted">Loading {terminology.staff_plural.toLowerCase()}…</p>}
+      {error && <p className="text-sm text-red-500">{error}</p>}
 
       {!loading && !error && (
-        <div className="border border-zinc-200 rounded-lg overflow-hidden bg-white">
-          <table className="w-full text-sm">
-            <thead className="bg-zinc-50 border-b border-zinc-200">
-              <tr className="text-left text-[11px] font-medium uppercase tracking-wider text-zinc-500">
+        <div className="border border-border rounded-lg overflow-hidden bg-surface">
+          <div className="overflow-x-auto">
+          <table className="w-full text-sm min-w-[760px]">
+            <thead className="bg-elevated border-b border-border">
+              <tr className="text-left text-[11px] font-medium uppercase tracking-wider text-fg-muted">
                 <th className="px-3 py-2">Name</th>
                 <th className="px-3 py-2">Status</th>
                 <th className="px-3 py-2">Profile</th>
@@ -128,10 +129,10 @@ export default function StaffSection({ slug }: { slug: string }) {
                 <th className="px-3 py-2 text-right">Actions</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-zinc-200">
+            <tbody className="divide-y divide-border">
               {staff.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="px-3 py-6 text-center text-zinc-500 text-sm">
+                  <td colSpan={7} className="px-3 py-6 text-center text-fg-muted text-sm">
                     No {terminology.staff_plural.toLowerCase()} yet.
                   </td>
                 </tr>
@@ -141,7 +142,7 @@ export default function StaffSection({ slug }: { slug: string }) {
                   const photo = s.photo_urls?.[0];
                   const isInvited = s.first_login && !s.wizard_completed;
                   return (
-                    <tr key={s.id} className="hover:bg-zinc-50">
+                    <tr key={s.id} className="hover:bg-elevated">
                       <td className="px-3 py-3">
                         <div className="flex items-center gap-2">
                           {photo ? (
@@ -152,14 +153,14 @@ export default function StaffSection({ slug }: { slug: string }) {
                               className="w-7 h-7 rounded-full object-cover"
                             />
                           ) : (
-                            <div className="w-7 h-7 rounded-full bg-slate-900 text-white flex items-center justify-center text-[11px] font-semibold">
+                            <div className="w-7 h-7 rounded-full bg-fg text-canvas flex items-center justify-center text-[11px] font-semibold">
                               {initialOf(s.pseudonym)}
                             </div>
                           )}
                           <div>
-                            <p className="text-zinc-900 font-medium">{s.pseudonym}</p>
+                            <p className="text-fg font-medium">{s.pseudonym}</p>
                             {s.real_name && (
-                              <p className="text-[11px] text-zinc-500">{s.real_name}</p>
+                              <p className="text-[11px] text-fg-muted">{s.real_name}</p>
                             )}
                           </div>
                         </div>
@@ -175,15 +176,15 @@ export default function StaffSection({ slug }: { slug: string }) {
                       </td>
                       <td className="px-3 py-3">
                         {isInvited ? (
-                          <span className="inline-block px-2 py-0.5 text-[10px] font-medium uppercase tracking-wider rounded border bg-amber-100 text-amber-800 border-amber-200">
+                          <span className="inline-block px-2 py-0.5 text-[10px] font-medium uppercase tracking-wider rounded border bg-amber-100 text-amber-800 border-amber-200 dark:bg-amber-500/15 dark:text-amber-400 dark:border-amber-500/30">
                             Invited
                           </span>
                         ) : s.wizard_completed ? (
-                          <span className="inline-block px-2 py-0.5 text-[10px] font-medium uppercase tracking-wider rounded border bg-emerald-100 text-emerald-800 border-emerald-200">
+                          <span className="inline-block px-2 py-0.5 text-[10px] font-medium uppercase tracking-wider rounded border bg-emerald-100 text-emerald-800 border-emerald-200 dark:bg-emerald-500/15 dark:text-emerald-400 dark:border-emerald-500/30">
                             Complete
                           </span>
                         ) : (
-                          <span className="inline-block px-2 py-0.5 text-[10px] font-medium uppercase tracking-wider rounded border bg-zinc-200 text-zinc-700 border-zinc-300">
+                          <span className="inline-block px-2 py-0.5 text-[10px] font-medium uppercase tracking-wider rounded border bg-sunken text-fg border-border-strong">
                             Setup pending
                           </span>
                         )}
@@ -193,20 +194,20 @@ export default function StaffSection({ slug }: { slug: string }) {
                           {tags.slice(0, 3).map(t => (
                             <span
                               key={t}
-                              className="bg-zinc-100 text-zinc-700 text-[10px] px-1.5 py-0.5 rounded border border-zinc-200"
+                              className="bg-elevated text-fg text-[10px] px-1.5 py-0.5 rounded border border-border"
                             >
                               {t}
                             </span>
                           ))}
                           {tags.length > 3 && (
-                            <span className="text-[10px] text-zinc-500">+{tags.length - 3}</span>
+                            <span className="text-[10px] text-fg-muted">+{tags.length - 3}</span>
                           )}
                         </div>
                       </td>
-                      <td className="px-3 py-3 text-zinc-700 text-xs">
+                      <td className="px-3 py-3 text-fg text-xs">
                         {scheduleDaysOf(s)}
                       </td>
-                      <td className="px-3 py-3 text-[11px] text-zinc-500">
+                      <td className="px-3 py-3 text-[11px] text-fg-muted">
                         {new Date(s.created_at).toLocaleDateString('en-GB')}
                       </td>
                       <td className="px-3 py-3 text-right">
@@ -214,7 +215,7 @@ export default function StaffSection({ slug }: { slug: string }) {
                           type="button"
                           onClick={() => toggleStatus(s)}
                           disabled={busyId === s.id}
-                          className="text-xs px-2 py-1 bg-zinc-100 hover:bg-zinc-200 text-zinc-800 rounded disabled:opacity-50"
+                          className="text-xs px-2 py-1 bg-elevated hover:bg-sunken text-fg rounded disabled:opacity-50"
                         >
                           {s.status === 'active' ? 'Deactivate' : 'Activate'}
                         </button>
@@ -225,6 +226,7 @@ export default function StaffSection({ slug }: { slug: string }) {
               )}
             </tbody>
           </table>
+          </div>
         </div>
       )}
 
@@ -285,13 +287,13 @@ function CreateStaffModal({
 
   return (
     <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
-      <div className="bg-white rounded-lg shadow-xl w-full max-w-sm p-6">
+      <div className="bg-surface rounded-lg shadow-xl w-full max-w-sm p-6">
         <div className="flex items-center justify-between mb-4">
-          <h3 className="text-base font-semibold text-zinc-900">Add {terminology.staff}</h3>
+          <h3 className="text-base font-semibold text-fg">Add {terminology.staff}</h3>
           <button
             type="button"
             onClick={onClose}
-            className="text-zinc-500 hover:text-zinc-900"
+            className="text-fg-muted hover:text-fg"
             aria-label="Close"
           >
             ✕
@@ -299,14 +301,14 @@ function CreateStaffModal({
         </div>
 
         {success ? (
-          <div className="rounded-lg bg-emerald-50 border border-emerald-200 p-3 text-sm text-emerald-800">
+          <div className="rounded-lg bg-emerald-50 border border-emerald-200 p-3 text-sm text-emerald-800 dark:bg-emerald-500/10 dark:border-emerald-500/30 dark:text-emerald-400">
             {terminology.staff} created. They can sign in with the password you set, then they&apos;ll be prompted
             to change it on first login.
           </div>
         ) : (
           <form onSubmit={submit} className="space-y-3">
             <div>
-              <label className="block text-xs text-zinc-600 mb-1" htmlFor="email">
+              <label className="block text-xs text-fg-muted mb-1" htmlFor="email">
                 Email
               </label>
               <input
@@ -315,12 +317,12 @@ function CreateStaffModal({
                 required
                 value={email}
                 onChange={e => setEmail(e.target.value)}
-                className="w-full text-sm border border-zinc-300 rounded px-3 py-2 focus:outline-none focus:border-zinc-500"
+                className="w-full text-sm bg-elevated text-fg border border-border rounded px-3 py-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus:border-border-strong"
                 placeholder="staff@example.com"
               />
             </div>
             <div>
-              <label className="block text-xs text-zinc-600 mb-1" htmlFor="pseudonym">
+              <label className="block text-xs text-fg-muted mb-1" htmlFor="pseudonym">
                 Display name
               </label>
               <input
@@ -328,12 +330,12 @@ function CreateStaffModal({
                 type="text"
                 value={pseudonym}
                 onChange={e => setPseudonym(e.target.value)}
-                className="w-full text-sm border border-zinc-300 rounded px-3 py-2 focus:outline-none focus:border-zinc-500"
+                className="w-full text-sm bg-elevated text-fg border border-border rounded px-3 py-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus:border-border-strong"
                 placeholder="Pseudonym or display name"
               />
             </div>
             <div>
-              <label className="block text-xs text-zinc-600 mb-1" htmlFor="password">
+              <label className="block text-xs text-fg-muted mb-1" htmlFor="password">
                 Initial password
               </label>
               <input
@@ -343,27 +345,27 @@ function CreateStaffModal({
                 minLength={8}
                 value={password}
                 onChange={e => setPassword(e.target.value)}
-                className="w-full text-sm border border-zinc-300 rounded px-3 py-2 focus:outline-none focus:border-zinc-500"
+                className="w-full text-sm bg-elevated text-fg border border-border rounded px-3 py-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus:border-border-strong"
                 placeholder="Min. 8 characters"
               />
-              <p className="text-[11px] text-zinc-500 mt-1">
+              <p className="text-[11px] text-fg-muted mt-1">
                 Share this password with the staff member. They&apos;ll be forced to change it on first login.
               </p>
             </div>
-            {error && <p className="text-xs text-red-600">{error}</p>}
+            {error && <p className="text-xs text-red-500">{error}</p>}
             <div className="flex justify-end gap-2 pt-2">
               <button
                 type="button"
                 onClick={onClose}
                 disabled={submitting}
-                className="text-sm px-3 py-1.5 text-zinc-700 hover:bg-zinc-100 rounded"
+                className="text-sm px-3 py-1.5 text-fg hover:bg-elevated rounded"
               >
                 Cancel
               </button>
               <button
                 type="submit"
                 disabled={submitting}
-                className="text-sm px-4 py-1.5 bg-slate-900 hover:bg-slate-800 text-white rounded disabled:opacity-50"
+                className="text-sm px-4 py-1.5 bg-fg text-canvas rounded hover:opacity-90 transition-opacity disabled:opacity-50"
               >
                 {submitting ? 'Creating…' : 'Create'}
               </button>

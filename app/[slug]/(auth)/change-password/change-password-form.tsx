@@ -4,6 +4,9 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 
+const inputCls =
+  'w-full bg-elevated border border-border rounded-lg px-3 py-2 text-sm text-fg placeholder-fg-subtle focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus:border-border-strong';
+
 export default function ChangePasswordForm({
   slug,
   staffId,
@@ -56,7 +59,7 @@ export default function ChangePasswordForm({
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       <div>
-        <label className="block text-xs text-zinc-400 mb-1" htmlFor="password">
+        <label className="block text-xs text-fg-muted mb-1" htmlFor="password">
           New password
         </label>
         <input
@@ -66,12 +69,12 @@ export default function ChangePasswordForm({
           required
           value={password}
           onChange={e => setPassword(e.target.value)}
-          className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-sm text-white placeholder-zinc-600 focus:outline-none focus:border-zinc-500"
+          className={inputCls}
           placeholder="Min. 8 characters"
         />
       </div>
       <div>
-        <label className="block text-xs text-zinc-400 mb-1" htmlFor="confirm">
+        <label className="block text-xs text-fg-muted mb-1" htmlFor="confirm">
           Confirm password
         </label>
         <input
@@ -81,15 +84,15 @@ export default function ChangePasswordForm({
           required
           value={confirm}
           onChange={e => setConfirm(e.target.value)}
-          className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-sm text-white placeholder-zinc-600 focus:outline-none focus:border-zinc-500"
+          className={inputCls}
           placeholder="Repeat password"
         />
       </div>
-      {error && <p className="text-red-400 text-xs">{error}</p>}
+      {error && <p className="text-red-500 text-xs">{error}</p>}
       <button
         type="submit"
         disabled={loading}
-        className="w-full bg-white text-zinc-900 rounded-lg py-2 text-sm font-medium hover:bg-zinc-100 transition-colors disabled:opacity-50"
+        className="w-full bg-fg text-canvas rounded-lg py-2 text-sm font-medium hover:opacity-90 transition-opacity disabled:opacity-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
       >
         {loading ? 'Saving…' : 'Set password'}
       </button>

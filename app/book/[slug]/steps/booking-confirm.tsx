@@ -171,7 +171,7 @@ export default function BookingConfirm({
         type="button"
         onClick={onSubmit}
         disabled={submitting}
-        className="w-full rounded-lg py-2.5 text-sm font-medium transition-opacity hover:opacity-90 disabled:opacity-50"
+        className="w-full rounded-lg py-2.5 text-sm font-medium transition-opacity hover:opacity-90 disabled:opacity-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-white/40"
         style={{ backgroundColor: brandColor, color: '#fff' }}
       >
         {submitting ? 'Submitting…' : 'Submit Booking'}

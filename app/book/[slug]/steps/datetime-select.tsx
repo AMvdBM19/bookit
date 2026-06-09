@@ -102,7 +102,8 @@ export default function DateTimeSelect({
                 key={d.value}
                 type="button"
                 onClick={() => onSelectDate(d.value)}
-                className={`shrink-0 snap-start rounded-lg border px-3 py-2 text-xs transition-colors ${
+                aria-pressed={isSelected}
+                className={`shrink-0 snap-start rounded-lg border px-3 py-2 text-xs transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-white/40 ${
                   isSelected
                     ? 'text-white border-transparent'
                     : 'text-zinc-300 border-zinc-800 bg-zinc-900 hover:border-zinc-600'
@@ -141,7 +142,7 @@ export default function DateTimeSelect({
           )}
 
           {!loading && slots.length > 0 && (
-            <div className="grid grid-cols-3 gap-2">
+            <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
               {slots.map(slot => {
                 const isSelected =
                   selectedSlot?.start === slot.start && selectedSlot?.end === slot.end;
@@ -150,7 +151,8 @@ export default function DateTimeSelect({
                     key={`${slot.start}-${slot.end}`}
                     type="button"
                     onClick={() => onSelectSlot(slot)}
-                    className={`rounded-lg border py-2 text-sm transition-colors ${
+                    aria-pressed={isSelected}
+                    className={`rounded-lg border py-2.5 text-sm transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-white/40 ${
                       isSelected
                         ? 'text-white border-transparent'
                         : 'text-zinc-300 border-zinc-800 bg-zinc-900 hover:border-zinc-600'
