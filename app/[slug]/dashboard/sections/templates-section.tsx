@@ -28,8 +28,8 @@ const EVENT_LABELS: Record<string, string> = {
 };
 
 const CHANNEL_BADGE: Record<string, string> = {
-  whatsapp: 'bg-emerald-100 text-emerald-800 border-emerald-200',
-  email: 'bg-blue-100 text-blue-800 border-blue-200',
+  whatsapp: 'bg-emerald-100 text-emerald-800 border-emerald-200 dark:bg-emerald-500/15 dark:text-emerald-400 dark:border-emerald-500/30',
+  email: 'bg-blue-100 text-blue-800 border-blue-200 dark:bg-blue-500/15 dark:text-blue-400 dark:border-blue-500/30',
 };
 
 interface EditDraft {
@@ -117,8 +117,8 @@ export default function TemplatesSection({ slug }: { slug: string }) {
     }
   }
 
-  if (loading) return <p className="text-sm text-zinc-500">Loading templates…</p>;
-  if (error) return <p className="text-sm text-red-600">{error}</p>;
+  if (loading) return <p className="text-sm text-fg-muted">Loading templates…</p>;
+  if (error) return <p className="text-sm text-red-500">{error}</p>;
   if (!data) return null;
 
   // Group existing templates by event_type → channel
@@ -131,10 +131,10 @@ export default function TemplatesSection({ slug }: { slug: string }) {
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-sm font-semibold text-zinc-900">Notification templates</h2>
-        <p className="text-xs text-zinc-500 mt-1">
+        <h2 className="text-sm font-semibold text-fg">Notification templates</h2>
+        <p className="text-xs text-fg-muted mt-1">
           Configure WhatsApp and email templates for each event. Use{' '}
-          <code className="px-1 py-0.5 bg-zinc-200 rounded text-[11px]">[variable]</code> placeholders.
+          <code className="px-1 py-0.5 bg-elevated rounded text-[11px]">[variable]</code> placeholders.
         </p>
       </div>
 
@@ -146,21 +146,21 @@ export default function TemplatesSection({ slug }: { slug: string }) {
           return (
             <section
               key={evt}
-              className="bg-white border border-zinc-200 rounded-lg overflow-hidden"
+              className="bg-surface border border-border rounded-lg overflow-hidden"
             >
-              <header className="px-4 py-3 border-b border-zinc-200 bg-zinc-50">
+              <header className="px-4 py-3 border-b border-border bg-elevated">
                 <div className="flex items-center justify-between gap-3">
-                  <h3 className="text-sm font-semibold text-zinc-900">
+                  <h3 className="text-sm font-semibold text-fg">
                     {EVENT_LABELS[evt] ?? evt}
                   </h3>
-                  <code className="text-[10px] text-zinc-500 font-mono">{evt}</code>
+                  <code className="text-[10px] text-fg-muted font-mono">{evt}</code>
                 </div>
                 {vars.length > 0 && (
                   <div className="flex flex-wrap gap-1 mt-2">
                     {vars.map(v => (
                       <code
                         key={v}
-                        className="text-[10px] bg-zinc-200 text-zinc-700 px-1.5 py-0.5 rounded"
+                        className="text-[10px] bg-sunken text-fg-muted px-1.5 py-0.5 rounded"
                       >
                         [{v}]
                       </code>
@@ -169,7 +169,7 @@ export default function TemplatesSection({ slug }: { slug: string }) {
                 )}
               </header>
 
-              <div className="divide-y divide-zinc-200">
+              <div className="divide-y divide-border">
                 {data.channels.map(ch => {
                   const existing = channels[ch];
                   const isEditing =
@@ -188,7 +188,7 @@ export default function TemplatesSection({ slug }: { slug: string }) {
                           <button
                             type="button"
                             onClick={() => startEdit(evt, ch, existing)}
-                            className="text-xs px-2 py-1 bg-zinc-100 hover:bg-zinc-200 text-zinc-800 rounded"
+                            className="text-xs px-2 py-1 bg-elevated hover:bg-sunken text-fg rounded transition-colors"
                           >
                             {existing ? 'Edit' : 'Add'}
                           </button>
@@ -205,24 +205,24 @@ export default function TemplatesSection({ slug }: { slug: string }) {
                                 setDraft({ ...draft, subject: e.target.value })
                               }
                               placeholder="Subject (email only)"
-                              className="w-full text-sm border border-zinc-300 rounded px-3 py-2 focus:outline-none focus:border-zinc-500"
+                              className="w-full text-sm bg-elevated border border-border rounded px-3 py-2 text-fg focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus:border-border-strong"
                             />
                           )}
                           <textarea
                             value={draft.body}
                             onChange={e => setDraft({ ...draft, body: e.target.value })}
                             placeholder="Template body — use [variable] placeholders"
-                            className="w-full text-sm border border-zinc-300 rounded px-3 py-2 focus:outline-none focus:border-zinc-500 h-28 resize-none font-mono"
+                            className="w-full text-sm bg-elevated border border-border rounded px-3 py-2 text-fg focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus:border-border-strong h-28 resize-none font-mono"
                           />
                           {saveError && (
-                            <p className="text-xs text-red-600">{saveError}</p>
+                            <p className="text-xs text-red-500">{saveError}</p>
                           )}
                           <div className="flex justify-end gap-2">
                             <button
                               type="button"
                               onClick={cancelEdit}
                               disabled={saving}
-                              className="text-xs px-3 py-1.5 text-zinc-700 hover:bg-zinc-100 rounded"
+                              className="text-xs px-3 py-1.5 text-fg-muted hover:bg-elevated rounded"
                             >
                               Cancel
                             </button>
@@ -230,7 +230,7 @@ export default function TemplatesSection({ slug }: { slug: string }) {
                               type="button"
                               onClick={saveDraft}
                               disabled={saving}
-                              className="text-xs px-3 py-1.5 bg-slate-900 hover:bg-slate-800 text-white rounded disabled:opacity-50"
+                              className="text-xs px-3 py-1.5 bg-fg text-canvas rounded hover:opacity-90 transition-opacity disabled:opacity-50"
                             >
                               {saving ? 'Saving…' : 'Save'}
                             </button>
@@ -239,17 +239,17 @@ export default function TemplatesSection({ slug }: { slug: string }) {
                       ) : existing ? (
                         <div>
                           {existing.subject && (
-                            <p className="text-[11px] text-zinc-500 mb-1">
-                              <span className="text-zinc-400">Subject:</span>{' '}
+                            <p className="text-[11px] text-fg-muted mb-1">
+                              <span className="text-fg-subtle">Subject:</span>{' '}
                               {existing.subject}
                             </p>
                           )}
-                          <pre className="text-xs text-zinc-700 whitespace-pre-wrap font-sans bg-zinc-50 border border-zinc-200 rounded p-2">
+                          <pre className="text-xs text-fg-muted whitespace-pre-wrap font-sans bg-elevated border border-border rounded p-2">
                             {existing.body}
                           </pre>
                         </div>
                       ) : (
-                        <p className="text-xs text-zinc-500 italic">
+                        <p className="text-xs text-fg-muted italic">
                           Not configured. Messages for this event will not be sent on {ch}.
                         </p>
                       )}

@@ -40,6 +40,17 @@ function buildGoogleCalUrl(booking: Props['booking'], bookingLabel: string): str
   return `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${title}&dates=${start}/${end}&details=${details}`;
 }
 
+function CalendarIcon() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
+      <line x1="16" y1="2" x2="16" y2="6" />
+      <line x1="8" y1="2" x2="8" y2="6" />
+      <line x1="3" y1="10" x2="21" y2="10" />
+    </svg>
+  );
+}
+
 export default function StaffBookingCard({ slug, booking, showActions, bookingLabel }: Props) {
   const router = useRouter();
   const [accepting, setAccepting] = useState(false);
@@ -94,8 +105,8 @@ export default function StaffBookingCard({ slug, booking, showActions, bookingLa
 
   if (accepted) {
     return (
-      <div className="rounded-lg border border-emerald-800 bg-emerald-950/30 p-4">
-        <p className="text-emerald-400 text-sm font-medium">
+      <div className="rounded-lg border border-emerald-500/40 bg-emerald-500/10 p-4">
+        <p className="text-emerald-600 dark:text-emerald-400 text-sm font-medium">
           Confirmed
         </p>
         {calendarUrl && (
@@ -103,9 +114,9 @@ export default function StaffBookingCard({ slug, booking, showActions, bookingLa
             href={calendarUrl}
             target="_blank"
             rel="noopener noreferrer"
-            className="text-xs text-zinc-400 hover:text-white transition-colors mt-1 inline-block"
+            className="text-xs text-fg-muted hover:text-fg transition-colors mt-1 inline-flex items-center gap-1 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded"
           >
-            Add to Google Calendar &nearr;
+            <CalendarIcon /> Add to Google Calendar
           </a>
         )}
       </div>
@@ -113,13 +124,13 @@ export default function StaffBookingCard({ slug, booking, showActions, bookingLa
   }
 
   return (
-    <div className="rounded-lg border border-zinc-800 bg-zinc-900 p-4 space-y-3">
+    <div className="rounded-lg border border-border bg-surface p-4 space-y-3">
       <div className="flex items-start justify-between gap-3">
-        <div>
-          <p className="text-white text-sm font-medium">
+        <div className="min-w-0">
+          <p className="text-fg text-sm font-medium">
             {formatDate(booking.slot_date)} &mdash; {booking.slot_start.slice(0, 5)}&ndash;{booking.slot_end.slice(0, 5)}
           </p>
-          <p className="text-zinc-400 text-xs mt-0.5">
+          <p className="text-fg-muted text-xs mt-0.5">
             {formatDuration(booking.duration_minutes)} &middot; {booking.clientName}
           </p>
         </div>
@@ -130,17 +141,13 @@ export default function StaffBookingCard({ slug, booking, showActions, bookingLa
               target="_blank"
               rel="noopener noreferrer"
               title="Add to Calendar"
+              aria-label="Add to Calendar"
               onClick={e => e.stopPropagation()}
-              className="text-zinc-400 hover:text-white transition-colors"
+              className="text-fg-muted hover:text-fg transition-colors p-1 rounded focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
             >
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
-                <line x1="16" y1="2" x2="16" y2="6" />
-                <line x1="8" y1="2" x2="8" y2="6" />
-                <line x1="3" y1="10" x2="21" y2="10" />
-              </svg>
+              <CalendarIcon />
             </a>
-            <span className="text-[10px] text-zinc-600 uppercase tracking-wider">
+            <span className="text-[10px] text-fg-subtle uppercase tracking-wider">
               {bookingLabel}
             </span>
           </div>
@@ -152,7 +159,7 @@ export default function StaffBookingCard({ slug, booking, showActions, bookingLa
           {booking.tags.map(tag => (
             <span
               key={tag}
-              className="bg-zinc-800 border border-zinc-700 rounded-full px-2 py-0.5 text-[11px] text-zinc-300"
+              className="bg-elevated border border-border rounded-full px-2 py-0.5 text-[11px] text-fg-muted"
             >
               {tag}
             </span>
@@ -161,7 +168,7 @@ export default function StaffBookingCard({ slug, booking, showActions, bookingLa
       )}
 
       {booking.booking_notes && (
-        <p className="text-xs text-zinc-500 line-clamp-2">{booking.booking_notes}</p>
+        <p className="text-xs text-fg-subtle line-clamp-2">{booking.booking_notes}</p>
       )}
 
       {showActions && (
@@ -171,14 +178,14 @@ export default function StaffBookingCard({ slug, booking, showActions, bookingLa
               type="button"
               onClick={handleAccept}
               disabled={accepting}
-              className="px-4 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-medium rounded-lg transition-colors disabled:opacity-50"
+              className="px-4 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-medium rounded-lg transition-colors disabled:opacity-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
             >
               {accepting ? 'Accepting...' : 'Accept'}
             </button>
             <button
               type="button"
               onClick={() => setShowDeclineInput(!showDeclineInput)}
-              className="px-4 py-1.5 bg-zinc-700 hover:bg-zinc-600 text-white text-xs rounded-lg transition-colors"
+              className="px-4 py-1.5 bg-elevated hover:bg-sunken text-fg text-xs rounded-lg transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
             >
               Decline
             </button>
@@ -191,20 +198,20 @@ export default function StaffBookingCard({ slug, booking, showActions, bookingLa
                 value={declineReason}
                 onChange={e => setDeclineReason(e.target.value)}
                 placeholder="Reason (optional)"
-                className="flex-1 bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-1.5 text-xs text-white placeholder-zinc-600 focus:outline-none focus:border-zinc-500"
+                className="flex-1 bg-elevated border border-border rounded-lg px-3 py-1.5 text-xs text-fg placeholder-fg-subtle focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
               />
               <button
                 type="button"
                 onClick={handleDecline}
                 disabled={declining}
-                className="px-3 py-1.5 bg-red-900 hover:bg-red-800 text-red-200 text-xs rounded-lg transition-colors disabled:opacity-50"
+                className="px-3 py-1.5 bg-red-600 hover:bg-red-500 text-white text-xs rounded-lg transition-colors disabled:opacity-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
               >
                 {declining ? 'Declining...' : 'Confirm Decline'}
               </button>
             </div>
           )}
 
-          {error && <p className="text-red-400 text-xs">{error}</p>}
+          {error && <p className="text-red-500 text-xs">{error}</p>}
         </div>
       )}
     </div>

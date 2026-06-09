@@ -71,21 +71,36 @@ function formatRelative(iso: string): string {
 }
 
 const STATUS_COLORS: Record<string, string> = {
-  pending_staff: 'bg-amber-100 text-amber-800 border-amber-200',
-  confirmed: 'bg-emerald-100 text-emerald-800 border-emerald-200',
-  cancelled: 'bg-zinc-200 text-zinc-700 border-zinc-300',
-  completed: 'bg-blue-100 text-blue-800 border-blue-200',
-  no_show: 'bg-red-100 text-red-800 border-red-200',
+  pending_staff: 'bg-amber-100 text-amber-800 border-amber-200 dark:bg-amber-500/15 dark:text-amber-400 dark:border-amber-500/30',
+  confirmed: 'bg-emerald-100 text-emerald-800 border-emerald-200 dark:bg-emerald-500/15 dark:text-emerald-400 dark:border-emerald-500/30',
+  cancelled: 'bg-elevated text-fg-muted border-border',
+  completed: 'bg-blue-100 text-blue-800 border-blue-200 dark:bg-blue-500/15 dark:text-blue-400 dark:border-blue-500/30',
+  no_show: 'bg-red-100 text-red-800 border-red-200 dark:bg-red-500/15 dark:text-red-400 dark:border-red-500/30',
 };
 
+const tableWrap = 'border border-border rounded-lg overflow-hidden bg-surface';
+const theadCls = 'bg-elevated border-b border-border';
+const thCls = 'text-left text-[11px] font-medium uppercase tracking-wider text-fg-muted';
+
 function StatusBadge({ status }: { status: string }) {
-  const cls = STATUS_COLORS[status] ?? 'bg-zinc-200 text-zinc-700 border-zinc-300';
+  const cls = STATUS_COLORS[status] ?? 'bg-elevated text-fg-muted border-border';
   return (
     <span
       className={`inline-block px-2 py-0.5 text-[10px] font-medium uppercase tracking-wider rounded border ${cls}`}
     >
       {status.replace('_', ' ')}
     </span>
+  );
+}
+
+function CalendarIcon() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
+      <line x1="16" y1="2" x2="16" y2="6" />
+      <line x1="8" y1="2" x2="8" y2="6" />
+      <line x1="3" y1="10" x2="21" y2="10" />
+    </svg>
   );
 }
 
@@ -171,10 +186,10 @@ export default function BookingsSection({ slug }: { slug: string }) {
     .slice(0, 30);
 
   if (loading) {
-    return <p className="text-sm text-zinc-500">Loading {terminology.booking_plural.toLowerCase()}…</p>;
+    return <p className="text-sm text-fg-muted">Loading {terminology.booking_plural.toLowerCase()}…</p>;
   }
   if (error) {
-    return <p className="text-sm text-red-600">{error}</p>;
+    return <p className="text-sm text-red-500">{error}</p>;
   }
 
   return (
@@ -182,205 +197,207 @@ export default function BookingsSection({ slug }: { slug: string }) {
       {/* Pending */}
       <section>
         <div className="flex items-center gap-2 mb-3">
-          <h2 className="text-sm font-semibold text-zinc-900">Pending requests</h2>
+          <h2 className="text-sm font-semibold text-fg">Pending requests</h2>
           {pending.length > 0 && (
-            <span className="bg-amber-100 text-amber-800 text-[11px] font-medium px-2 py-0.5 rounded-full border border-amber-200">
+            <span className="bg-amber-100 text-amber-800 border border-amber-200 dark:bg-amber-500/15 dark:text-amber-400 dark:border-amber-500/30 text-[11px] font-medium px-2 py-0.5 rounded-full">
               {pending.length}
             </span>
           )}
         </div>
 
         {pending.length === 0 ? (
-          <p className="text-sm text-zinc-500">No pending requests.</p>
+          <p className="text-sm text-fg-muted">No pending requests.</p>
         ) : (
-          <div className="border border-zinc-200 rounded-lg overflow-hidden bg-white">
-            <table className="w-full text-sm">
-              <thead className="bg-zinc-50 border-b border-zinc-200">
-                <tr className="text-left text-[11px] font-medium uppercase tracking-wider text-zinc-500">
-                  <th className="px-3 py-2">Ref</th>
-                  <th className="px-3 py-2">{terminology.staff}</th>
-                  <th className="px-3 py-2">{terminology.client}</th>
-                  <th className="px-3 py-2">When</th>
-                  <th className="px-3 py-2">Tags</th>
-                  <th className="px-3 py-2">Requested</th>
-                  <th className="px-3 py-2 text-right">Actions</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-zinc-200">
-                {pending.map(b => {
-                  const busy = actionState[b.id] === 'busy';
-                  const inDecline = b.id in declineMode;
-                  return (
-                    <tr key={b.id} className="hover:bg-zinc-50">
-                      <td className="px-3 py-3 font-mono text-[11px] text-zinc-500">
-                        {b.id.slice(0, 8)}
-                      </td>
-                      <td className="px-3 py-3 text-zinc-900">{staffNameOf(b)}</td>
-                      <td className="px-3 py-3 text-zinc-900">{clientNameOf(b)}</td>
-                      <td className="px-3 py-3 text-zinc-700">
-                        {formatDate(b.slot_date)} · {b.slot_start.slice(0, 5)}–{b.slot_end.slice(0, 5)}
-                      </td>
-                      <td className="px-3 py-3">
-                        <div className="flex flex-wrap gap-1">
-                          {b.booking_service_tags.slice(0, 3).map(t => (
-                            <span
-                              key={t.tag_name}
-                              className="bg-zinc-100 text-zinc-700 text-[10px] px-1.5 py-0.5 rounded border border-zinc-200"
-                            >
-                              {t.tag_name}
-                            </span>
-                          ))}
-                        </div>
-                      </td>
-                      <td className="px-3 py-3 text-[11px] text-zinc-500">
-                        {formatRelative(b.created_at)}
-                      </td>
-                      <td className="px-3 py-3">
-                        {inDecline ? (
-                          <div className="flex justify-end gap-1">
-                            <input
-                              type="text"
-                              autoFocus
-                              value={declineMode[b.id]}
-                              onChange={e =>
-                                setDeclineMode(prev => ({ ...prev, [b.id]: e.target.value }))
-                              }
-                              placeholder="Reason (optional)"
-                              className="text-xs border border-zinc-300 rounded px-2 py-1 w-36"
-                            />
-                            <button
-                              type="button"
-                              onClick={() => handleDecline(b.id)}
-                              disabled={busy}
-                              className="text-xs px-2 py-1 bg-red-600 hover:bg-red-700 text-white rounded disabled:opacity-50"
-                            >
-                              Confirm
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() =>
-                                setDeclineMode(prev => {
-                                  const n = { ...prev };
-                                  delete n[b.id];
-                                  return n;
-                                })
-                              }
-                              className="text-xs px-2 py-1 text-zinc-600 hover:bg-zinc-100 rounded"
-                            >
-                              ✕
-                            </button>
+          <div className={tableWrap}>
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm min-w-[760px]">
+                <thead className={theadCls}>
+                  <tr className={thCls}>
+                    <th className="px-3 py-2">Ref</th>
+                    <th className="px-3 py-2">{terminology.staff}</th>
+                    <th className="px-3 py-2">{terminology.client}</th>
+                    <th className="px-3 py-2">When</th>
+                    <th className="px-3 py-2">Tags</th>
+                    <th className="px-3 py-2">Requested</th>
+                    <th className="px-3 py-2 text-right">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-border">
+                  {pending.map(b => {
+                    const busy = actionState[b.id] === 'busy';
+                    const inDecline = b.id in declineMode;
+                    return (
+                      <tr key={b.id} className="hover:bg-elevated">
+                        <td className="px-3 py-3 font-mono text-[11px] text-fg-muted">
+                          {b.id.slice(0, 8)}
+                        </td>
+                        <td className="px-3 py-3 text-fg">{staffNameOf(b)}</td>
+                        <td className="px-3 py-3 text-fg">{clientNameOf(b)}</td>
+                        <td className="px-3 py-3 text-fg-muted whitespace-nowrap">
+                          {formatDate(b.slot_date)} · {b.slot_start.slice(0, 5)}–{b.slot_end.slice(0, 5)}
+                        </td>
+                        <td className="px-3 py-3">
+                          <div className="flex flex-wrap gap-1">
+                            {b.booking_service_tags.slice(0, 3).map(t => (
+                              <span
+                                key={t.tag_name}
+                                className="bg-elevated text-fg-muted text-[10px] px-1.5 py-0.5 rounded border border-border"
+                              >
+                                {t.tag_name}
+                              </span>
+                            ))}
                           </div>
-                        ) : (
-                          <div className="flex justify-end gap-1">
-                            <button
-                              type="button"
-                              onClick={() => handleAccept(b.id)}
-                              disabled={busy}
-                              className="text-xs px-2 py-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded disabled:opacity-50"
-                            >
-                              Accept
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() =>
-                                setDeclineMode(prev => ({ ...prev, [b.id]: '' }))
-                              }
-                              disabled={busy}
-                              className="text-xs px-2 py-1 bg-zinc-200 hover:bg-zinc-300 text-zinc-800 rounded disabled:opacity-50"
-                            >
-                              Decline
-                            </button>
-                          </div>
-                        )}
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
+                        </td>
+                        <td className="px-3 py-3 text-[11px] text-fg-muted whitespace-nowrap">
+                          {formatRelative(b.created_at)}
+                        </td>
+                        <td className="px-3 py-3">
+                          {inDecline ? (
+                            <div className="flex justify-end gap-1">
+                              <input
+                                type="text"
+                                autoFocus
+                                value={declineMode[b.id]}
+                                onChange={e =>
+                                  setDeclineMode(prev => ({ ...prev, [b.id]: e.target.value }))
+                                }
+                                placeholder="Reason (optional)"
+                                className="text-xs bg-elevated border border-border rounded px-2 py-1 w-36 text-fg focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                              />
+                              <button
+                                type="button"
+                                onClick={() => handleDecline(b.id)}
+                                disabled={busy}
+                                className="text-xs px-2 py-1 bg-red-600 hover:bg-red-500 text-white rounded disabled:opacity-50"
+                              >
+                                Confirm
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  setDeclineMode(prev => {
+                                    const n = { ...prev };
+                                    delete n[b.id];
+                                    return n;
+                                  })
+                                }
+                                className="text-xs px-2 py-1 text-fg-muted hover:bg-elevated rounded"
+                              >
+                                ✕
+                              </button>
+                            </div>
+                          ) : (
+                            <div className="flex justify-end gap-1">
+                              <button
+                                type="button"
+                                onClick={() => handleAccept(b.id)}
+                                disabled={busy}
+                                className="text-xs px-2 py-1 bg-emerald-600 hover:bg-emerald-500 text-white rounded disabled:opacity-50"
+                              >
+                                Accept
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  setDeclineMode(prev => ({ ...prev, [b.id]: '' }))
+                                }
+                                disabled={busy}
+                                className="text-xs px-2 py-1 bg-elevated hover:bg-sunken text-fg rounded disabled:opacity-50"
+                              >
+                                Decline
+                              </button>
+                            </div>
+                          )}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
           </div>
         )}
       </section>
 
       {/* Upcoming */}
       <section>
-        <h2 className="text-sm font-semibold text-zinc-900 mb-3">Upcoming (next 14 days)</h2>
+        <h2 className="text-sm font-semibold text-fg mb-3">Upcoming (next 14 days)</h2>
         {upcoming.length === 0 ? (
-          <p className="text-sm text-zinc-500">No upcoming {terminology.booking_plural.toLowerCase()}.</p>
+          <p className="text-sm text-fg-muted">No upcoming {terminology.booking_plural.toLowerCase()}.</p>
         ) : (
-          <div className="border border-zinc-200 rounded-lg overflow-hidden bg-white">
-            <table className="w-full text-sm">
-              <thead className="bg-zinc-50 border-b border-zinc-200">
-                <tr className="text-left text-[11px] font-medium uppercase tracking-wider text-zinc-500">
-                  <th className="px-3 py-2">{terminology.staff}</th>
-                  <th className="px-3 py-2">{terminology.client}</th>
-                  <th className="px-3 py-2">Date</th>
-                  <th className="px-3 py-2">Time</th>
-                  <th className="px-3 py-2 w-8"></th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-zinc-200">
-                {upcoming.map(b => (
-                  <tr key={b.id} className="hover:bg-zinc-50">
-                    <td className="px-3 py-3 text-zinc-900">{staffNameOf(b)}</td>
-                    <td className="px-3 py-3 text-zinc-900">{clientNameOf(b)}</td>
-                    <td className="px-3 py-3 text-zinc-700">{formatDate(b.slot_date)}</td>
-                    <td className="px-3 py-3 text-zinc-700">
-                      {b.slot_start.slice(0, 5)}–{b.slot_end.slice(0, 5)}
-                    </td>
-                    <td className="px-3 py-3">
-                      <a
-                        href={buildGoogleCalUrl(b, terminology.booking)}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        title="Add to Calendar"
-                        className="text-zinc-400 hover:text-zinc-700 transition-colors"
-                      >
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                          <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
-                          <line x1="16" y1="2" x2="16" y2="6" />
-                          <line x1="8" y1="2" x2="8" y2="6" />
-                          <line x1="3" y1="10" x2="21" y2="10" />
-                        </svg>
-                      </a>
-                    </td>
+          <div className={tableWrap}>
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm min-w-[560px]">
+                <thead className={theadCls}>
+                  <tr className={thCls}>
+                    <th className="px-3 py-2">{terminology.staff}</th>
+                    <th className="px-3 py-2">{terminology.client}</th>
+                    <th className="px-3 py-2">Date</th>
+                    <th className="px-3 py-2">Time</th>
+                    <th className="px-3 py-2 w-8"></th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody className="divide-y divide-border">
+                  {upcoming.map(b => (
+                    <tr key={b.id} className="hover:bg-elevated">
+                      <td className="px-3 py-3 text-fg">{staffNameOf(b)}</td>
+                      <td className="px-3 py-3 text-fg">{clientNameOf(b)}</td>
+                      <td className="px-3 py-3 text-fg-muted whitespace-nowrap">{formatDate(b.slot_date)}</td>
+                      <td className="px-3 py-3 text-fg-muted whitespace-nowrap">
+                        {b.slot_start.slice(0, 5)}–{b.slot_end.slice(0, 5)}
+                      </td>
+                      <td className="px-3 py-3">
+                        <a
+                          href={buildGoogleCalUrl(b, terminology.booking)}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          title="Add to Calendar"
+                          aria-label="Add to Calendar"
+                          className="text-fg-muted hover:text-fg transition-colors inline-flex p-1 rounded focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                        >
+                          <CalendarIcon />
+                        </a>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </div>
         )}
       </section>
 
       {/* Past */}
       <section>
-        <h2 className="text-sm font-semibold text-zinc-900 mb-3">Past (last 30)</h2>
+        <h2 className="text-sm font-semibold text-fg mb-3">Past (last 30)</h2>
         {past.length === 0 ? (
-          <p className="text-sm text-zinc-500">No past {terminology.booking_plural.toLowerCase()}.</p>
+          <p className="text-sm text-fg-muted">No past {terminology.booking_plural.toLowerCase()}.</p>
         ) : (
-          <div className="border border-zinc-200 rounded-lg overflow-hidden bg-white">
-            <table className="w-full text-sm">
-              <thead className="bg-zinc-50 border-b border-zinc-200">
-                <tr className="text-left text-[11px] font-medium uppercase tracking-wider text-zinc-500">
-                  <th className="px-3 py-2">{terminology.staff}</th>
-                  <th className="px-3 py-2">{terminology.client}</th>
-                  <th className="px-3 py-2">Date</th>
-                  <th className="px-3 py-2">Status</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-zinc-200">
-                {past.map(b => (
-                  <tr key={b.id} className="hover:bg-zinc-50">
-                    <td className="px-3 py-3 text-zinc-900">{staffNameOf(b)}</td>
-                    <td className="px-3 py-3 text-zinc-900">{clientNameOf(b)}</td>
-                    <td className="px-3 py-3 text-zinc-700">{formatDate(b.slot_date)}</td>
-                    <td className="px-3 py-3">
-                      <StatusBadge status={b.status} />
-                    </td>
+          <div className={tableWrap}>
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm min-w-[560px]">
+                <thead className={theadCls}>
+                  <tr className={thCls}>
+                    <th className="px-3 py-2">{terminology.staff}</th>
+                    <th className="px-3 py-2">{terminology.client}</th>
+                    <th className="px-3 py-2">Date</th>
+                    <th className="px-3 py-2">Status</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody className="divide-y divide-border">
+                  {past.map(b => (
+                    <tr key={b.id} className="hover:bg-elevated">
+                      <td className="px-3 py-3 text-fg">{staffNameOf(b)}</td>
+                      <td className="px-3 py-3 text-fg">{clientNameOf(b)}</td>
+                      <td className="px-3 py-3 text-fg-muted whitespace-nowrap">{formatDate(b.slot_date)}</td>
+                      <td className="px-3 py-3">
+                        <StatusBadge status={b.status} />
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </div>
         )}
       </section>

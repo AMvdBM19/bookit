@@ -37,13 +37,13 @@ interface Summary {
 }
 
 const inputCls =
-  'w-full text-sm border border-zinc-300 rounded px-3 py-1.5 focus:outline-none focus:border-zinc-500';
+  'w-full text-sm bg-elevated text-fg border border-border rounded px-3 py-1.5 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus:border-border-strong';
 
 function Row({ label, value }: { label: string; value: React.ReactNode }) {
   return (
-    <div className="flex justify-between gap-4 py-2 border-b border-zinc-200 last:border-0">
-      <span className="text-xs text-zinc-500">{label}</span>
-      <span className="text-sm text-zinc-900 text-right">{value || '—'}</span>
+    <div className="flex justify-between gap-4 py-2 border-b border-border last:border-0">
+      <span className="text-xs text-fg-muted">{label}</span>
+      <span className="text-sm text-fg text-right">{value || '—'}</span>
     </div>
   );
 }
@@ -58,11 +58,11 @@ function EditRow({
   locked?: boolean;
 }) {
   return (
-    <div className="py-2 border-b border-zinc-200 last:border-0">
+    <div className="py-2 border-b border-border last:border-0">
       <div className="flex items-baseline justify-between gap-3 mb-1">
-        <span className="text-xs text-zinc-500">{label}</span>
+        <span className="text-xs text-fg-muted">{label}</span>
         {locked && (
-          <span className="text-[10px] uppercase tracking-wider text-zinc-400">Locked</span>
+          <span className="text-[10px] uppercase tracking-wider text-fg-subtle">Locked</span>
         )}
       </div>
       {children}
@@ -147,8 +147,8 @@ export default function SettingsSection({ slug }: { slug: string }) {
     }
   }
 
-  if (loading) return <p className="text-sm text-zinc-500">Loading settings…</p>;
-  if (error) return <p className="text-sm text-red-600">{error}</p>;
+  if (loading) return <p className="text-sm text-fg-muted">Loading settings…</p>;
+  if (error) return <p className="text-sm text-red-500">{error}</p>;
   if (!summary) return null;
 
   const { tenant, settings, integrations, locked_fields } = summary;
@@ -161,7 +161,7 @@ export default function SettingsSection({ slug }: { slug: string }) {
 
   return (
     <div className="space-y-6 max-w-2xl">
-      <p className="text-xs text-zinc-500">
+      <p className="text-xs text-fg-muted">
         Editable settings update immediately. Locked fields were set during onboarding and require support to change.
       </p>
 
@@ -175,7 +175,7 @@ export default function SettingsSection({ slug }: { slug: string }) {
           onSave={() => saveSection(['agency_display_name', 'logo_url', 'brand_color'])}
           saving={saving}
         />
-        <div className="bg-white rounded-lg border border-zinc-200 px-4">
+        <div className="bg-surface rounded-lg border border-border px-4">
           {editingSection === 'identity' ? (
             <>
               <EditRow label="Display name">
@@ -201,7 +201,7 @@ export default function SettingsSection({ slug }: { slug: string }) {
                     type="color"
                     value={draft.brand_color ?? '#2BB673'}
                     onChange={e => patchDraft({ brand_color: e.target.value })}
-                    className="h-8 w-12 rounded border border-zinc-300 cursor-pointer p-0.5"
+                    className="h-8 w-12 rounded border border-border-strong cursor-pointer p-0.5"
                   />
                   <input
                     type="text"
@@ -227,7 +227,7 @@ export default function SettingsSection({ slug }: { slug: string }) {
                       href={settings.logo_url}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="text-blue-600 hover:underline text-xs break-all"
+                      className="text-blue-600 dark:text-blue-400 hover:underline text-xs break-all"
                     >
                       {settings.logo_url}
                     </a>
@@ -242,7 +242,7 @@ export default function SettingsSection({ slug }: { slug: string }) {
                   settings?.brand_color ? (
                     <span className="inline-flex items-center gap-2">
                       <span
-                        className="w-4 h-4 rounded-full border border-zinc-300"
+                        className="w-4 h-4 rounded-full border border-border-strong"
                         style={{ backgroundColor: settings.brand_color }}
                       />
                       <code className="text-xs">{settings.brand_color}</code>
@@ -274,7 +274,7 @@ export default function SettingsSection({ slug }: { slug: string }) {
           }
           saving={saving}
         />
-        <div className="bg-white rounded-lg border border-zinc-200 px-4">
+        <div className="bg-surface rounded-lg border border-border px-4">
           {editingSection === 'bookings' ? (
             <>
               <EditRow label="Confirm mode">
@@ -350,11 +350,11 @@ export default function SettingsSection({ slug }: { slug: string }) {
           onSave={() => saveSection(['require_age_confirm'])}
           saving={saving}
         />
-        <div className="bg-white rounded-lg border border-zinc-200 px-4">
+        <div className="bg-surface rounded-lg border border-border px-4">
           {editingSection === 'compliance' ? (
             <>
               <EditRow label="Minimum age" locked={isLocked('age_gate_minimum')}>
-                <p className="text-sm text-zinc-500">{settings?.age_gate_minimum}</p>
+                <p className="text-sm text-fg-muted">{settings?.age_gate_minimum}</p>
               </EditRow>
               <EditRow label="Age confirmation">
                 <label className="flex items-center gap-2 cursor-pointer">
@@ -363,7 +363,7 @@ export default function SettingsSection({ slug }: { slug: string }) {
                     checked={draft.require_age_confirm ?? false}
                     onChange={e => patchDraft({ require_age_confirm: e.target.checked })}
                   />
-                  <span className="text-sm text-zinc-700">Require clients to confirm age</span>
+                  <span className="text-sm text-fg">Require clients to confirm age</span>
                 </label>
               </EditRow>
             </>
@@ -381,24 +381,24 @@ export default function SettingsSection({ slug }: { slug: string }) {
 
       {/* Integrations (read-only) */}
       <section>
-        <h3 className="text-xs font-semibold text-zinc-500 uppercase tracking-wider mb-2">
+        <h3 className="text-xs font-semibold text-fg-muted uppercase tracking-wider mb-2">
           Integrations
         </h3>
-        <div className="bg-white rounded-lg border border-zinc-200 px-4">
+        <div className="bg-surface rounded-lg border border-border px-4">
           <Row
             label="WhatsApp"
             value={
               wa.configured ? (
                 <span className="inline-flex items-center gap-1.5">
-                  <span className="inline-block px-2 py-0.5 text-[10px] font-medium uppercase tracking-wider rounded border bg-emerald-100 text-emerald-800 border-emerald-200">
+                  <span className="inline-block px-2 py-0.5 text-[10px] font-medium uppercase tracking-wider rounded border bg-emerald-100 text-emerald-800 border-emerald-200 dark:bg-emerald-500/15 dark:text-emerald-400 dark:border-emerald-500/30">
                     Configured
                   </span>
-                  <span className="text-[11px] text-zinc-500">
+                  <span className="text-[11px] text-fg-muted">
                     ({wa.provider === 'meta_whatsapp' ? 'Meta' : 'Twilio'})
                   </span>
                 </span>
               ) : (
-                <span className="inline-block px-2 py-0.5 text-[10px] font-medium uppercase tracking-wider rounded border bg-zinc-100 text-zinc-700 border-zinc-200">
+                <span className="inline-block px-2 py-0.5 text-[10px] font-medium uppercase tracking-wider rounded border bg-elevated text-fg border-border">
                   Not configured
                 </span>
               )
@@ -408,7 +408,7 @@ export default function SettingsSection({ slug }: { slug: string }) {
       </section>
 
       {saveError && (
-        <div className="rounded-lg border border-red-200 bg-red-50 p-3 text-xs text-red-800">
+        <div className="rounded-lg border border-red-200 bg-red-50 p-3 text-xs text-red-800 dark:border-red-500/30 dark:bg-red-500/10 dark:text-red-400">
           {saveError}
         </div>
       )}
@@ -433,14 +433,14 @@ function SectionHeader({
 }) {
   return (
     <div className="flex items-center justify-between mb-2">
-      <h3 className="text-xs font-semibold text-zinc-500 uppercase tracking-wider">{title}</h3>
+      <h3 className="text-xs font-semibold text-fg-muted uppercase tracking-wider">{title}</h3>
       {editing ? (
         <div className="flex gap-1">
           <button
             type="button"
             onClick={onCancel}
             disabled={saving}
-            className="text-xs px-2 py-1 text-zinc-600 hover:bg-zinc-100 rounded"
+            className="text-xs px-2 py-1 text-fg-muted hover:bg-elevated rounded"
           >
             Cancel
           </button>
@@ -448,7 +448,7 @@ function SectionHeader({
             type="button"
             onClick={onSave}
             disabled={saving}
-            className="text-xs px-3 py-1 bg-slate-900 hover:bg-slate-800 text-white rounded disabled:opacity-50"
+            className="text-xs px-3 py-1 bg-fg text-canvas rounded hover:opacity-90 transition-opacity disabled:opacity-50"
           >
             {saving ? 'Saving…' : 'Save'}
           </button>
@@ -457,7 +457,7 @@ function SectionHeader({
         <button
           type="button"
           onClick={onEdit}
-          className="text-xs px-2 py-1 bg-zinc-100 hover:bg-zinc-200 text-zinc-800 rounded"
+          className="text-xs px-2 py-1 bg-elevated hover:bg-sunken text-fg rounded"
         >
           Edit
         </button>

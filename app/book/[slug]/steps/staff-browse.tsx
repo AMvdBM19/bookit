@@ -114,7 +114,7 @@ export default function StaffBrowse({
             key={s.id}
             type="button"
             onClick={() => onSelect(s.id)}
-            className="w-full text-left rounded-lg border border-zinc-800 bg-zinc-900 p-4 transition-all hover:border-zinc-600 hover:shadow-md"
+            className="w-full text-left rounded-lg border border-zinc-800 bg-zinc-900 p-4 transition-all hover:border-zinc-600 hover:shadow-md focus:outline-none focus-visible:ring-2 focus-visible:ring-white/40"
           >
             <div className="flex items-start gap-3">
               {photo ? (
