@@ -84,29 +84,29 @@ export default function BookingConfirm({
 
   return (
     <div className="space-y-4">
-      <section className="rounded-lg border border-zinc-800 bg-zinc-900 p-4 space-y-2">
+      <section className="w-card w-pad space-y-2">
         <div className="flex justify-between gap-4">
-          <span className="text-xs text-zinc-500">With</span>
-          <span className="text-xs text-white">{staff?.pseudonym ?? 'To be assigned'}</span>
+          <span className="text-xs w-tx3">With</span>
+          <span className="text-xs w-tx">{staff?.pseudonym ?? 'To be assigned'}</span>
         </div>
         <div className="flex justify-between gap-4">
-          <span className="text-xs text-zinc-500">Date</span>
-          <span className="text-xs text-white">{formatDate(date)}</span>
+          <span className="text-xs w-tx3">Date</span>
+          <span className="text-xs w-tx">{formatDate(date)}</span>
         </div>
         <div className="flex justify-between gap-4">
-          <span className="text-xs text-zinc-500">Time</span>
-          <span className="text-xs text-white">
+          <span className="text-xs w-tx3">Time</span>
+          <span className="text-xs w-tx">
             {slot.start}–{slot.end} ({formatDuration(duration)})
           </span>
         </div>
         {selectedTags.length > 0 && (
           <div>
-            <p className="text-xs text-zinc-500 mb-1">Services</p>
+            <p className="text-xs w-tx3 mb-1">Services</p>
             <div className="flex flex-wrap gap-1.5">
               {selectedTags.map(t => (
                 <span
                   key={t.id}
-                  className="bg-zinc-800 border border-zinc-700 rounded-full px-2 py-0.5 text-[11px] text-zinc-300"
+                  className="w-el border w-bd2 rounded-full px-2 py-0.5 text-[11px] w-tx-soft"
                 >
                   {t.name}
                 </span>
@@ -116,8 +116,8 @@ export default function BookingConfirm({
         )}
         {notes && (
           <div>
-            <p className="text-xs text-zinc-500 mb-1">Notes</p>
-            <p className="text-xs text-zinc-300 whitespace-pre-wrap">{notes}</p>
+            <p className="text-xs w-tx3 mb-1">Notes</p>
+            <p className="text-xs w-tx-soft whitespace-pre-wrap">{notes}</p>
           </div>
         )}
       </section>
@@ -125,26 +125,26 @@ export default function BookingConfirm({
       {showPrice && (() => {
         const sym = CURRENCY_SYMBOLS[currency] ?? currency;
         return (
-          <section className="rounded-lg border border-zinc-800 bg-zinc-900 p-4 space-y-1.5">
+          <section className="w-card w-pad space-y-1.5">
             <div className="flex justify-between gap-4">
-              <span className="text-xs text-zinc-500">
+              <span className="text-xs w-tx3">
                 {basePriceLabel} ({formatDuration(duration)})
               </span>
-              <span className="text-xs text-white">
+              <span className="text-xs w-tx">
                 {sym}{baseTotal.toFixed(2)}
               </span>
             </div>
             {selectedTags.filter(t => t.extra_price > 0).map(t => (
               <div key={t.id} className="flex justify-between gap-4">
-                <span className="text-xs text-zinc-500">{t.name}</span>
-                <span className="text-xs text-white">
+                <span className="text-xs w-tx3">{t.name}</span>
+                <span className="text-xs w-tx">
                   +{sym}{t.extra_price.toFixed(2)}
                 </span>
               </div>
             ))}
-            <div className="flex justify-between gap-4 pt-1.5 border-t border-zinc-800">
-              <span className="text-sm text-white font-medium">Total</span>
-              <span className="text-sm text-white font-medium">
+            <div className="flex justify-between gap-4 pt-1.5 border-t w-bd">
+              <span className="text-sm w-tx font-medium">Total</span>
+              <span className="text-sm w-tx font-medium">
                 {sym}{totalPrice.toFixed(2)}
               </span>
             </div>
@@ -171,14 +171,14 @@ export default function BookingConfirm({
         type="button"
         onClick={onSubmit}
         disabled={submitting}
-        className="w-full rounded-lg py-2.5 text-sm font-medium transition-opacity hover:opacity-90 disabled:opacity-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-white/40"
+        className="w-full w-round py-2.5 text-sm font-medium transition-opacity hover:opacity-90 disabled:opacity-50 focus:outline-none w-focus"
         style={{ backgroundColor: brandColor, color: '#fff' }}
       >
         {submitting ? 'Submitting…' : 'Submit Booking'}
       </button>
 
       {isGuestMode && (
-        <p className="text-[10px] text-zinc-600 text-center">
+        <p className="text-[10px] w-tx3 text-center">
           Your details are not stored without your consent.
         </p>
       )}

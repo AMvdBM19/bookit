@@ -30,15 +30,17 @@ export default function BookingSuccess({
   return (
     <div className="space-y-4">
       <div
-        className="rounded-lg border p-6 text-center"
+        className="w-round border w-pad-lg text-center"
         style={{
-          borderColor: confirmed ? brandColor : '#3f3f46',
-          backgroundColor: confirmed ? `${brandColor}15` : '#18181b',
+          borderColor: confirmed ? brandColor : 'var(--w-border-strong)',
+          backgroundColor: confirmed
+            ? 'color-mix(in srgb, var(--w-primary) 8%, transparent)'
+            : 'var(--w-surface)',
         }}
       >
-        <p className="text-white text-base font-semibold mb-1">{headline}</p>
-        <p className="text-zinc-400 text-xs">{subline}</p>
-        <p className="text-zinc-600 text-[10px] font-mono mt-3">
+        <p className="w-tx text-base font-semibold mb-1">{headline}</p>
+        <p className="w-tx2 text-xs">{subline}</p>
+        <p className="w-tx3 text-[10px] font-mono mt-3">
           Ref: {bookingId.slice(0, 8)}
         </p>
       </div>
@@ -46,7 +48,7 @@ export default function BookingSuccess({
       <button
         type="button"
         onClick={onBookAnother}
-        className="w-full bg-zinc-800 hover:bg-zinc-700 text-white rounded-lg py-2 text-sm transition-colors"
+        className="w-full w-btn2 w-round py-2 text-sm transition-colors"
       >
         Book another
       </button>

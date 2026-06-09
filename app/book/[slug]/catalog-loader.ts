@@ -29,6 +29,20 @@ export interface CatalogSettings {
   currency: string;
   deposit_pct: number | null;
   deposit_required_above_minutes: number | null;
+  widget_primary_color: string | null;
+  widget_accent_color: string | null;
+  widget_bg: string | null;
+  widget_bg_custom: string | null;
+  widget_font_pair: string | null;
+  widget_border_radius: string | null;
+  widget_card_style: string | null;
+  widget_spacing: string | null;
+  widget_text_color: string | null;
+  widget_text_muted: string | null;
+  widget_surface_color: string | null;
+  widget_border_color: string | null;
+  widget_show_powered_by: boolean | null;
+  widget_logo_url: string | null;
 }
 
 export interface Catalog {
@@ -63,7 +77,7 @@ export async function loadCatalog(slug: string): Promise<Catalog | null> {
   const { data: settings, error: settingsError } = await supabase
     .from('tenant_settings')
     .select(
-      'brand_color, agency_display_name, logo_url, show_price_to_client, base_rate_per_30min, age_gate_minimum, require_age_confirm, booking_confirm_mode, default_slot_minutes, min_lead_time_hours, currency, deposit_pct, deposit_required_above_minutes'
+      'brand_color, agency_display_name, logo_url, show_price_to_client, base_rate_per_30min, age_gate_minimum, require_age_confirm, booking_confirm_mode, default_slot_minutes, min_lead_time_hours, currency, deposit_pct, deposit_required_above_minutes, widget_primary_color, widget_accent_color, widget_bg, widget_bg_custom, widget_font_pair, widget_border_radius, widget_card_style, widget_spacing, widget_text_color, widget_text_muted, widget_surface_color, widget_border_color, widget_show_powered_by, widget_logo_url'
     )
     .eq('tenant_id', tenant.id)
     .single();

@@ -37,9 +37,8 @@ const CURRENCY_SYMBOLS: Record<string, string> = {
   EUR: '€', USD: '$', GBP: '£',
 };
 
-const inputCls =
-  'w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-sm text-white placeholder-zinc-600 focus:outline-none focus:border-zinc-500';
-const labelCls = 'block text-xs text-zinc-400 mb-1';
+const inputCls = 'w-full w-input px-3 py-2 text-sm';
+const labelCls = 'block text-xs w-tx2 mb-1';
 
 export default function DetailsForm({
   slug,
@@ -67,14 +66,14 @@ export default function DetailsForm({
   if (clientMode === 'account') {
     return (
       <div className="space-y-4">
-        <div className="rounded-lg border border-zinc-800 bg-zinc-900 p-4 text-center">
-          <p className="text-white text-sm font-medium mb-2">Account required</p>
-          <p className="text-zinc-400 text-xs">
+        <div className="w-card w-pad text-center">
+          <p className="w-tx text-sm font-medium mb-2">Account required</p>
+          <p className="w-tx2 text-xs">
             This business requires an account to book. Please{' '}
             <a
               href={`/${slug}/login?redirect=/book/${slug}`}
               target="_top"
-              className="underline hover:text-white"
+              className="underline hover:opacity-80"
               style={{ color: brandColor }}
             >
               log in
@@ -105,13 +104,13 @@ export default function DetailsForm({
                   className={`px-3 py-1.5 rounded-full text-xs border transition-colors ${
                     selected
                       ? 'text-white border-transparent'
-                      : 'bg-zinc-800 text-zinc-300 border-zinc-700 hover:border-zinc-500'
+                      : 'w-el w-tx-soft w-bd2 w-hbd'
                   }`}
                   style={selected ? { backgroundColor: brandColor } : undefined}
                 >
                   {tag.name}
                   {showPrice && tag.extra_price > 0 && (
-                    <span className={selected ? 'opacity-75 ml-1' : 'text-zinc-500 ml-1'}>
+                    <span className={selected ? 'opacity-75 ml-1' : 'w-tx3 ml-1'}>
                       +{sym}{tag.extra_price}
                     </span>
                   )}
@@ -130,19 +129,19 @@ export default function DetailsForm({
         const extrasTotal = selectedExtras.reduce((sum, t) => sum + (t.extra_price ?? 0), 0);
         const subtotal = baseTotal + extrasTotal;
         return (
-          <div className="rounded-lg border border-zinc-800 bg-zinc-800 p-3 space-y-1.5">
+          <div className="w-round border w-bd w-el w-pad-sm space-y-1.5">
             <div className="flex justify-between text-xs">
-              <span className="text-zinc-400">{basePriceLabel}</span>
-              <span className="text-zinc-300">{sym}{baseTotal.toFixed(2)}</span>
+              <span className="w-tx2">{basePriceLabel}</span>
+              <span className="w-tx-soft">{sym}{baseTotal.toFixed(2)}</span>
             </div>
             {selectedExtras.map(t => (
               <div key={t.id} className="flex justify-between text-xs">
-                <span className="text-zinc-400">{t.name}</span>
-                <span className="text-zinc-300">+{sym}{t.extra_price.toFixed(2)}</span>
+                <span className="w-tx2">{t.name}</span>
+                <span className="w-tx-soft">+{sym}{t.extra_price.toFixed(2)}</span>
               </div>
             ))}
-            <div className="flex justify-between text-sm pt-1.5 border-t border-zinc-700">
-              <span className="text-white font-medium">Subtotal</span>
+            <div className="flex justify-between text-sm pt-1.5 border-t w-bd2">
+              <span className="w-tx font-medium">Subtotal</span>
               <span className="font-medium" style={{ color: brandColor }}>{sym}{subtotal.toFixed(2)}</span>
             </div>
           </div>
@@ -198,7 +197,7 @@ export default function DetailsForm({
 
       <div>
         <label className={labelCls} htmlFor="guestPhone">
-          Phone <span className="text-zinc-600">(optional)</span>
+          Phone <span className="w-tx3">(optional)</span>
         </label>
         <input
           id="guestPhone"
@@ -217,9 +216,9 @@ export default function DetailsForm({
             type="checkbox"
             checked={state.guestWaOptIn}
             onChange={e => onChange({ guestWaOptIn: e.target.checked })}
-            className="mt-0.5 accent-white"
+            className="mt-0.5"
           />
-          <span className="text-xs text-zinc-400">
+          <span className="text-xs w-tx2">
             I&apos;d like to receive WhatsApp updates about my booking.
           </span>
         </label>
@@ -231,9 +230,9 @@ export default function DetailsForm({
             type="checkbox"
             checked={state.ageConfirmed}
             onChange={e => onChange({ ageConfirmed: e.target.checked })}
-            className="mt-0.5 accent-white"
+            className="mt-0.5"
           />
-          <span className="text-xs text-zinc-400">
+          <span className="text-xs w-tx2">
             I confirm I am at least {ageMin} years old.
           </span>
         </label>

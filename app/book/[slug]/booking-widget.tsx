@@ -52,8 +52,11 @@ interface Props {
 }
 
 export default function BookingWidget({ slug, catalog }: Props) {
-  const brandColor = catalog.settings?.brand_color ?? '#2BB673';
+  // All theme colors flow through CSS custom properties set by the layout —
+  // inline styles reference the variable so live preview overrides apply.
+  const brandColor = 'var(--w-primary)';
   const isAccountMode = catalog.tenant.client_mode === 'account';
+  const showPoweredBy = catalog.settings?.widget_show_powered_by ?? true;
 
   // Pool mode: clients book without choosing staff — skip the browse step and
   // leave staff unselected; the booking is claimed by staff after submission.
@@ -210,21 +213,21 @@ export default function BookingWidget({ slug, catalog }: Props) {
     : ['browse', 'datetime', 'details', 'confirm'];
 
   return (
-    <div className="min-h-screen bg-zinc-950 text-white px-4 py-6">
+    <div className="min-h-screen px-4 py-6">
       <div className="max-w-md mx-auto">
         {/* Header */}
         <header className="mb-6 flex items-center gap-3">
-          {catalog.settings?.logo_url ? (
+          {(catalog.settings?.widget_logo_url || catalog.settings?.logo_url) ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img
-              src={catalog.settings.logo_url}
+              src={catalog.settings.widget_logo_url || catalog.settings.logo_url || ''}
               alt={headerName}
-              className="h-9 w-9 rounded-lg object-contain bg-zinc-900 p-1 border border-zinc-800"
+              className="h-9 w-9 w-round object-contain w-sf p-1 border w-bd"
             />
           ) : null}
           <div className="min-w-0">
-            <p className="text-white text-base font-semibold truncate">{headerName}</p>
-            <p className="text-zinc-500 text-xs">Book a {bookingLabel.toLowerCase()}</p>
+            <p className="w-tx text-base font-semibold truncate">{headerName}</p>
+            <p className="w-tx3 text-xs">Book a {bookingLabel.toLowerCase()}</p>
           </div>
         </header>
 
@@ -239,7 +242,7 @@ export default function BookingWidget({ slug, catalog }: Props) {
                   key={s}
                   className="h-1 flex-1 rounded-full transition-colors"
                   style={{
-                    backgroundColor: active ? brandColor : '#27272a',
+                    backgroundColor: active ? brandColor : 'var(--w-border)',
                   }}
                 />
               );
@@ -264,9 +267,9 @@ export default function BookingWidget({ slug, catalog }: Props) {
           {state.step === 'datetime' && (selectedStaff || isPool) && (
             <>
               {selectedStaff && (
-                <div className="rounded-lg border border-zinc-800 bg-zinc-900 p-3">
-                  <p className="text-xs text-zinc-500">{catalog.terminology.staff}</p>
-                  <p className="text-sm text-white font-medium">{selectedStaff.pseudonym}</p>
+                <div className="w-card w-pad-sm">
+                  <p className="text-xs w-tx3">{catalog.terminology.staff}</p>
+                  <p className="text-sm w-tx font-medium">{selectedStaff.pseudonym}</p>
                 </div>
               )}
               <DateTimeSelect
@@ -288,7 +291,7 @@ export default function BookingWidget({ slug, catalog }: Props) {
                   <button
                     type="button"
                     onClick={() => goTo('browse')}
-                    className="px-4 py-2 bg-zinc-800 hover:bg-zinc-700 text-white text-xs rounded-lg transition-colors"
+                    className="px-4 py-2 w-btn2 text-xs w-round transition-colors"
                   >
                     Back
                   </button>
@@ -299,7 +302,7 @@ export default function BookingWidget({ slug, catalog }: Props) {
                   type="button"
                   onClick={handleProceedToDetails}
                   disabled={!state.selectedSlot}
-                  className="px-6 py-2 bg-white text-zinc-900 text-xs font-medium rounded-lg hover:bg-zinc-100 transition-colors disabled:opacity-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-white/40"
+                  className="px-6 py-2 w-btn text-xs font-medium w-round transition-opacity disabled:opacity-50 focus:outline-none w-focus"
                 >
                   Continue
                 </button>
@@ -334,7 +337,7 @@ export default function BookingWidget({ slug, catalog }: Props) {
                 <button
                   type="button"
                   onClick={() => goTo('datetime')}
-                  className="px-4 py-2 bg-zinc-800 hover:bg-zinc-700 text-white text-xs rounded-lg transition-colors"
+                  className="px-4 py-2 w-btn2 text-xs w-round transition-colors"
                 >
                   Back
                 </button>
@@ -342,7 +345,7 @@ export default function BookingWidget({ slug, catalog }: Props) {
                   <button
                     type="button"
                     onClick={handleProceedToConfirm}
-                    className="px-6 py-2 bg-white text-zinc-900 text-xs font-medium rounded-lg hover:bg-zinc-100 transition-colors"
+                    className="px-6 py-2 w-btn text-xs font-medium w-round transition-opacity"
                   >
                     Review
                   </button>
@@ -376,7 +379,7 @@ export default function BookingWidget({ slug, catalog }: Props) {
                     type="button"
                     onClick={() => goTo('details')}
                     disabled={state.submitting}
-                    className="px-4 py-2 bg-zinc-800 hover:bg-zinc-700 text-white text-xs rounded-lg transition-colors disabled:opacity-50"
+                    className="px-4 py-2 w-btn2 text-xs w-round transition-colors disabled:opacity-50"
                   >
                     Back
                   </button>
@@ -398,9 +401,11 @@ export default function BookingWidget({ slug, catalog }: Props) {
         </div>
 
         {/* Footer */}
-        <p className="text-center text-[10px] text-zinc-600 mt-8">
-          Powered by Book-IT
-        </p>
+        {showPoweredBy && (
+          <p className="text-center text-[10px] w-tx3 mt-8">
+            Powered by Book-IT
+          </p>
+        )}
       </div>
     </div>
   );

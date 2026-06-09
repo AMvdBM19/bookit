@@ -10,8 +10,9 @@ import ClientsSection from './sections/clients-section';
 import PricingSection from './sections/pricing-section';
 import SettingsSection from './sections/settings-section';
 import TemplatesSection from './sections/templates-section';
+import WidgetSection from './sections/widget-section';
 
-type Tab = 'bookings' | 'staff' | 'clients' | 'pricing' | 'templates' | 'settings';
+type Tab = 'bookings' | 'staff' | 'clients' | 'pricing' | 'widget' | 'templates' | 'settings';
 
 interface Props {
   slug: string;
@@ -20,7 +21,7 @@ interface Props {
   clientMode: 'guest' | 'account';
 }
 
-const TAB_IDS: Tab[] = ['bookings', 'staff', 'clients', 'pricing', 'templates', 'settings'];
+const TAB_IDS: Tab[] = ['bookings', 'staff', 'clients', 'pricing', 'widget', 'templates', 'settings'];
 
 function TabIcon({ id }: { id: Tab }) {
   const p = {
@@ -63,6 +64,13 @@ function TabIcon({ id }: { id: Tab }) {
           <path d="M12 1v22M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
         </svg>
       );
+    case 'widget':
+      return (
+        <svg {...p}>
+          <rect x="2" y="3" width="20" height="14" rx="2" />
+          <path d="M2 7h20M8 21h8M12 17v4" />
+        </svg>
+      );
     case 'templates':
       return (
         <svg {...p}>
@@ -101,6 +109,8 @@ export default function AgentDashboard({
         return terminology.client_plural;
       case 'pricing':
         return 'Pricing';
+      case 'widget':
+        return 'Widget';
       case 'templates':
         return 'Templates';
       case 'settings':
@@ -214,6 +224,7 @@ export default function AgentDashboard({
           {tab === 'staff' && <StaffSection slug={slug} />}
           {tab === 'clients' && <ClientsSection slug={slug} clientMode={clientMode} />}
           {tab === 'pricing' && <PricingSection slug={slug} />}
+          {tab === 'widget' && <WidgetSection slug={slug} />}
           {tab === 'templates' && <TemplatesSection slug={slug} />}
           {tab === 'settings' && <SettingsSection slug={slug} />}
         </div>

@@ -25,6 +25,21 @@ const EDITABLE_FIELDS = [
   'tax_period',
   'no_show_revenue_policy',
   'no_show_partial_pct',
+  // Widget customizer (Phase 12A) — always editable, never lockable.
+  'widget_primary_color',
+  'widget_accent_color',
+  'widget_bg',
+  'widget_bg_custom',
+  'widget_font_pair',
+  'widget_border_radius',
+  'widget_card_style',
+  'widget_spacing',
+  'widget_text_color',
+  'widget_text_muted',
+  'widget_surface_color',
+  'widget_border_color',
+  'widget_show_powered_by',
+  'widget_logo_url',
 ] as const;
 
 type EditableField = (typeof EDITABLE_FIELDS)[number];

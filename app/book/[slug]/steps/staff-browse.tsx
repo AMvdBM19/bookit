@@ -95,8 +95,8 @@ export default function StaffBrowse({
   const sym = CURRENCY_SYMBOLS[currency] ?? currency;
   if (staff.length === 0) {
     return (
-      <div className="rounded-lg border border-zinc-800 bg-zinc-900 p-6 text-center">
-        <p className="text-zinc-400 text-sm">
+      <div className="w-card w-pad-lg text-center">
+        <p className="w-tx2 text-sm">
           No {staffPluralLower} are currently available. Please check back later.
         </p>
       </div>
@@ -114,7 +114,7 @@ export default function StaffBrowse({
             key={s.id}
             type="button"
             onClick={() => onSelect(s.id)}
-            className="w-full text-left rounded-lg border border-zinc-800 bg-zinc-900 p-4 transition-all hover:border-zinc-600 hover:shadow-md focus:outline-none focus-visible:ring-2 focus-visible:ring-white/40"
+            className="w-full text-left w-card w-pad transition-all w-hbd hover:shadow-md focus:outline-none w-focus"
           >
             <div className="flex items-start gap-3">
               {photo ? (
@@ -122,7 +122,7 @@ export default function StaffBrowse({
                 <img
                   src={photo}
                   alt={s.pseudonym}
-                  className="w-14 h-14 rounded-full object-cover border border-zinc-700 shrink-0"
+                  className="w-14 h-14 rounded-full object-cover border w-bd2 shrink-0"
                 />
               ) : (
                 <div
@@ -134,9 +134,9 @@ export default function StaffBrowse({
               )}
 
               <div className="flex-1 min-w-0">
-                <p className="text-white text-sm font-semibold">{s.pseudonym}</p>
+                <p className="w-tx text-sm font-semibold">{s.pseudonym}</p>
                 {s.bio && (
-                  <p className="text-zinc-400 text-xs mt-1 line-clamp-2">{s.bio}</p>
+                  <p className="w-tx2 text-xs mt-1 line-clamp-2">{s.bio}</p>
                 )}
 
                 {s.tags.length > 0 && (
@@ -144,16 +144,16 @@ export default function StaffBrowse({
                     {s.tags.slice(0, 4).map(t => (
                       <span
                         key={t.id}
-                        className="bg-zinc-800 border border-zinc-700 rounded-full px-2 py-0.5 text-[11px] text-zinc-300"
+                        className="w-el border w-bd2 rounded-full px-2 py-0.5 text-[11px] w-tx-soft"
                       >
                         {t.name}
                         {showPrice && t.extra_price > 0 && (
-                          <span className="text-zinc-500 ml-1">+{sym}{t.extra_price}</span>
+                          <span className="w-tx3 ml-1">+{sym}{t.extra_price}</span>
                         )}
                       </span>
                     ))}
                     {s.tags.length > 4 && (
-                      <span className="text-[11px] text-zinc-500 px-1">
+                      <span className="text-[11px] w-tx3 px-1">
                         +{s.tags.length - 4}
                       </span>
                     )}
@@ -161,19 +161,19 @@ export default function StaffBrowse({
                 )}
 
                 {languages.length > 0 && (
-                  <p className="text-[10px] text-zinc-500 mt-2">
+                  <p className="text-[10px] w-tx3 mt-2">
                     Speaks: {languages.join(', ')}
                   </p>
                 )}
 
                 {socials.length > 0 && (
-                  <div className="flex gap-1.5 mt-2 text-zinc-400">
+                  <div className="flex gap-1.5 mt-2 w-tx2">
                     {socials.map(([key]) => {
                       const Icon = SOCIAL_ICONS[key];
                       return (
                         <span
                           key={key}
-                          className="inline-flex items-center border border-zinc-700 rounded px-1.5 py-0.5"
+                          className="inline-flex items-center border w-bd2 rounded px-1.5 py-0.5"
                           aria-label={key}
                         >
                           {Icon ? <Icon /> : <span className="text-[10px]">{key}</span>}

@@ -44,6 +44,7 @@ lib/cron/                  — node-cron jobs (reminders)
 lib/auth/super-admin.ts  — Bearer key validation for super-admin routes
 app/book/[slug]/         — public booking widget + APIs (no auth)
 app/book/[slug]/api/     — catalog, availability, book endpoints
+lib/widget-theme.ts      — widget theming (WidgetTheme, PRESETS, themeToVars/CSS, settings mapping); widget renders from --w-* CSS vars set in app/book/[slug]/layout.tsx, live-preview via postMessage 'bookit:theme-override'
 app/api/[slug]/staff/    — staff creation API (agent-only)
 lib/whatsapp/            — WA provider abstraction (Twilio + Meta)
 supabase/migrations/   — DB schema
@@ -91,6 +92,7 @@ Phase 10C-2: ✅ Staff login fix (hard nav), time format fix (HH:MM), base_price
 Phase 11A: ✅ Booking status lifecycle (source column, completion/no-show API, booking_completion_by flag, UI buttons)
 Phase 11B: ✅ Manual booking creation (create API, client search API, modal UI, off-grid manual bookings)
 Phase 11C: ✅ Pool booking mode (booking_mode flag, wizard step, pool availability, widget flow, staff claim, admin assign)
+Phase 12A: ✅ Widget customizer (CSS variable theming, live preview, 8 presets, embed code export, new Widget dashboard tab)
 
 ## Deposits
 Widget shows a deposit notice when deposits_supported flag is true AND deposit_pct>0 AND duration>deposit_required_above_minutes.

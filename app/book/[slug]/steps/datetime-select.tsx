@@ -104,7 +104,7 @@ export default function DateTimeSelect({
   return (
     <div className="space-y-4">
       <div>
-        <p className="text-xs text-zinc-400 mb-2">Choose a date</p>
+        <p className="text-xs w-tx2 mb-2">Choose a date</p>
         <div className="flex gap-2 overflow-x-auto pb-2 -mx-1 px-1 snap-x snap-mandatory">
           {dateChips.map(d => {
             const isSelected = d.value === selectedDate;
@@ -114,10 +114,10 @@ export default function DateTimeSelect({
                 type="button"
                 onClick={() => onSelectDate(d.value)}
                 aria-pressed={isSelected}
-                className={`shrink-0 snap-start rounded-lg border px-3 py-2 text-xs transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-white/40 ${
+                className={`shrink-0 snap-start w-round border px-3 py-2 text-xs transition-colors focus:outline-none w-focus ${
                   isSelected
                     ? 'text-white border-transparent'
-                    : 'text-zinc-300 border-zinc-800 bg-zinc-900 hover:border-zinc-600'
+                    : 'w-tx-soft w-bd w-sf w-hbd'
                 }`}
                 style={isSelected ? { backgroundColor: brandColor } : undefined}
               >
@@ -129,17 +129,17 @@ export default function DateTimeSelect({
       </div>
 
       {!selectedDate && (
-        <p className="text-xs text-zinc-600 italic">
+        <p className="text-xs w-tx3 italic">
           ← Select a date to see available times
         </p>
       )}
 
       {selectedDate && (
         <div>
-          <p className="text-xs text-zinc-400 mb-2">Choose a time</p>
+          <p className="text-xs w-tx2 mb-2">Choose a time</p>
 
           {loading && (
-            <p className="text-xs text-zinc-500 italic">Loading slots…</p>
+            <p className="text-xs w-tx3 italic">Loading slots…</p>
           )}
 
           {!loading && error && (
@@ -147,7 +147,7 @@ export default function DateTimeSelect({
           )}
 
           {!loading && !error && slots.length === 0 && (
-            <p className="text-xs text-zinc-500 italic">
+            <p className="text-xs w-tx3 italic">
               {reason ?? 'No availability on this date. Try another day.'}
             </p>
           )}
@@ -163,10 +163,10 @@ export default function DateTimeSelect({
                     type="button"
                     onClick={() => onSelectSlot(slot)}
                     aria-pressed={isSelected}
-                    className={`rounded-lg border py-2.5 text-sm transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-white/40 ${
+                    className={`w-round border py-2.5 text-sm transition-colors focus:outline-none w-focus ${
                       isSelected
                         ? 'text-white border-transparent'
-                        : 'text-zinc-300 border-zinc-800 bg-zinc-900 hover:border-zinc-600'
+                        : 'w-tx-soft w-bd w-sf w-hbd'
                     }`}
                     style={isSelected ? { backgroundColor: brandColor } : undefined}
                   >
