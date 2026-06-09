@@ -39,6 +39,9 @@ export function validateFeatureFlags(value: unknown): string | null {
   if (typeof value.require_booking_notes !== 'boolean') return 'feature_flags.require_booking_notes must be a boolean';
   if (typeof value.booking_notes_label !== 'string') return 'feature_flags.booking_notes_label must be a string';
   if (typeof value.booking_notes_placeholder !== 'string') return 'feature_flags.booking_notes_placeholder must be a string';
+  if (value.booking_completion_by !== 'admin_only' && value.booking_completion_by !== 'staff_and_admin') {
+    return 'feature_flags.booking_completion_by must be "admin_only" or "staff_and_admin"';
+  }
   return null;
 }
 

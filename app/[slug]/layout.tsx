@@ -36,8 +36,8 @@ export default async function TenantLayout({
     .single();
 
   const terminology = { ...DEFAULT_TERMINOLOGY, ...(tenantConfig?.terminology as Partial<typeof DEFAULT_TERMINOLOGY> | undefined) };
-  const featureFlags = tenantConfig?.feature_flags ?? DEFAULT_FEATURE_FLAGS;
-  const complianceFlags = tenantConfig?.compliance_flags ?? DEFAULT_COMPLIANCE_FLAGS;
+  const featureFlags = { ...DEFAULT_FEATURE_FLAGS, ...(tenantConfig?.feature_flags as Partial<typeof DEFAULT_FEATURE_FLAGS> | undefined) };
+  const complianceFlags = { ...DEFAULT_COMPLIANCE_FLAGS, ...(tenantConfig?.compliance_flags as Partial<typeof DEFAULT_COMPLIANCE_FLAGS> | undefined) };
   const sourceTemplateSlug = tenantConfig?.source_template_slug ?? null;
 
   return (

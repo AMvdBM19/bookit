@@ -120,6 +120,7 @@ export interface Booking {
   client_id: string | null;
   guest_client_id: string | null;
   booking_source: 'client_request' | 'manual';
+  source: 'widget' | 'manual';
   slot_date: string;
   slot_start: string;
   slot_end: string;

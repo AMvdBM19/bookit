@@ -59,6 +59,12 @@ function buildGoogleCalUrl(b: Booking, bookingLabel: string): string {
   return `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${title}&dates=${start}/${end}&details=${details}`;
 }
 
+function isActionable(b: Booking): boolean {
+  const now = new Date();
+  const endDateTime = new Date(`${b.slot_date}T${b.slot_end}`);
+  return b.status === 'confirmed' && endDateTime < now;
+}
+
 function formatRelative(iso: string): string {
   const ms = Date.now() - new Date(iso).getTime();
   const mins = Math.floor(ms / 60000);
@@ -141,6 +147,25 @@ export default function BookingsSection({ slug }: { slug: string }) {
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
         alert(data.error ?? 'Failed to accept');
+        return;
+      }
+      await reload();
+    } finally {
+      setActionState(prev => ({ ...prev, [id]: 'idle' }));
+    }
+  }
+
+  async function handleStatus(id: string, status: 'completed' | 'no_show') {
+    setActionState(prev => ({ ...prev, [id]: 'busy' }));
+    try {
+      const res = await fetch(`/api/${slug}/bookings/${id}/status`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status }),
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        alert(data.error ?? 'Failed to update');
         return;
       }
       await reload();
@@ -327,18 +352,20 @@ export default function BookingsSection({ slug }: { slug: string }) {
         ) : (
           <div className={tableWrap}>
             <div className="overflow-x-auto">
-              <table className="w-full text-sm min-w-[560px]">
+              <table className="w-full text-sm min-w-[680px]">
                 <thead className={theadCls}>
                   <tr className={thCls}>
                     <th className="px-3 py-2">{terminology.staff}</th>
                     <th className="px-3 py-2">{terminology.client}</th>
                     <th className="px-3 py-2">Date</th>
                     <th className="px-3 py-2">Time</th>
-                    <th className="px-3 py-2 w-8"></th>
+                    <th className="px-3 py-2 text-right">Actions</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-border">
-                  {upcoming.map(b => (
+                  {upcoming.map(b => {
+                    const busy = actionState[b.id] === 'busy';
+                    return (
                     <tr key={b.id} className="hover:bg-elevated">
                       <td className="px-3 py-3 text-fg">{staffNameOf(b)}</td>
                       <td className="px-3 py-3 text-fg">{clientNameOf(b)}</td>
@@ -347,19 +374,42 @@ export default function BookingsSection({ slug }: { slug: string }) {
                         {b.slot_start.slice(0, 5)}–{b.slot_end.slice(0, 5)}
                       </td>
                       <td className="px-3 py-3">
-                        <a
-                          href={buildGoogleCalUrl(b, terminology.booking)}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          title="Add to Calendar"
-                          aria-label="Add to Calendar"
-                          className="text-fg-muted hover:text-fg transition-colors inline-flex p-1 rounded focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                        >
-                          <CalendarIcon />
-                        </a>
+                        <div className="flex items-center justify-end gap-1">
+                          {isActionable(b) && (
+                            <>
+                              <button
+                                type="button"
+                                onClick={() => handleStatus(b.id, 'completed')}
+                                disabled={busy}
+                                className="text-xs px-2 py-1 bg-emerald-600 hover:bg-emerald-500 text-white rounded disabled:opacity-50"
+                              >
+                                Mark completed
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => handleStatus(b.id, 'no_show')}
+                                disabled={busy}
+                                className="text-xs px-2 py-1 bg-elevated hover:bg-sunken text-fg-muted rounded disabled:opacity-50"
+                              >
+                                Mark as no-show
+                              </button>
+                            </>
+                          )}
+                          <a
+                            href={buildGoogleCalUrl(b, terminology.booking)}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            title="Add to Calendar"
+                            aria-label="Add to Calendar"
+                            className="text-fg-muted hover:text-fg transition-colors inline-flex p-1 rounded focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                          >
+                            <CalendarIcon />
+                          </a>
+                        </div>
                       </td>
                     </tr>
-                  ))}
+                    );
+                  })}
                 </tbody>
               </table>
             </div>

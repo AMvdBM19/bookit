@@ -12,11 +12,17 @@ interface Props {
     slot_end: string;
     duration_minutes: number;
     booking_notes: string | null;
+    status?: string;
     tags: string[];
     clientName: string;
   };
   showActions: boolean;
+  canComplete?: boolean;
   bookingLabel: string;
+}
+
+function isPastTime(slotDate: string, slotEnd: string): boolean {
+  return new Date(`${slotDate}T${slotEnd}`) < new Date();
 }
 
 function formatDate(dateStr: string): string {
@@ -51,7 +57,7 @@ function CalendarIcon() {
   );
 }
 
-export default function StaffBookingCard({ slug, booking, showActions, bookingLabel }: Props) {
+export default function StaffBookingCard({ slug, booking, showActions, canComplete = false, bookingLabel }: Props) {
   const router = useRouter();
   const [accepting, setAccepting] = useState(false);
   const [declining, setDeclining] = useState(false);
@@ -60,6 +66,35 @@ export default function StaffBookingCard({ slug, booking, showActions, bookingLa
   const [error, setError] = useState('');
   const [calendarUrl, setCalendarUrl] = useState<string | null>(null);
   const [accepted, setAccepted] = useState(false);
+  const [completing, setCompleting] = useState(false);
+
+  const showCompletion =
+    !showActions &&
+    canComplete &&
+    booking.status === 'confirmed' &&
+    isPastTime(booking.slot_date, booking.slot_end);
+
+  async function handleStatus(status: 'completed' | 'no_show') {
+    setCompleting(true);
+    setError('');
+    try {
+      const res = await fetch(`/api/${slug}/bookings/${booking.id}/status`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setError(data.error ?? 'Failed to update');
+        return;
+      }
+      router.refresh();
+    } catch {
+      setError('Network error');
+    } finally {
+      setCompleting(false);
+    }
+  }
 
   async function handleAccept() {
     setAccepting(true);
@@ -169,6 +204,30 @@ export default function StaffBookingCard({ slug, booking, showActions, bookingLa
 
       {booking.booking_notes && (
         <p className="text-xs text-fg-subtle line-clamp-2">{booking.booking_notes}</p>
+      )}
+
+      {showCompletion && (
+        <div className="space-y-2 pt-1">
+          <div className="flex gap-2">
+            <button
+              type="button"
+              onClick={() => handleStatus('completed')}
+              disabled={completing}
+              className="px-4 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-medium rounded-lg transition-colors disabled:opacity-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            >
+              {completing ? 'Saving...' : 'Mark completed'}
+            </button>
+            <button
+              type="button"
+              onClick={() => handleStatus('no_show')}
+              disabled={completing}
+              className="px-4 py-1.5 bg-elevated hover:bg-sunken text-fg-muted text-xs rounded-lg transition-colors disabled:opacity-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            >
+              Mark as no-show
+            </button>
+          </div>
+          {error && <p className="text-red-500 text-xs">{error}</p>}
+        </div>
       )}
 
       {showActions && (

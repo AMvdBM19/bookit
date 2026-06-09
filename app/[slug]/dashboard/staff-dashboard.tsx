@@ -34,6 +34,7 @@ function toCardBooking(b: BookingRow) {
     slot_end: b.slot_end,
     duration_minutes: b.duration_minutes,
     booking_notes: b.booking_notes,
+    status: b.status,
     tags: b.booking_service_tags?.map(t => t.tag_name) ?? [],
     clientName: getClientName(b),
   };
@@ -81,8 +82,9 @@ export default function StaffDashboard({
   tenantTags = [],
 }: Props) {
   const router = useRouter();
-  const { terminology } = useTenantConfig();
+  const { terminology, featureFlags } = useTenantConfig();
   const bookingLabel = terminology.booking;
+  const canComplete = featureFlags.booking_completion_by === 'staff_and_admin';
 
   async function handleSignOut() {
     const supabase = createClient();
@@ -169,6 +171,7 @@ export default function StaffDashboard({
                   slug={slug}
                   booking={toCardBooking(b)}
                   showActions={false}
+                  canComplete={canComplete}
                   bookingLabel={bookingLabel}
                 />
               ))}
