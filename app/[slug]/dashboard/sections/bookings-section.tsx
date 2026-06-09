@@ -119,6 +119,8 @@ export default function BookingsSection({ slug }: { slug: string }) {
   const [error, setError] = useState<string | null>(null);
   const [actionState, setActionState] = useState<Record<string, 'idle' | 'busy'>>({});
   const [declineMode, setDeclineMode] = useState<Record<string, string>>({});
+  const [assignChoice, setAssignChoice] = useState<Record<string, string>>({});
+  const [staffOptions, setStaffOptions] = useState<Array<{ id: string; pseudonym: string }>>([]);
   const [showCreate, setShowCreate] = useState(false);
 
   const reload = useCallback(async () => {
@@ -142,6 +144,50 @@ export default function BookingsSection({ slug }: { slug: string }) {
   useEffect(() => {
     reload();
   }, [reload]);
+
+  // Staff options for assigning unassigned (pool) bookings.
+  useEffect(() => {
+    let cancelled = false;
+    fetch(`/api/${slug}/staff`)
+      .then(res => res.json())
+      .then(data => {
+        if (cancelled) return;
+        const active = (data.staff ?? []).filter(
+          (s: { status: string }) => s.status === 'active'
+        );
+        setStaffOptions(active.map((s: { id: string; pseudonym: string }) => ({ id: s.id, pseudonym: s.pseudonym })));
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [slug]);
+
+  async function handleAssign(id: string) {
+    const staffId = assignChoice[id];
+    if (!staffId) return;
+    setActionState(prev => ({ ...prev, [id]: 'busy' }));
+    try {
+      const res = await fetch(`/api/${slug}/bookings/${id}/assign`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ staff_id: staffId }),
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        alert(data.error ?? 'Failed to assign');
+        return;
+      }
+      setAssignChoice(prev => {
+        const next = { ...prev };
+        delete next[id];
+        return next;
+      });
+      await reload();
+    } finally {
+      setActionState(prev => ({ ...prev, [id]: 'idle' }));
+    }
+  }
 
   async function handleAccept(id: string) {
     setActionState(prev => ({ ...prev, [id]: 'busy' }));
@@ -328,6 +374,41 @@ export default function BookingsSection({ slug }: { slug: string }) {
                                 className="text-xs px-2 py-1 text-fg-muted hover:bg-elevated rounded"
                               >
                                 ✕
+                              </button>
+                            </div>
+                          ) : !pickOne(b.staff) ? (
+                            <div className="flex justify-end items-center gap-1">
+                              <select
+                                value={assignChoice[b.id] ?? ''}
+                                onChange={e =>
+                                  setAssignChoice(prev => ({ ...prev, [b.id]: e.target.value }))
+                                }
+                                className="text-xs bg-elevated border border-border rounded px-2 py-1 text-fg focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                              >
+                                <option value="">Assign to…</option>
+                                {staffOptions.map(s => (
+                                  <option key={s.id} value={s.id}>
+                                    {s.pseudonym}
+                                  </option>
+                                ))}
+                              </select>
+                              <button
+                                type="button"
+                                onClick={() => handleAssign(b.id)}
+                                disabled={busy || !assignChoice[b.id]}
+                                className="text-xs px-2 py-1 bg-emerald-600 hover:bg-emerald-500 text-white rounded disabled:opacity-50"
+                              >
+                                Assign
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  setDeclineMode(prev => ({ ...prev, [b.id]: '' }))
+                                }
+                                disabled={busy}
+                                className="text-xs px-2 py-1 bg-elevated hover:bg-sunken text-fg rounded disabled:opacity-50"
+                              >
+                                Decline
                               </button>
                             </div>
                           ) : (

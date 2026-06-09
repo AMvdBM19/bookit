@@ -8,6 +8,7 @@ import StepTemplatePicker from './steps/step-template-picker';
 import StepIdentity from './steps/step-identity';
 import StepBranding from './steps/step-branding';
 import StepBookingRules from './steps/step-booking-rules';
+import StepBookingMode from './steps/step-booking-mode';
 import StepFinancial from './steps/step-financial';
 import StepCompliance from './steps/step-compliance';
 import StepServices from './steps/step-services';
@@ -22,6 +23,7 @@ export interface WizardState {
   default_slot_minutes: number;
   min_lead_time_hours: number;
   booking_confirm_mode: 'staff_must_accept' | 'auto_confirm';
+  booking_mode: 'staff_select' | 'pool';
   base_rate_per_30min: number;
   staff_payout_pct: number;
   currency: string;
@@ -47,6 +49,7 @@ function buildDefaultState(
     default_slot_minutes: 30,
     min_lead_time_hours: 2,
     booking_confirm_mode: 'staff_must_accept',
+    booking_mode: featureFlags.booking_mode ?? 'staff_select',
     base_rate_per_30min: 60,
     staff_payout_pct: 70,
     currency: 'EUR',
@@ -64,6 +67,7 @@ type StepKey =
   | 'identity'
   | 'branding'
   | 'booking'
+  | 'booking_mode'
   | 'financial'
   | 'compliance'
   | 'services'
@@ -79,6 +83,8 @@ function stepLabel(key: StepKey, terminology: Terminology): string {
       return 'Branding';
     case 'booking':
       return 'Booking Rules';
+    case 'booking_mode':
+      return `${terminology.staff} Selection`;
     case 'financial':
       return 'Financial';
     case 'compliance':
@@ -142,7 +148,7 @@ export default function WizardShell({ slug, tenantName, initialServiceTags }: Pr
   const steps = useMemo<StepKey[]>(() => {
     const s: StepKey[] = [];
     if (!sourceTemplateSlug) s.push('template');
-    s.push('identity', 'branding', 'booking', 'financial');
+    s.push('identity', 'branding', 'booking', 'booking_mode', 'financial');
 
     const hasAnyCompliance = Object.values(complianceFlags).some(v => v === true);
     const hasAgeGate = featureFlags.show_age_gate_step;
@@ -249,6 +255,7 @@ export default function WizardShell({ slug, tenantName, initialServiceTags }: Pr
         {stepKey === 'identity' && <StepIdentity {...stepProps} />}
         {stepKey === 'branding' && <StepBranding {...stepProps} />}
         {stepKey === 'booking' && <StepBookingRules {...stepProps} />}
+        {stepKey === 'booking_mode' && <StepBookingMode {...stepProps} />}
         {stepKey === 'financial' && <StepFinancial {...stepProps} />}
         {stepKey === 'compliance' && <StepCompliance {...stepProps} />}
         {stepKey === 'services' && <StepServices {...stepProps} />}

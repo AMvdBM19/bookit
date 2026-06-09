@@ -90,6 +90,7 @@ Phase 10C: ✅ Catalog caching fix, deposits feature flag, logout, calendar butt
 Phase 10C-2: ✅ Staff login fix (hard nav), time format fix (HH:MM), base_price_label terminology, root slug redirect
 Phase 11A: ✅ Booking status lifecycle (source column, completion/no-show API, booking_completion_by flag, UI buttons)
 Phase 11B: ✅ Manual booking creation (create API, client search API, modal UI, off-grid manual bookings)
+Phase 11C: ✅ Pool booking mode (booking_mode flag, wizard step, pool availability, widget flow, staff claim, admin assign)
 
 ## Deposits
 Widget shows a deposit notice when deposits_supported flag is true AND deposit_pct>0 AND duration>deposit_required_above_minutes.

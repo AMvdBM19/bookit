@@ -9,7 +9,9 @@ interface Slot {
 
 interface Props {
   slug: string;
-  staffId: string;
+  staffId: string | null;
+  poolMode?: boolean;
+  poolTagIds?: string[];
   selectedDate: string | null;
   selectedSlot: Slot | null;
   onSelectDate: (date: string) => void;
@@ -46,6 +48,8 @@ function buildDateChips(): Array<{ value: string; label: string }> {
 export default function DateTimeSelect({
   slug,
   staffId,
+  poolMode = false,
+  poolTagIds = [],
   selectedDate,
   selectedSlot,
   onSelectDate,
@@ -58,8 +62,11 @@ export default function DateTimeSelect({
   const [reason, setReason] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
+  // Stable key so the effect doesn't re-fire on every render from a fresh array.
+  const poolTagKey = poolTagIds.join(',');
+
   useEffect(() => {
-    if (!selectedDate) {
+    if (!selectedDate || (!poolMode && !staffId)) {
       setSlots([]);
       setReason(null);
       return;
@@ -70,7 +77,11 @@ export default function DateTimeSelect({
     setError(null);
     setReason(null);
 
-    fetch(`/book/${slug}/api/availability?staff_id=${staffId}&date=${selectedDate}`)
+    const url = poolMode
+      ? `/book/${slug}/api/pool-availability?date=${selectedDate}${poolTagKey ? `&tag_ids=${poolTagKey}` : ''}`
+      : `/book/${slug}/api/availability?staff_id=${staffId}&date=${selectedDate}`;
+
+    fetch(url)
       .then(res => res.json())
       .then((data: AvailabilityResponse) => {
         if (cancelled) return;
@@ -88,7 +99,7 @@ export default function DateTimeSelect({
     return () => {
       cancelled = true;
     };
-  }, [slug, staffId, selectedDate]);
+  }, [slug, staffId, selectedDate, poolMode, poolTagKey]);
 
   return (
     <div className="space-y-4">

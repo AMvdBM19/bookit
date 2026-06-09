@@ -18,6 +18,7 @@ interface Props {
   };
   showActions: boolean;
   canComplete?: boolean;
+  claimable?: boolean;
   bookingLabel: string;
 }
 
@@ -57,7 +58,7 @@ function CalendarIcon() {
   );
 }
 
-export default function StaffBookingCard({ slug, booking, showActions, canComplete = false, bookingLabel }: Props) {
+export default function StaffBookingCard({ slug, booking, showActions, canComplete = false, claimable = false, bookingLabel }: Props) {
   const router = useRouter();
   const [accepting, setAccepting] = useState(false);
   const [declining, setDeclining] = useState(false);
@@ -93,6 +94,26 @@ export default function StaffBookingCard({ slug, booking, showActions, canComple
       setError('Network error');
     } finally {
       setCompleting(false);
+    }
+  }
+
+  async function handleClaim() {
+    setAccepting(true);
+    setError('');
+    try {
+      const res = await fetch(`/api/${slug}/bookings/${booking.id}/claim`, { method: 'POST' });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setError(data.error ?? 'Failed to accept');
+        return;
+      }
+      setAccepted(true);
+      setCalendarUrl(buildGoogleCalUrl(booking, bookingLabel));
+      router.refresh();
+    } catch {
+      setError('Network error');
+    } finally {
+      setAccepting(false);
     }
   }
 
@@ -226,6 +247,20 @@ export default function StaffBookingCard({ slug, booking, showActions, canComple
               Mark as no-show
             </button>
           </div>
+          {error && <p className="text-red-500 text-xs">{error}</p>}
+        </div>
+      )}
+
+      {claimable && (
+        <div className="space-y-2 pt-1">
+          <button
+            type="button"
+            onClick={handleClaim}
+            disabled={accepting}
+            className="px-4 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-medium rounded-lg transition-colors disabled:opacity-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          >
+            {accepting ? 'Accepting...' : 'Accept'}
+          </button>
           {error && <p className="text-red-500 text-xs">{error}</p>}
         </div>
       )}

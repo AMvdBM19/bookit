@@ -42,6 +42,9 @@ export function validateFeatureFlags(value: unknown): string | null {
   if (value.booking_completion_by !== 'admin_only' && value.booking_completion_by !== 'staff_and_admin') {
     return 'feature_flags.booking_completion_by must be "admin_only" or "staff_and_admin"';
   }
+  if (value.booking_mode !== 'staff_select' && value.booking_mode !== 'pool') {
+    return 'feature_flags.booking_mode must be "staff_select" or "pool"';
+  }
   return null;
 }
 

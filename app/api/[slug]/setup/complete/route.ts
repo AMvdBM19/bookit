@@ -61,6 +61,34 @@ export async function POST(
     return NextResponse.json({ error: 'Failed to save settings' }, { status: 500 });
   }
 
+  // 1b. Persist the chosen booking_mode into tenant_config feature_flags
+  const bookingMode =
+    body.booking_mode === 'pool' || body.booking_mode === 'staff_select'
+      ? body.booking_mode
+      : 'staff_select';
+
+  const { data: existingConfig } = await supabase
+    .from('tenant_config')
+    .select('feature_flags')
+    .eq('tenant_id', tenantId)
+    .maybeSingle();
+
+  if (existingConfig) {
+    const updatedFlags = {
+      ...(existingConfig.feature_flags as Record<string, unknown>),
+      booking_mode: bookingMode,
+    };
+    const { error: configError } = await supabase
+      .from('tenant_config')
+      .update({ feature_flags: updatedFlags, updated_at: new Date().toISOString() })
+      .eq('tenant_id', tenantId);
+
+    if (configError) {
+      console.error('tenant_config booking_mode update error:', configError);
+      return NextResponse.json({ error: 'Failed to save booking mode' }, { status: 500 });
+    }
+  }
+
   // 2. Update tenants with identity fields
   const tenantUpdate: Record<string, unknown> = {};
   if (body.kvk_number) tenantUpdate.kvk_number = body.kvk_number;

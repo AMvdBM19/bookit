@@ -13,7 +13,7 @@ const CURRENCY_SYMBOLS: Record<string, string> = {
 };
 
 interface Props {
-  staff: CatalogStaff;
+  staff: CatalogStaff | null;
   date: string;
   slot: { start: string; end: string };
   selectedTags: Tag[];
@@ -87,7 +87,7 @@ export default function BookingConfirm({
       <section className="rounded-lg border border-zinc-800 bg-zinc-900 p-4 space-y-2">
         <div className="flex justify-between gap-4">
           <span className="text-xs text-zinc-500">With</span>
-          <span className="text-xs text-white">{staff.pseudonym}</span>
+          <span className="text-xs text-white">{staff?.pseudonym ?? 'To be assigned'}</span>
         </div>
         <div className="flex justify-between gap-4">
           <span className="text-xs text-zinc-500">Date</span>

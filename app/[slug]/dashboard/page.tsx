@@ -75,6 +75,20 @@ export default async function DashboardPage({
       .lte('slot_date', weekFromNow)
       .order('slot_date', { ascending: true });
 
+    // Unassigned pool bookings — staff can claim those matching their tags.
+    const { data: unassignedRows } = await supabase
+      .from('bookings')
+      .select(`
+        id, slot_date, slot_start, slot_end, duration_minutes, booking_notes, status,
+        clients(display_name),
+        guest_clients(name),
+        booking_service_tags(tag_name, tag_id)
+      `)
+      .eq('tenant_id', user.tenantId)
+      .is('staff_id', null)
+      .eq('status', 'pending_staff')
+      .order('slot_date', { ascending: true });
+
     const tagJoins = staff?.staff_service_tags as unknown as Array<{
       service_tags: { id: string; name: string } | Array<{ id: string; name: string }> | null;
     }> ?? [];
@@ -90,6 +104,16 @@ export default async function DashboardPage({
         return tag?.name ?? null;
       })
       .filter((n): n is string => n !== null);
+
+    // Only offer bookings this staff member can serve: untagged bookings are
+    // open to everyone; tagged ones need at least one overlapping tag.
+    const staffTagIdSet = new Set(staffTagIds);
+    const unassignedBookings = (unassignedRows ?? []).filter(b => {
+      const tagIds = (b.booking_service_tags ?? [])
+        .map(t => t.tag_id as string | null)
+        .filter((id): id is string => id !== null);
+      return tagIds.length === 0 || tagIds.some(id => staffTagIdSet.has(id));
+    });
 
     const rawSchedule = (schedule ?? []).map(s => ({
       day_of_week: s.day_of_week,
@@ -110,6 +134,7 @@ export default async function DashboardPage({
         tenantName={tenant?.name ?? slug}
         pendingBookings={pendingBookings ?? []}
         upcomingBookings={upcomingBookings ?? []}
+        unassignedBookings={unassignedBookings}
         staffProfile={{
           pseudonym: staff?.pseudonym ?? 'Staff',
           bio: staff?.bio ?? null,

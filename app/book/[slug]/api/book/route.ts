@@ -1,10 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase/server';
 import { checkAvailability } from '@/lib/availability/check';
+import { checkPoolAvailability } from '@/lib/availability/pool';
 import { calculatePricing } from '@/lib/pricing/calculate';
 import type { FeatureFlags } from '@/lib/types/tenant-config';
 import { DEFAULT_FEATURE_FLAGS } from '@/lib/types/tenant-config';
-import { notifyBookingRequest, sendWhatsApp } from '@/lib/notifications/dispatch';
+import { notifyBookingRequest, sendWhatsApp, createNotification } from '@/lib/notifications/dispatch';
 import { checkRateLimit } from '@/lib/rate-limit/book';
 
 function stripHtml(input: string): string {
@@ -51,9 +52,9 @@ export async function POST(
     return NextResponse.json({ error: 'Invalid body' }, { status: 400 });
   }
 
-  if (!body.staff_id || !body.slot_date || !body.slot_start || !body.slot_end) {
+  if (!body.slot_date || !body.slot_start || !body.slot_end) {
     return NextResponse.json(
-      { error: 'staff_id, slot_date, slot_start, slot_end are required' },
+      { error: 'slot_date, slot_start, slot_end are required' },
       { status: 400 }
     );
   }
@@ -84,6 +85,13 @@ export async function POST(
 
   const featureFlags = (tenantConfig?.feature_flags as FeatureFlags | undefined) ?? DEFAULT_FEATURE_FLAGS;
 
+  // Pool mode: clients book without choosing staff; the booking lands
+  // unassigned. In staff_select mode a staff_id is mandatory.
+  const isPoolBooking = featureFlags.booking_mode === 'pool' && !body.staff_id;
+  if (!body.staff_id && featureFlags.booking_mode !== 'pool') {
+    return NextResponse.json({ error: 'staff_id is required' }, { status: 400 });
+  }
+
   if (settings?.require_age_confirm && !body.age_confirmed) {
     return NextResponse.json({ error: 'Age confirmation required' }, { status: 400 });
   }
@@ -95,32 +103,54 @@ export async function POST(
     );
   }
 
-  const { data: staff } = await supabase
-    .from('staff')
-    .select('id, pseudonym')
-    .eq('id', body.staff_id)
-    .eq('tenant_id', tenant.id)
-    .eq('status', 'active')
-    .single();
+  let staff: { id: string; pseudonym: string } | null = null;
 
-  if (!staff) {
-    return NextResponse.json({ error: 'Staff not available' }, { status: 400 });
-  }
+  if (body.staff_id) {
+    const { data: staffRow } = await supabase
+      .from('staff')
+      .select('id, pseudonym')
+      .eq('id', body.staff_id)
+      .eq('tenant_id', tenant.id)
+      .eq('status', 'active')
+      .single();
 
-  const availability = await checkAvailability(
-    supabase,
-    tenant.id,
-    body.staff_id,
-    body.slot_date,
-    body.slot_start,
-    body.slot_end
-  );
+    if (!staffRow) {
+      return NextResponse.json({ error: 'Staff not available' }, { status: 400 });
+    }
+    staff = staffRow;
 
-  if (!availability.available) {
-    return NextResponse.json(
-      { error: availability.reason ?? 'Slot not available' },
-      { status: 409 }
+    const availability = await checkAvailability(
+      supabase,
+      tenant.id,
+      body.staff_id,
+      body.slot_date,
+      body.slot_start,
+      body.slot_end
     );
+
+    if (!availability.available) {
+      return NextResponse.json(
+        { error: availability.reason ?? 'Slot not available' },
+        { status: 409 }
+      );
+    }
+  } else {
+    // Pool booking: at least one eligible staff member must be free.
+    const poolAvailability = await checkPoolAvailability(
+      supabase,
+      tenant.id,
+      body.slot_date,
+      Array.isArray(body.tag_ids) && body.tag_ids.length > 0 ? body.tag_ids : undefined,
+      body.slot_start,
+      body.slot_end
+    );
+
+    if (!poolAvailability.available) {
+      return NextResponse.json(
+        { error: poolAvailability.reason ?? 'Slot not available' },
+        { status: 409 }
+      );
+    }
   }
 
   let clientId: string | null = null;
@@ -243,15 +273,20 @@ export async function POST(
     tagExtras,
   });
 
-  const status =
-    settings?.booking_confirm_mode === 'auto_confirm' ? 'confirmed' : 'pending_staff';
+  // Pool bookings always require explicit staff acceptance, regardless of
+  // booking_confirm_mode.
+  const status = isPoolBooking
+    ? 'pending_staff'
+    : settings?.booking_confirm_mode === 'auto_confirm'
+      ? 'confirmed'
+      : 'pending_staff';
   const confirmedAt = status === 'confirmed' ? new Date().toISOString() : null;
 
   const { data: booking, error: bookingError } = await supabase
     .from('bookings')
     .insert({
       tenant_id: tenant.id,
-      staff_id: body.staff_id,
+      staff_id: staff?.id ?? null,
       client_id: clientId,
       guest_client_id: guestClientId,
       booking_source: 'client_request',
@@ -289,17 +324,29 @@ export async function POST(
   }
 
   if (status === 'pending_staff') {
-    await notifyBookingRequest(
-      tenant.id,
-      booking.id,
-      staff.pseudonym,
-      clientDisplayName,
-      body.slot_date,
-      body.slot_start
-    );
+    if (staff) {
+      await notifyBookingRequest(
+        tenant.id,
+        booking.id,
+        staff.pseudonym,
+        clientDisplayName,
+        body.slot_date,
+        body.slot_start
+      );
+    } else {
+      // Pool booking: no assigned staff to notify — alert the agent instead.
+      await createNotification({
+        tenantId: tenant.id,
+        type: 'booking_request_unassigned',
+        message: `New unassigned booking from ${clientDisplayName} on ${body.slot_date} at ${body.slot_start}`,
+        priority: 2,
+        linkedEntity: 'booking',
+        linkedId: booking.id,
+      });
+    }
   }
 
-  if (status === 'confirmed' && clientPhone && waOptIn) {
+  if (status === 'confirmed' && staff && clientPhone && waOptIn) {
     const agencyName = settings?.agency_display_name ?? tenant.name;
     await sendWhatsApp({
       tenantId: tenant.id,

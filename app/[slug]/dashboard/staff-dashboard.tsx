@@ -64,6 +64,7 @@ interface Props {
   tenantName: string;
   pendingBookings: BookingRow[];
   upcomingBookings: BookingRow[];
+  unassignedBookings?: BookingRow[];
   staffProfile?: StaffProfile;
   tenantTags?: TenantTag[];
 }
@@ -78,6 +79,7 @@ export default function StaffDashboard({
   tenantName,
   pendingBookings,
   upcomingBookings,
+  unassignedBookings = [],
   staffProfile,
   tenantTags = [],
 }: Props) {
@@ -129,6 +131,32 @@ export default function StaffDashboard({
 
         {staffProfile && (
           <ScheduleSection slug={slug} rawSchedule={staffProfile.rawSchedule} />
+        )}
+
+        {unassignedBookings.length > 0 && (
+          <section className="mb-8">
+            <div className="flex items-center gap-2 mb-4">
+              <h2 className="text-fg text-sm font-medium">Available {terminology.booking_plural}</h2>
+              <span className="bg-elevated text-fg text-[11px] font-medium px-2 py-0.5 rounded-full">
+                {unassignedBookings.length}
+              </span>
+            </div>
+            <p className="text-fg-subtle text-xs mb-3">
+              Unassigned {terminology.booking_plural.toLowerCase()} matching your services — first to accept gets the {bookingLabel.toLowerCase()}.
+            </p>
+            <div className="space-y-3">
+              {unassignedBookings.map(b => (
+                <StaffBookingCard
+                  key={b.id}
+                  slug={slug}
+                  booking={toCardBooking(b)}
+                  showActions={false}
+                  claimable={true}
+                  bookingLabel={bookingLabel}
+                />
+              ))}
+            </div>
+          </section>
         )}
 
         <section className="mb-8">

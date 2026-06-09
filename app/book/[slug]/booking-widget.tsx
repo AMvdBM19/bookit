@@ -55,9 +55,13 @@ export default function BookingWidget({ slug, catalog }: Props) {
   const brandColor = catalog.settings?.brand_color ?? '#2BB673';
   const isAccountMode = catalog.tenant.client_mode === 'account';
 
+  // Pool mode: clients book without choosing staff — skip the browse step and
+  // leave staff unselected; the booking is claimed by staff after submission.
+  const isPool = catalog.featureFlags.booking_mode === 'pool';
+
   // Auto-select if only one staff member exists
-  const initialStep: Step = catalog.staff.length === 1 ? 'datetime' : 'browse';
-  const initialStaffId = catalog.staff.length === 1 ? catalog.staff[0].id : null;
+  const initialStep: Step = isPool || catalog.staff.length === 1 ? 'datetime' : 'browse';
+  const initialStaffId = !isPool && catalog.staff.length === 1 ? catalog.staff[0].id : null;
 
   const [state, setState] = useState<BookingState>({
     ...INITIAL_STATE,
@@ -132,7 +136,7 @@ export default function BookingWidget({ slug, catalog }: Props) {
   }
 
   async function handleSubmit() {
-    if (!selectedStaff || !state.selectedDate || !state.selectedSlot) return;
+    if ((!selectedStaff && !isPool) || !state.selectedDate || !state.selectedSlot) return;
     update({ submitting: true, submitError: null });
 
     try {
@@ -140,7 +144,7 @@ export default function BookingWidget({ slug, catalog }: Props) {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          staff_id: selectedStaff.id,
+          staff_id: selectedStaff?.id,
           slot_date: state.selectedDate,
           slot_start: state.selectedSlot.start,
           slot_end: state.selectedSlot.end,
@@ -178,8 +182,8 @@ export default function BookingWidget({ slug, catalog }: Props) {
   function handleReset() {
     setState({
       ...INITIAL_STATE,
-      step: catalog.staff.length === 1 ? 'datetime' : 'browse',
-      selectedStaffId: catalog.staff.length === 1 ? catalog.staff[0].id : null,
+      step: initialStep,
+      selectedStaffId: initialStaffId,
     });
   }
 
@@ -194,9 +198,16 @@ export default function BookingWidget({ slug, catalog }: Props) {
     catalog.settings?.agency_display_name ?? catalog.tenant.name;
   const bookingLabel = catalog.terminology.booking;
 
-  // Filter tags shown in details step to those offered by selected staff
-  const staffTags = selectedStaff?.tags ?? [];
+  // Filter tags shown in details step to those offered by selected staff.
+  // Pool mode has no selected staff — show all tenant tags.
+  const staffTags = isPool
+    ? catalog.tags.map(t => ({ id: t.id, name: t.name, extra_price: t.extra_price ?? 0 }))
+    : selectedStaff?.tags ?? [];
   const selectedTags = staffTags.filter(t => state.selectedTagIds.includes(t.id));
+
+  const stepOrder: Step[] = isPool
+    ? ['datetime', 'details', 'confirm']
+    : ['browse', 'datetime', 'details', 'confirm'];
 
   return (
     <div className="min-h-screen bg-zinc-950 text-white px-4 py-6">
@@ -220,9 +231,8 @@ export default function BookingWidget({ slug, catalog }: Props) {
         {/* Step indicator */}
         {state.step !== 'success' && (
           <div className="flex items-center gap-1.5 mb-4">
-            {(['browse', 'datetime', 'details', 'confirm'] as const).map((s, i) => {
-              const order: Step[] = ['browse', 'datetime', 'details', 'confirm'];
-              const currentIdx = order.indexOf(state.step);
+            {stepOrder.map((s, i) => {
+              const currentIdx = stepOrder.indexOf(state.step);
               const active = i <= currentIdx;
               return (
                 <div
@@ -251,15 +261,19 @@ export default function BookingWidget({ slug, catalog }: Props) {
             />
           )}
 
-          {state.step === 'datetime' && selectedStaff && (
+          {state.step === 'datetime' && (selectedStaff || isPool) && (
             <>
-              <div className="rounded-lg border border-zinc-800 bg-zinc-900 p-3">
-                <p className="text-xs text-zinc-500">{catalog.terminology.staff}</p>
-                <p className="text-sm text-white font-medium">{selectedStaff.pseudonym}</p>
-              </div>
+              {selectedStaff && (
+                <div className="rounded-lg border border-zinc-800 bg-zinc-900 p-3">
+                  <p className="text-xs text-zinc-500">{catalog.terminology.staff}</p>
+                  <p className="text-sm text-white font-medium">{selectedStaff.pseudonym}</p>
+                </div>
+              )}
               <DateTimeSelect
                 slug={slug}
-                staffId={selectedStaff.id}
+                staffId={selectedStaff?.id ?? null}
+                poolMode={isPool}
+                poolTagIds={state.selectedTagIds}
                 selectedDate={state.selectedDate}
                 selectedSlot={state.selectedSlot}
                 onSelectDate={d => update({ selectedDate: d, selectedSlot: null })}
@@ -270,7 +284,7 @@ export default function BookingWidget({ slug, catalog }: Props) {
                 <p className="text-red-400 text-xs">{state.validationError}</p>
               )}
               <div className="flex justify-between gap-2 pt-2">
-                {catalog.staff.length > 1 ? (
+                {!isPool && catalog.staff.length > 1 ? (
                   <button
                     type="button"
                     onClick={() => goTo('browse')}
@@ -293,7 +307,7 @@ export default function BookingWidget({ slug, catalog }: Props) {
             </>
           )}
 
-          {state.step === 'details' && selectedStaff && (
+          {state.step === 'details' && (selectedStaff || isPool) && (
             <>
               <DetailsForm
                 slug={slug}
@@ -338,7 +352,7 @@ export default function BookingWidget({ slug, catalog }: Props) {
           )}
 
           {state.step === 'confirm' &&
-            selectedStaff &&
+            (selectedStaff || isPool) &&
             state.selectedDate &&
             state.selectedSlot && (
               <>
@@ -370,13 +384,13 @@ export default function BookingWidget({ slug, catalog }: Props) {
               </>
             )}
 
-          {state.step === 'success' && state.bookingResult && selectedStaff && (
+          {state.step === 'success' && state.bookingResult && (
             <BookingSuccess
               status={state.bookingResult.status}
               message={state.bookingResult.message}
               bookingId={state.bookingResult.bookingId}
               bookingLabel={bookingLabel}
-              staffName={selectedStaff.pseudonym}
+              staffName={selectedStaff?.pseudonym ?? 'Our team'}
               onBookAnother={handleReset}
               brandColor={brandColor}
             />

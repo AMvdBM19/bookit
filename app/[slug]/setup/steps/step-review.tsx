@@ -80,6 +80,14 @@ export default function StepReview({ state, error }: Props) {
                 : 'Auto-confirm'
             }
           />
+          <Row
+            label="Booking Mode"
+            value={
+              state.booking_mode === 'pool'
+                ? `Any available ${terminology.staff.toLowerCase()}`
+                : `Client selects ${terminology.staff.toLowerCase()}`
+            }
+          />
         </div>
       </section>
 
