@@ -26,7 +26,7 @@ export async function GET(request: NextRequest) {
   let query = supabase
     .from('bookings')
     .select(`
-      id, slot_date, slot_start, slot_end, duration_minutes, booking_notes, status,
+      id, slot_date, slot_start, slot_end, duration_minutes, booking_notes, status, source,
       total_price, created_at: requested_at, confirmed_at, cancelled_at, cancellation_reason,
       staff:staff_id(id, pseudonym),
       clients:client_id(id, display_name),

@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import { useTenantConfig } from '@/lib/context/tenant-config';
+import CreateBookingModal from './create-booking-modal';
 
 interface JoinObj {
   pseudonym?: string;
@@ -16,6 +17,7 @@ interface Booking {
   slot_end: string;
   duration_minutes: number;
   status: string;
+  source?: string;
   created_at: string;
   staff: JoinObj | JoinObj[] | null;
   clients: JoinObj | JoinObj[] | null;
@@ -117,6 +119,7 @@ export default function BookingsSection({ slug }: { slug: string }) {
   const [error, setError] = useState<string | null>(null);
   const [actionState, setActionState] = useState<Record<string, 'idle' | 'busy'>>({});
   const [declineMode, setDeclineMode] = useState<Record<string, string>>({});
+  const [showCreate, setShowCreate] = useState(false);
 
   const reload = useCallback(async () => {
     setLoading(true);
@@ -219,6 +222,17 @@ export default function BookingsSection({ slug }: { slug: string }) {
 
   return (
     <div className="space-y-8">
+      <div className="flex items-center justify-between">
+        <h2 className="text-sm font-semibold text-fg">{terminology.booking_plural}</h2>
+        <button
+          type="button"
+          onClick={() => setShowCreate(true)}
+          className="text-xs px-3 py-1.5 bg-fg text-canvas rounded hover:opacity-90 transition-opacity"
+        >
+          + New {terminology.booking}
+        </button>
+      </div>
+
       {/* Pending */}
       <section>
         <div className="flex items-center gap-2 mb-3">
@@ -257,7 +271,12 @@ export default function BookingsSection({ slug }: { slug: string }) {
                           {b.id.slice(0, 8)}
                         </td>
                         <td className="px-3 py-3 text-fg">{staffNameOf(b)}</td>
-                        <td className="px-3 py-3 text-fg">{clientNameOf(b)}</td>
+                        <td className="px-3 py-3 text-fg">
+                          {clientNameOf(b)}
+                          {b.source === 'manual' && (
+                            <span className="text-[10px] text-fg-subtle ml-1">Manual</span>
+                          )}
+                        </td>
                         <td className="px-3 py-3 text-fg-muted whitespace-nowrap">
                           {formatDate(b.slot_date)} · {b.slot_start.slice(0, 5)}–{b.slot_end.slice(0, 5)}
                         </td>
@@ -368,7 +387,12 @@ export default function BookingsSection({ slug }: { slug: string }) {
                     return (
                     <tr key={b.id} className="hover:bg-elevated">
                       <td className="px-3 py-3 text-fg">{staffNameOf(b)}</td>
-                      <td className="px-3 py-3 text-fg">{clientNameOf(b)}</td>
+                      <td className="px-3 py-3 text-fg">
+                        {clientNameOf(b)}
+                        {b.source === 'manual' && (
+                          <span className="text-[10px] text-fg-subtle ml-1">Manual</span>
+                        )}
+                      </td>
                       <td className="px-3 py-3 text-fg-muted whitespace-nowrap">{formatDate(b.slot_date)}</td>
                       <td className="px-3 py-3 text-fg-muted whitespace-nowrap">
                         {b.slot_start.slice(0, 5)}–{b.slot_end.slice(0, 5)}
@@ -438,7 +462,12 @@ export default function BookingsSection({ slug }: { slug: string }) {
                   {past.map(b => (
                     <tr key={b.id} className="hover:bg-elevated">
                       <td className="px-3 py-3 text-fg">{staffNameOf(b)}</td>
-                      <td className="px-3 py-3 text-fg">{clientNameOf(b)}</td>
+                      <td className="px-3 py-3 text-fg">
+                        {clientNameOf(b)}
+                        {b.source === 'manual' && (
+                          <span className="text-[10px] text-fg-subtle ml-1">Manual</span>
+                        )}
+                      </td>
                       <td className="px-3 py-3 text-fg-muted whitespace-nowrap">{formatDate(b.slot_date)}</td>
                       <td className="px-3 py-3">
                         <StatusBadge status={b.status} />
@@ -451,6 +480,17 @@ export default function BookingsSection({ slug }: { slug: string }) {
           </div>
         )}
       </section>
+
+      {showCreate && (
+        <CreateBookingModal
+          slug={slug}
+          onClose={() => setShowCreate(false)}
+          onCreated={() => {
+            setShowCreate(false);
+            reload();
+          }}
+        />
+      )}
     </div>
   );
 }
