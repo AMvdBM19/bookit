@@ -2,6 +2,12 @@ import { createServiceClient } from '@/lib/supabase/server';
 import { settingsToTheme, themeToCSS } from '@/lib/widget-theme';
 import type { WidgetSettingsRow } from '@/lib/widget-theme';
 
+// The theme query must read fresh tenant_settings on every request — without
+// this, Next caches the layout's Supabase fetch and customizer saves never
+// reach the live widget (page.tsx is already force-dynamic; layouts need
+// their own segment config).
+export const dynamic = 'force-dynamic';
+
 // Scoped utility classes for the widget. Derived shades are color-mixed from
 // the theme variables so a single palette drives the whole widget. With the
 // default (midnight) theme these resolve to the historical zinc values.
