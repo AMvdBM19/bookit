@@ -17,6 +17,13 @@ Client modes: account (login required) or guest (email-deduped, no account)
 Booking confirm modes: staff_must_accept or auto_confirm
 JWT claims: tenant_id, user_role (agent/staff/client/super_admin), staff_id?, client_id?
 
+### Known gotcha: Next.js data caching + Supabase service client
+Any layout.tsx or server component that queries Supabase via `createServiceClient()` must include
+`export const dynamic = 'force-dynamic'` at the top, or the query result will be cached indefinitely
+by Next.js. The service client uses plain `fetch()` internally, which Next caches by default in
+non-dynamic route segments. A page's `dynamic` config does NOT extend to its layout's fetches.
+(Caused stale-data bugs twice: catalog in Phase 10C, widget theme in Phase 12A.)
+
 ## Key paths
 lib/types/tenant-config.ts — JSONB contract interfaces (Terminology, FeatureFlags, ComplianceFlags, DefaultSettings) + DEFAULT_* constants + core type aliases (VerticalId, ClientMode, BookingConfirmMode)
 lib/context/tenant-config.tsx — TenantConfigProvider + useTenantConfig() (data-driven config)
