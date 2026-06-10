@@ -9,6 +9,12 @@ import {
   DEFAULT_COMPLIANCE_FLAGS,
 } from '@/lib/types/tenant-config';
 
+// tenant_config (terminology, feature flags) is queried via the service
+// client; without force-dynamic Next may serve it from the data cache and
+// template/config changes would never reach the dashboard (see "Known
+// gotcha" in CLAUDE.md).
+export const dynamic = 'force-dynamic';
+
 export default async function TenantLayout({
   children,
   params,

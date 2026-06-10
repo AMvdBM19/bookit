@@ -4,6 +4,10 @@ import { createServiceClient } from '@/lib/supabase/server';
 import { redirect } from 'next/navigation';
 import WizardShell from './wizard-shell';
 
+// Service-client queries must not be served from Next's data cache (see
+// "Known gotcha" in CLAUDE.md).
+export const dynamic = 'force-dynamic';
+
 export default async function SetupPage({
   params,
 }: {
