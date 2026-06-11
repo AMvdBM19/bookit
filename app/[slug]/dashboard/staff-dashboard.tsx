@@ -7,6 +7,7 @@ import { createClient } from '@/lib/supabase/client';
 import { useTenantConfig } from '@/lib/context/tenant-config';
 import ThemeToggle from '@/app/components/theme-toggle';
 import EmptyState from '@/components/ui/empty-state';
+import StaffExceptions from '@/components/staff-exceptions';
 import StaffBookingCard from './staff-booking-card';
 
 function BookingsEmptyIcon() {
@@ -73,6 +74,7 @@ interface TenantTag {
 interface Props {
   slug: string;
   tenantName: string;
+  staffId?: string;
   pendingBookings: BookingRow[];
   upcomingBookings: BookingRow[];
   unassignedBookings?: BookingRow[];
@@ -88,6 +90,7 @@ const ghostBtn = 'text-xs px-2 py-1 text-fg-muted hover:text-fg rounded-lg trans
 export default function StaffDashboard({
   slug,
   tenantName,
+  staffId,
   pendingBookings,
   upcomingBookings,
   unassignedBookings = [],
@@ -142,6 +145,13 @@ export default function StaffDashboard({
 
         {staffProfile && (
           <ScheduleSection slug={slug} rawSchedule={staffProfile.rawSchedule} />
+        )}
+
+        {staffId && (
+          <section className="mb-8 rounded-lg border border-border bg-surface p-4">
+            <h2 className="text-fg text-sm font-medium mb-3">Days Off</h2>
+            <StaffExceptions slug={slug} staffId={staffId} />
+          </section>
         )}
 
         {unassignedBookings.length > 0 && (

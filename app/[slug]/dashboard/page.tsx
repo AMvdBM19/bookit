@@ -132,6 +132,7 @@ export default async function DashboardPage({
       <StaffDashboard
         slug={slug}
         tenantName={tenant?.name ?? slug}
+        staffId={user.staffId}
         pendingBookings={pendingBookings ?? []}
         upcomingBookings={upcomingBookings ?? []}
         unassignedBookings={unassignedBookings}

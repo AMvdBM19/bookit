@@ -8,6 +8,7 @@ import Modal from '@/components/ui/modal';
 import Spinner from '@/components/ui/spinner';
 import EmptyState from '@/components/ui/empty-state';
 import ConfirmDialog from '@/components/ui/confirm-dialog';
+import StaffExceptions from '@/components/staff-exceptions';
 
 interface StaffRow {
   id: string;
@@ -62,6 +63,7 @@ export default function StaffSection({ slug }: { slug: string }) {
   const [showCreate, setShowCreate] = useState(false);
   const [busyId, setBusyId] = useState<string | null>(null);
   const [deactivateTarget, setDeactivateTarget] = useState<StaffRow | null>(null);
+  const [exceptionsTarget, setExceptionsTarget] = useState<StaffRow | null>(null);
 
   const reload = useCallback(async () => {
     setLoading(true);
@@ -220,14 +222,28 @@ export default function StaffSection({ slug }: { slug: string }) {
                         {new Date(s.created_at).toLocaleDateString('en-GB')}
                       </td>
                       <td className="px-3 py-3 text-right">
-                        <button
-                          type="button"
-                          onClick={() => (s.status === 'active' ? setDeactivateTarget(s) : toggleStatus(s))}
-                          disabled={busyId === s.id}
-                          className="text-xs px-2 py-1 bg-elevated hover:bg-sunken text-fg rounded disabled:opacity-50"
-                        >
-                          {s.status === 'active' ? 'Deactivate' : 'Activate'}
-                        </button>
+                        <div className="flex justify-end items-center gap-1">
+                          <button
+                            type="button"
+                            onClick={() => setExceptionsTarget(s)}
+                            title="Days off"
+                            aria-label={`Days off for ${s.pseudonym}`}
+                            className="p-1.5 text-fg-muted hover:text-fg hover:bg-sunken rounded transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                          >
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                              <rect x="3" y="4" width="18" height="18" rx="2" />
+                              <path d="M16 2v4M8 2v4M3 10h18M10 16l4-4M10 12l4 4" />
+                            </svg>
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => (s.status === 'active' ? setDeactivateTarget(s) : toggleStatus(s))}
+                            disabled={busyId === s.id}
+                            className="text-xs px-2 py-1 bg-elevated hover:bg-sunken text-fg rounded disabled:opacity-50"
+                          >
+                            {s.status === 'active' ? 'Deactivate' : 'Activate'}
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   );
@@ -247,6 +263,15 @@ export default function StaffSection({ slug }: { slug: string }) {
             reload();
           }}
         />
+      )}
+
+      {exceptionsTarget && (
+        <Modal
+          title={`Days off — ${exceptionsTarget.pseudonym}`}
+          onClose={() => setExceptionsTarget(null)}
+        >
+          <StaffExceptions slug={slug} staffId={exceptionsTarget.id} />
+        </Modal>
       )}
 
       {deactivateTarget && (
