@@ -13,6 +13,8 @@ interface Props {
   staffId: string | null;
   poolMode?: boolean;
   poolTagIds?: string[];
+  /** Selected service tags — drives per-service slot duration when enabled. */
+  serviceTagIds?: string[];
   selectedDate: string | null;
   selectedSlot: Slot | null;
   onSelectDate: (date: string) => void;
@@ -51,6 +53,7 @@ export default function DateTimeSelect({
   staffId,
   poolMode = false,
   poolTagIds = [],
+  serviceTagIds = [],
   selectedDate,
   selectedSlot,
   onSelectDate,
@@ -63,8 +66,9 @@ export default function DateTimeSelect({
   const [reason, setReason] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  // Stable key so the effect doesn't re-fire on every render from a fresh array.
+  // Stable keys so the effect doesn't re-fire on every render from a fresh array.
   const poolTagKey = poolTagIds.join(',');
+  const serviceTagKey = serviceTagIds.join(',');
 
   useEffect(() => {
     if (!selectedDate || (!poolMode && !staffId)) {
@@ -78,9 +82,10 @@ export default function DateTimeSelect({
     setError(null);
     setReason(null);
 
+    const durationParam = serviceTagKey ? `&service_tag_ids=${serviceTagKey}` : '';
     const url = poolMode
-      ? `/book/${slug}/api/pool-availability?date=${selectedDate}${poolTagKey ? `&tag_ids=${poolTagKey}` : ''}`
-      : `/book/${slug}/api/availability?staff_id=${staffId}&date=${selectedDate}`;
+      ? `/book/${slug}/api/pool-availability?date=${selectedDate}${poolTagKey ? `&tag_ids=${poolTagKey}` : ''}${durationParam}`
+      : `/book/${slug}/api/availability?staff_id=${staffId}&date=${selectedDate}${durationParam}`;
 
     fetch(url)
       .then(res => res.json())
@@ -100,7 +105,7 @@ export default function DateTimeSelect({
     return () => {
       cancelled = true;
     };
-  }, [slug, staffId, selectedDate, poolMode, poolTagKey]);
+  }, [slug, staffId, selectedDate, poolMode, poolTagKey, serviceTagKey]);
 
   return (
     <div className="space-y-4">

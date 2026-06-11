@@ -125,7 +125,11 @@ export async function POST(
       body.staff_id,
       body.slot_date,
       body.slot_start,
-      body.slot_end
+      body.slot_end,
+      {
+        bufferBeforeMinutes: settings?.buffer_before_minutes ?? 0,
+        bufferAfterMinutes: settings?.buffer_after_minutes ?? 0,
+      }
     );
 
     if (!availability.available) {
@@ -142,7 +146,11 @@ export async function POST(
       body.slot_date,
       Array.isArray(body.tag_ids) && body.tag_ids.length > 0 ? body.tag_ids : undefined,
       body.slot_start,
-      body.slot_end
+      body.slot_end,
+      {
+        bufferBeforeMinutes: settings?.buffer_before_minutes ?? 0,
+        bufferAfterMinutes: settings?.buffer_after_minutes ?? 0,
+      }
     );
 
     if (!poolAvailability.available) {

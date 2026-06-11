@@ -12,7 +12,7 @@ export interface CatalogStaff {
   nationality: string | null;
   age: number | null;
   languages: string[] | null;
-  tags: Array<{ id: string; name: string; extra_price: number }>;
+  tags: Array<{ id: string; name: string; extra_price: number; duration_minutes: number | null }>;
 }
 
 export interface CatalogSettings {
@@ -43,6 +43,8 @@ export interface CatalogSettings {
   widget_border_color: string | null;
   widget_show_powered_by: boolean | null;
   widget_logo_url: string | null;
+  /** Optional until the per-service-duration migration is applied. */
+  per_service_duration_enabled?: boolean | null;
 }
 
 export interface Catalog {
@@ -54,7 +56,7 @@ export interface Catalog {
   };
   settings: CatalogSettings | null;
   staff: CatalogStaff[];
-  tags: Array<{ id: string; name: string; extra_price: number | null }>;
+  tags: Array<{ id: string; name: string; extra_price: number | null; duration_minutes?: number | null }>;
   terminology: Terminology;
   featureFlags: FeatureFlags;
 }
@@ -74,11 +76,11 @@ export async function loadCatalog(slug: string): Promise<Catalog | null> {
 
   if (!tenant || !tenant.is_active) return null;
 
+  // select('*') keeps this resilient to additive columns (e.g.
+  // per_service_duration_enabled) that may not exist until migrations run.
   const { data: settings, error: settingsError } = await supabase
     .from('tenant_settings')
-    .select(
-      'brand_color, agency_display_name, logo_url, show_price_to_client, base_rate_per_30min, age_gate_minimum, require_age_confirm, booking_confirm_mode, default_slot_minutes, min_lead_time_hours, currency, deposit_pct, deposit_required_above_minutes, widget_primary_color, widget_accent_color, widget_bg, widget_bg_custom, widget_font_pair, widget_border_radius, widget_card_style, widget_spacing, widget_text_color, widget_text_muted, widget_surface_color, widget_border_color, widget_show_powered_by, widget_logo_url'
-    )
+    .select('*')
     .eq('tenant_id', tenant.id)
     .single();
 
@@ -98,12 +100,12 @@ export async function loadCatalog(slug: string): Promise<Catalog | null> {
   }
 
   const staffIds = (staffRows ?? []).map(s => s.id);
-  const staffTagMap: Record<string, Array<{ id: string; name: string; extra_price: number }>> = {};
+  const staffTagMap: Record<string, CatalogStaff['tags']> = {};
 
   if (staffIds.length > 0) {
     const { data: tagJoins, error: tagError } = await supabase
       .from('staff_service_tags')
-      .select('staff_id, tag_id, service_tags(id, name, extra_price)')
+      .select('staff_id, tag_id, service_tags(*)')
       .in('staff_id', staffIds);
 
     if (tagError) {
@@ -114,7 +116,12 @@ export async function loadCatalog(slug: string): Promise<Catalog | null> {
       const tag = Array.isArray(join.service_tags) ? join.service_tags[0] : join.service_tags;
       if (tag) {
         if (!staffTagMap[join.staff_id]) staffTagMap[join.staff_id] = [];
-        staffTagMap[join.staff_id].push({ id: tag.id, name: tag.name, extra_price: tag.extra_price ?? 0 });
+        staffTagMap[join.staff_id].push({
+          id: tag.id,
+          name: tag.name,
+          extra_price: tag.extra_price ?? 0,
+          duration_minutes: (tag as { duration_minutes?: number | null }).duration_minutes ?? null,
+        });
       }
     }
   }
@@ -134,7 +141,7 @@ export async function loadCatalog(slug: string): Promise<Catalog | null> {
 
   const { data: allTags } = await supabase
     .from('service_tags')
-    .select('id, name, extra_price')
+    .select('*')
     .eq('tenant_id', tenant.id)
     .eq('is_active', true)
     .order('display_order');

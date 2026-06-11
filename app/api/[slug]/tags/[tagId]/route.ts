@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase/server';
 import { requireRole } from '@/lib/auth/session';
 
-const ALLOWED_FIELDS = ['extra_price', 'is_active', 'name', 'description', 'display_order'] as const;
+const ALLOWED_FIELDS = ['extra_price', 'is_active', 'name', 'description', 'display_order', 'duration_minutes'] as const;
 
 // PATCH — update a service tag's pricing/status (agent-only, tenant-scoped).
 export async function PATCH(
@@ -38,6 +38,17 @@ export async function PATCH(
       return NextResponse.json({ error: 'extra_price must be a non-negative number' }, { status: 400 });
     }
     updates.extra_price = price;
+  }
+
+  if ('duration_minutes' in updates && updates.duration_minutes !== null) {
+    const minutes = Number(updates.duration_minutes);
+    if (!Number.isInteger(minutes) || minutes < 5 || minutes > 600) {
+      return NextResponse.json(
+        { error: 'duration_minutes must be an integer between 5 and 600, or null' },
+        { status: 400 }
+      );
+    }
+    updates.duration_minutes = minutes;
   }
 
   const supabase = createServiceClient();

@@ -25,6 +25,10 @@ const EDITABLE_FIELDS = [
   'tax_period',
   'no_show_revenue_policy',
   'no_show_partial_pct',
+  // Per-service duration + buffer time (Tier 1 polish sprint).
+  'per_service_duration_enabled',
+  'buffer_before_minutes',
+  'buffer_after_minutes',
   // Widget customizer (Phase 12A) — always editable, never lockable.
   'widget_primary_color',
   'widget_accent_color',
@@ -101,6 +105,20 @@ export async function PATCH(request: NextRequest) {
   for (const field of Object.keys(update)) {
     if (lockedSet.has(field)) {
       return NextResponse.json({ error: `Field is locked: ${field}` }, { status: 403 });
+    }
+  }
+
+  // Buffer minutes: 0–60 in whole minutes.
+  for (const bufferField of ['buffer_before_minutes', 'buffer_after_minutes'] as const) {
+    if (bufferField in update) {
+      const minutes = Number(update[bufferField]);
+      if (!Number.isInteger(minutes) || minutes < 0 || minutes > 60) {
+        return NextResponse.json(
+          { error: `${bufferField} must be an integer between 0 and 60` },
+          { status: 400 }
+        );
+      }
+      update[bufferField] = minutes;
     }
   }
 

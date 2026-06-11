@@ -20,6 +20,8 @@ interface Settings {
   deposit_required_above_minutes: number | null;
   no_show_revenue_policy: string;
   no_show_partial_pct: number;
+  per_service_duration_enabled?: boolean;
+  default_slot_minutes?: number;
 }
 
 interface Summary {
@@ -34,6 +36,7 @@ interface ServiceTag {
   extra_price: number;
   is_active: boolean;
   display_order: number;
+  duration_minutes?: number | null;
 }
 
 const inputCls =
@@ -454,9 +457,34 @@ export default function PricingSection({ slug }: { slug: string }) {
       )}
 
       {/* Per-Service Pricing */}
-      <PerServicePricing slug={slug} currency={currency} />
+      <PerServicePricing
+        slug={slug}
+        currency={currency}
+        perServiceDuration={settings?.per_service_duration_enabled ?? false}
+        defaultSlotMinutes={settings?.default_slot_minutes ?? 30}
+        onToggleDuration={togglePerServiceDuration}
+      />
     </div>
   );
+
+  async function togglePerServiceDuration(next: boolean) {
+    try {
+      const res = await fetch(`/api/${slug}/settings`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ per_service_duration_enabled: next }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        toast.error(data.error ?? "Couldn't save. Please try again.");
+        return;
+      }
+      toast.success(next ? 'Per-service duration enabled.' : 'Per-service duration disabled.');
+      await reload();
+    } catch {
+      toast.error("Couldn't save. Please try again.");
+    }
+  }
 }
 
 function SplitBar({ staffPct, agencyPct }: { staffPct: number; agencyPct: number }) {
@@ -479,10 +507,23 @@ function SplitBar({ staffPct, agencyPct }: { staffPct: number; agencyPct: number
 
 /* ------------------------------------------------ Per-service pricing table */
 
-function PerServicePricing({ slug, currency }: { slug: string; currency: string }) {
+function PerServicePricing({
+  slug,
+  currency,
+  perServiceDuration,
+  defaultSlotMinutes,
+  onToggleDuration,
+}: {
+  slug: string;
+  currency: string;
+  perServiceDuration: boolean;
+  defaultSlotMinutes: number;
+  onToggleDuration: (next: boolean) => Promise<void>;
+}) {
   const [tags, setTags] = useState<ServiceTag[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [toggling, setToggling] = useState(false);
 
   const reload = useCallback(async () => {
     setLoading(true);
@@ -515,6 +556,26 @@ function PerServicePricing({ slug, currency }: { slug: string; currency: string 
         Extra price is the additional charge on top of the base rate for each service type.
       </p>
 
+      <label className="flex items-center gap-2 cursor-pointer mb-3">
+        <input
+          type="checkbox"
+          checked={perServiceDuration}
+          disabled={toggling}
+          onChange={async e => {
+            setToggling(true);
+            try {
+              await onToggleDuration(e.target.checked);
+            } finally {
+              setToggling(false);
+            }
+          }}
+        />
+        <span className="text-sm text-fg">Per-service duration</span>
+        <span className="text-[11px] text-fg-muted">
+          — each service sets its own appointment length (blank = default {defaultSlotMinutes} min)
+        </span>
+      </label>
+
       {loading && (
         <div className="flex justify-center py-10 text-fg-muted">
           <Spinner size="md" />
@@ -542,13 +603,20 @@ function PerServicePricing({ slug, currency }: { slug: string; currency: string 
               <tr className="text-left text-[11px] font-medium uppercase tracking-wider text-fg-muted">
                 <th className="px-3 py-2">Service</th>
                 <th className="px-3 py-2">Extra price</th>
+                {perServiceDuration && <th className="px-3 py-2">Duration (min)</th>}
                 <th className="px-3 py-2">Status</th>
                 <th className="px-3 py-2 text-right">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-border">
               {tags.map(tag => (
-                <TagPriceRow key={tag.id} slug={slug} tag={tag} currency={currency} />
+                <TagPriceRow
+                  key={tag.id}
+                  slug={slug}
+                  tag={tag}
+                  currency={currency}
+                  showDuration={perServiceDuration}
+                />
               ))}
             </tbody>
           </table>
@@ -562,18 +630,22 @@ function TagPriceRow({
   slug,
   tag,
   currency,
+  showDuration,
 }: {
   slug: string;
   tag: ServiceTag;
   currency: string;
+  showDuration: boolean;
 }) {
   const [price, setPrice] = useState(String(num(tag.extra_price)));
   const [savedPrice, setSavedPrice] = useState(num(tag.extra_price));
+  const [duration, setDuration] = useState(tag.duration_minutes != null ? String(tag.duration_minutes) : '');
+  const [savedDuration, setSavedDuration] = useState(tag.duration_minutes != null ? String(tag.duration_minutes) : '');
   const [active, setActive] = useState(tag.is_active);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const dirty = num(price) !== savedPrice;
+  const dirty = num(price) !== savedPrice || (showDuration && duration !== savedDuration);
 
   async function patch(updates: Record<string, unknown>): Promise<boolean> {
     setBusy(true);
@@ -601,10 +673,15 @@ function TagPriceRow({
   }
 
   async function savePrice() {
-    const ok = await patch({ extra_price: num(price) });
+    const updates: Record<string, unknown> = { extra_price: num(price) };
+    if (showDuration) {
+      updates.duration_minutes = duration.trim() === '' ? null : num(duration);
+    }
+    const ok = await patch(updates);
     if (ok) {
       setSavedPrice(num(price));
-      toast.success('Price saved.');
+      setSavedDuration(duration);
+      toast.success('Service saved.');
     }
   }
 
@@ -634,6 +711,20 @@ function TagPriceRow({
         </div>
         {error && <p className="text-[11px] text-red-500 mt-1">{error}</p>}
       </td>
+      {showDuration && (
+        <td className="px-3 py-3">
+          <input
+            type="number"
+            min={5}
+            max={600}
+            step={5}
+            value={duration}
+            onChange={e => setDuration(e.target.value)}
+            placeholder="Default"
+            className="w-24 text-sm bg-elevated text-fg border border-border rounded px-2 py-1 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus:border-border-strong"
+          />
+        </td>
+      )}
       <td className="px-3 py-3">
         <button
           type="button"

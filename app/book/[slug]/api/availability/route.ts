@@ -62,7 +62,7 @@ export async function GET(
 
   const { data: settings, error: settingsError } = await supabase
     .from('tenant_settings')
-    .select('default_slot_minutes, min_lead_time_hours, max_booking_days_ahead')
+    .select('*')
     .eq('tenant_id', tenant.id)
     .single();
 
@@ -70,9 +70,28 @@ export async function GET(
     console.error('[availability] Settings query error:', settingsError.message);
   }
 
-  const slotMinutes = settings?.default_slot_minutes ?? 30;
+  let slotMinutes = settings?.default_slot_minutes ?? 30;
   const minLeadHours = settings?.min_lead_time_hours ?? 2;
   const maxDaysAhead = settings?.max_booking_days_ahead ?? 30;
+
+  // Per-service duration: when the tenant flag is on and the widget passes the
+  // selected service tags, the slot length becomes the sum of their durations.
+  const tagIdsParam = request.nextUrl.searchParams.get('service_tag_ids');
+  if (settings?.per_service_duration_enabled && tagIdsParam) {
+    const tagIds = tagIdsParam.split(',').map(s => s.trim()).filter(Boolean);
+    if (tagIds.length > 0) {
+      const { data: tagRows } = await supabase
+        .from('service_tags')
+        .select('id, duration_minutes')
+        .in('id', tagIds)
+        .eq('tenant_id', tenant.id);
+      const total = (tagRows ?? []).reduce(
+        (sum, t) => sum + (typeof t.duration_minutes === 'number' ? t.duration_minutes : 0),
+        0
+      );
+      if (total > 0) slotMinutes = total;
+    }
+  }
 
   const today = new Date();
   const todayDateStr = today.toISOString().split('T')[0];
@@ -101,7 +120,10 @@ export async function GET(
     }
   }
 
-  const result = await checkAvailability(supabase, tenant.id, staffId, date);
+  const result = await checkAvailability(supabase, tenant.id, staffId, date, undefined, undefined, {
+    bufferBeforeMinutes: settings?.buffer_before_minutes ?? 0,
+    bufferAfterMinutes: settings?.buffer_after_minutes ?? 0,
+  });
 
   const discreteSlots: Array<{ start: string; end: string }> = [];
   const now = new Date();

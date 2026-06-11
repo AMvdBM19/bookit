@@ -1,6 +1,6 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { checkAvailability } from './check';
-import type { TimeSlot } from './check';
+import type { AvailabilityOptions, TimeSlot } from './check';
 
 export interface PoolAvailabilityResult {
   available: boolean;
@@ -66,7 +66,8 @@ export async function checkPoolAvailability(
   date: string,
   tagIds?: string[],
   requestedStart?: string,
-  requestedEnd?: string
+  requestedEnd?: string,
+  options?: AvailabilityOptions
 ): Promise<PoolAvailabilityResult> {
   const staffIds = await getEligibleStaffIds(supabase, tenantId, tagIds);
   if (staffIds.length === 0) {
@@ -80,7 +81,7 @@ export async function checkPoolAvailability(
 
   const results = await Promise.all(
     staffIds.map(id =>
-      checkAvailability(supabase, tenantId, id, date, requestedStart, requestedEnd)
+      checkAvailability(supabase, tenantId, id, date, requestedStart, requestedEnd, options)
     )
   );
 

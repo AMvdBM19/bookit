@@ -49,7 +49,7 @@ export async function GET(
 
   const { data: settings, error: settingsError } = await supabase
     .from('tenant_settings')
-    .select('default_slot_minutes, min_lead_time_hours, max_booking_days_ahead')
+    .select('*')
     .eq('tenant_id', tenant.id)
     .single();
 
@@ -57,9 +57,28 @@ export async function GET(
     console.error('[pool-availability] Settings query error:', settingsError.message);
   }
 
-  const slotMinutes = settings?.default_slot_minutes ?? 30;
+  let slotMinutes = settings?.default_slot_minutes ?? 30;
   const minLeadHours = settings?.min_lead_time_hours ?? 2;
   const maxDaysAhead = settings?.max_booking_days_ahead ?? 30;
+
+  // Per-service duration: slot length becomes the sum of the selected tags'
+  // durations when the tenant flag is on.
+  const serviceTagIdsParam = request.nextUrl.searchParams.get('service_tag_ids');
+  if (settings?.per_service_duration_enabled && serviceTagIdsParam) {
+    const serviceTagIds = serviceTagIdsParam.split(',').map(s => s.trim()).filter(Boolean);
+    if (serviceTagIds.length > 0) {
+      const { data: tagRows } = await supabase
+        .from('service_tags')
+        .select('id, duration_minutes')
+        .in('id', serviceTagIds)
+        .eq('tenant_id', tenant.id);
+      const total = (tagRows ?? []).reduce(
+        (sum, t) => sum + (typeof t.duration_minutes === 'number' ? t.duration_minutes : 0),
+        0
+      );
+      if (total > 0) slotMinutes = total;
+    }
+  }
 
   const today = new Date();
   const todayDateStr = today.toISOString().split('T')[0];
@@ -88,7 +107,10 @@ export async function GET(
     }
   }
 
-  const result = await checkPoolAvailability(supabase, tenant.id, date, tagIds);
+  const result = await checkPoolAvailability(supabase, tenant.id, date, tagIds, undefined, undefined, {
+    bufferBeforeMinutes: settings?.buffer_before_minutes ?? 0,
+    bufferAfterMinutes: settings?.buffer_after_minutes ?? 0,
+  });
 
   // Split each staff member's free intervals into discrete slots, then dedupe
   // across staff. Splitting per-staff (rather than the merged union) guarantees

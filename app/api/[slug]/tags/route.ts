@@ -14,9 +14,11 @@ export async function GET() {
 
   const supabase = createServiceClient();
 
+  // select('*') keeps this resilient to additive columns (duration_minutes)
+  // that may not exist until migrations run.
   const { data: tags, error } = await supabase
     .from('service_tags')
-    .select('id, name, description, extra_price, is_active, display_order')
+    .select('*')
     .eq('tenant_id', user.tenantId)
     .order('display_order', { ascending: true });
 

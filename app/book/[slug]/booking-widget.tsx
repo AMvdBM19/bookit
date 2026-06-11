@@ -135,6 +135,13 @@ export default function BookingWidget({ slug, catalog }: Props) {
       update({ validationError: err });
       return;
     }
+    if (durationMismatch) {
+      update({
+        validationError:
+          'Your selected services changed the appointment duration — please pick a new time slot.',
+      });
+      return;
+    }
     goTo('confirm');
   }
 
@@ -204,9 +211,30 @@ export default function BookingWidget({ slug, catalog }: Props) {
   // Filter tags shown in details step to those offered by selected staff.
   // Pool mode has no selected staff — show all tenant tags.
   const staffTags = isPool
-    ? catalog.tags.map(t => ({ id: t.id, name: t.name, extra_price: t.extra_price ?? 0 }))
+    ? catalog.tags.map(t => ({
+        id: t.id,
+        name: t.name,
+        extra_price: t.extra_price ?? 0,
+        duration_minutes: t.duration_minutes ?? null,
+      }))
     : selectedStaff?.tags ?? [];
   const selectedTags = staffTags.filter(t => state.selectedTagIds.includes(t.id));
+
+  // Per-service duration: selected services dictate the appointment length.
+  // When the slot picked earlier no longer matches, the client must re-confirm.
+  const perServiceDuration = catalog.settings?.per_service_duration_enabled ?? false;
+  const defaultSlotMinutes = catalog.settings?.default_slot_minutes ?? 30;
+  const effectiveDuration = (() => {
+    if (!perServiceDuration) return defaultSlotMinutes;
+    const total = selectedTags.reduce((sum, t) => sum + (t.duration_minutes ?? 0), 0);
+    return total > 0 ? total : defaultSlotMinutes;
+  })();
+  const durationMismatch =
+    perServiceDuration && state.selectedSlot !== null && effectiveDuration !== slotDurationMinutes();
+
+  function handleReselectTime() {
+    update({ selectedSlot: null, step: 'datetime', validationError: null });
+  }
 
   const stepOrder: Step[] = isPool
     ? ['datetime', 'details', 'confirm']
@@ -277,6 +305,7 @@ export default function BookingWidget({ slug, catalog }: Props) {
                 staffId={selectedStaff?.id ?? null}
                 poolMode={isPool}
                 poolTagIds={state.selectedTagIds}
+                serviceTagIds={perServiceDuration ? state.selectedTagIds : []}
                 selectedDate={state.selectedDate}
                 selectedSlot={state.selectedSlot}
                 onSelectDate={d => update({ selectedDate: d, selectedSlot: null })}
@@ -333,6 +362,21 @@ export default function BookingWidget({ slug, catalog }: Props) {
                 durationMinutes={slotDurationMinutes()}
                 basePriceLabel={catalog.terminology.base_price_label}
               />
+              {durationMismatch && (
+                <div className="w-card w-pad-sm border border-amber-700/50">
+                  <p className="text-xs text-amber-400">
+                    Your selected services changed the appointment duration to{' '}
+                    {effectiveDuration} minutes. Please pick a new time slot.
+                  </p>
+                  <button
+                    type="button"
+                    onClick={handleReselectTime}
+                    className="mt-2 px-4 py-1.5 w-btn text-xs font-medium w-round transition-opacity"
+                  >
+                    Choose a new time
+                  </button>
+                </div>
+              )}
               <div className="flex justify-between gap-2 pt-2">
                 <button
                   type="button"
