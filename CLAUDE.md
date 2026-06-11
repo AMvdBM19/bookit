@@ -100,7 +100,23 @@ Phase 11A: ✅ Booking status lifecycle (source column, completion/no-show API, 
 Phase 11B: ✅ Manual booking creation (create API, client search API, modal UI, off-grid manual bookings)
 Phase 11C: ✅ Pool booking mode (booking_mode flag, wizard step, pool availability, widget flow, staff claim, admin assign)
 Phase 12A: ✅ Widget customizer (CSS variable theming, live preview, 8 presets, embed code export, new Widget dashboard tab)
+Tier 1 Polish Sprint: ✅ Groups 1-10 (shared UI components, toasts, loading/empty states, confirm dialogs, onboarding checklist, per-service duration, buffer time, staff days off UI, CSV export, AI assistant foundation)
 
 ## Deposits
 Widget shows a deposit notice when deposits_supported flag is true AND deposit_pct>0 AND duration>deposit_required_above_minutes.
 No payment processing yet — informational scaffolding only.
+
+## AI assistant (foundation only)
+ai-docs/ — markdown knowledge base grounding the future tenant assistant (one guide per feature area + changelog.md + tools-reference.md)
+lib/ai/ — provider-agnostic skeleton: adapter.ts (AIAdapter contract), providers/ (getAdapter factory, all throw not-implemented), tools/ (empty registry), docs/loader.ts (loadDocsForTab + PAGE_DOC_MAP), context/builder.ts (buildSystemPrompt)
+app/api/[slug]/assistant — POST, agent-only; 403 when tenant_settings.ai_assistant_enabled=false, 501 otherwise (no provider yet)
+tenant_settings.ai_assistant_enabled (default false) + ai_provider ('anthropic'|'openai'|'mistral'|null) already exist in the schema — do not re-add.
+
+## AI Docs Maintenance Protocol
+The ai-docs/ folder is the assistant's only knowledge of the product. It MUST stay in sync with shipped behavior:
+1. Any PR/commit that changes user-facing behavior (UI labels, flows, settings, statuses, APIs the docs mention) must update the affected ai-docs/*.md guide(s) in the same commit.
+2. Every shipped feature gets an entry at the TOP of ai-docs/changelog.md (date + short description, newest first).
+3. New dashboard tabs or pages must be added to PAGE_DOC_MAP in lib/ai/docs/loader.ts and get (or reuse) a guide.
+4. Guides are written for an LLM advising a business owner: UI-oriented, exact tab/button names, tenant terminology placeholders like {staff}, and a "Related APIs" section for future tool use.
+5. New assistant tools must be documented in ai-docs/tools-reference.md (move from "planned" to active) when registered in lib/ai/tools/index.ts.
+6. Docs state facts about current behavior only — no roadmap promises except inside tools-reference.md's clearly marked planned section.
