@@ -70,7 +70,8 @@ export async function GET(
     console.error('[availability] Settings query error:', settingsError.message);
   }
 
-  let slotMinutes = settings?.default_slot_minutes ?? 30;
+  const defaultSlotMinutes = settings?.default_slot_minutes ?? 30;
+  let slotMinutes = defaultSlotMinutes;
   const minLeadHours = settings?.min_lead_time_hours ?? 2;
   const maxDaysAhead = settings?.max_booking_days_ahead ?? 30;
 
@@ -85,8 +86,10 @@ export async function GET(
         .select('id, duration_minutes')
         .in('id', tagIds)
         .eq('tenant_id', tenant.id);
+      // NULL duration = a normal-length service: it contributes the default
+      // slot length to the sum, not zero.
       const total = (tagRows ?? []).reduce(
-        (sum, t) => sum + (typeof t.duration_minutes === 'number' ? t.duration_minutes : 0),
+        (sum, t) => sum + (typeof t.duration_minutes === 'number' ? t.duration_minutes : defaultSlotMinutes),
         0
       );
       if (total > 0) slotMinutes = total;

@@ -254,11 +254,16 @@ export async function POST(
   }
 
   const tagIds: string[] = Array.isArray(body.tag_ids) ? body.tag_ids : [];
-  let tagDetails: Array<{ id: string; name: string; extra_price: number | null }> = [];
+  let tagDetails: Array<{
+    id: string;
+    name: string;
+    extra_price: number | null;
+    duration_minutes: number | null;
+  }> = [];
   if (tagIds.length > 0) {
     const { data: tags } = await supabase
       .from('service_tags')
-      .select('id, name, extra_price')
+      .select('id, name, extra_price, duration_minutes')
       .in('id', tagIds)
       .eq('tenant_id', tenant.id);
     tagDetails = tags ?? [];
@@ -271,6 +276,24 @@ export async function POST(
 
   if (durationMinutes <= 0) {
     return NextResponse.json({ error: 'Invalid time range' }, { status: 400 });
+  }
+
+  // Per-service duration: the submitted slot length must equal the sum of the
+  // selected services' durations (NULL duration = default slot length, same
+  // semantics as the availability APIs). Blocks tampered clients from
+  // underblocking the calendar / underpricing the booking.
+  if (settings?.per_service_duration_enabled && tagIds.length > 0) {
+    const defaultMinutes = settings?.default_slot_minutes ?? 30;
+    const expectedDuration = tagDetails.reduce(
+      (sum, t) => sum + (typeof t.duration_minutes === 'number' ? t.duration_minutes : defaultMinutes),
+      0
+    );
+    if (expectedDuration > 0 && durationMinutes !== expectedDuration) {
+      return NextResponse.json(
+        { error: 'Slot duration does not match the selected services. Please pick your time again.' },
+        { status: 409 }
+      );
+    }
   }
 
   const pricing = calculatePricing({

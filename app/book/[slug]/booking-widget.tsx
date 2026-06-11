@@ -226,7 +226,12 @@ export default function BookingWidget({ slug, catalog }: Props) {
   const defaultSlotMinutes = catalog.settings?.default_slot_minutes ?? 30;
   const effectiveDuration = (() => {
     if (!perServiceDuration) return defaultSlotMinutes;
-    const total = selectedTags.reduce((sum, t) => sum + (t.duration_minutes ?? 0), 0);
+    // NULL duration = a normal-length service: it contributes the default
+    // slot length to the sum, not zero (must match the availability APIs).
+    const total = selectedTags.reduce(
+      (sum, t) => sum + (t.duration_minutes ?? defaultSlotMinutes),
+      0
+    );
     return total > 0 ? total : defaultSlotMinutes;
   })();
   const durationMismatch =

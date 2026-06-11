@@ -66,7 +66,8 @@ Staff members see, on their own dashboard:
    staff member exists).
 2. **Date & time** — date chips for the next 14 days; available slots load per
    date. Slot length = `default_slot_minutes`, or the sum of selected services'
-   durations when per-service duration is enabled.
+   durations when per-service duration is enabled (services without a custom
+   duration count as the default appointment length in that sum).
 3. **Details** — name, email, phone, service selection, notes (label and
    required-ness are template-driven), age confirmation when the age gate is on.
    If changing services changes the appointment duration, the client is asked

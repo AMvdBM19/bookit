@@ -3,6 +3,18 @@
 > Feature history for the AI assistant: what exists and since when. Newest
 > first. Maintained per the AI Docs Maintenance Protocol in CLAUDE.md.
 
+## 2026-06-11 — Audit hotfix (Phase 13 post-deployment audit)
+
+- ai-docs knowledge base is now bundled into the Docker runtime image (the
+  assistant's doc loader can read it in production).
+- Per-service duration sum now counts services *without* a custom duration
+  as the default appointment length (previously they contributed 0
+  minutes), consistently across both availability APIs and the widget.
+- The booking API now rejects submissions whose slot length doesn't match
+  the selected services' total duration (409), closing a tampered-client
+  underblocking/underpricing gap. No behavior change when per-service
+  duration is off.
+
 ## 2026-06-11 — Tier 1 "Ship It" Polish Sprint
 
 - **Group 10 — AI assistant foundation**: this `ai-docs/` knowledge base,

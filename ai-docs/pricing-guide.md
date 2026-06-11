@@ -72,7 +72,9 @@ A table of the tenant's service tags with inline editing:
 - **Per-service duration** checkbox (above the table) — when enabled, a
   **Duration (min)** column appears; each service can set its own
   appointment length (5–600 min, in steps of 5). Blank = the default slot
-  length. Selecting multiple services in the widget sums their durations.
+  length. Selecting multiple services in the widget sums their durations —
+  services without a custom duration count as the default appointment
+  length in that sum.
 - **Active/Inactive** toggle — inactive services disappear from the widget
   but keep their history. Services themselves are created during the setup
   wizard.

@@ -17,6 +17,13 @@ Client modes: account (login required) or guest (email-deduped, no account)
 Booking confirm modes: staff_must_accept or auto_confirm
 JWT claims: tenant_id, user_role (agent/staff/client/super_admin), staff_id?, client_id?
 
+### Known gotcha: migrations must be applied AND committed
+- Database migrations MUST be applied to live Supabase via the Supabase MCP
+  `apply_migration` tool AND committed as files in supabase/migrations/ — both,
+  always, in the same work block. Committing the .sql file alone does NOT
+  change the live schema. (Phase 13 audit finding: code shipped reading
+  columns that didn't exist; optional chaining masked it.)
+
 ### Known gotcha: Next.js data caching + Supabase service client
 Any layout.tsx or server component that queries Supabase via `createServiceClient()` must include
 `export const dynamic = 'force-dynamic'` at the top, or the query result will be cached indefinitely
