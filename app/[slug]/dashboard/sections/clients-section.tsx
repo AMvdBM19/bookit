@@ -5,6 +5,25 @@ import { toast } from 'sonner';
 import { useTenantConfig } from '@/lib/context/tenant-config';
 import Badge, { type BadgeVariant } from '@/components/ui/badge';
 import Modal from '@/components/ui/modal';
+import Spinner from '@/components/ui/spinner';
+import EmptyState from '@/components/ui/empty-state';
+
+function ClientsIcon() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+      <circle cx="12" cy="7" r="4" />
+    </svg>
+  );
+}
+
+function SectionLoading() {
+  return (
+    <div className="flex justify-center py-16 text-fg-muted">
+      <Spinner size="lg" />
+    </div>
+  );
+}
 
 interface Guest {
   id: string;
@@ -95,8 +114,21 @@ function GuestList({ slug }: { slug: string }) {
     reload();
   }, [reload]);
 
-  if (loading) return <p className="text-sm text-fg-muted">Loading {terminology.client_plural.toLowerCase()}…</p>;
+  if (loading) return <SectionLoading />;
   if (error) return <p className="text-sm text-red-500">{error}</p>;
+
+  if (guests.length === 0) {
+    return (
+      <div className="space-y-4">
+        <h2 className="text-sm font-semibold text-fg">{terminology.client_plural}</h2>
+        <EmptyState
+          icon={<ClientsIcon />}
+          title={`No ${terminology.client_plural.toLowerCase()} yet`}
+          description={`${terminology.client_plural} appear here automatically after their first booking.`}
+        />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-4">
@@ -116,14 +148,7 @@ function GuestList({ slug }: { slug: string }) {
               </tr>
             </thead>
             <tbody className="divide-y divide-border">
-              {guests.length === 0 ? (
-                <tr>
-                  <td colSpan={6} className="px-3 py-6 text-center text-fg-muted text-sm">
-                    No {terminology.client_plural.toLowerCase()} yet.
-                  </td>
-                </tr>
-              ) : (
-                guests.map(g => (
+              {guests.map(g => (
                   <tr key={g.id} className={`hover:bg-elevated ${g.is_blocked ? 'opacity-60' : ''}`}>
                     <td className="px-3 py-3 text-fg">{g.name}</td>
                     <td className="px-3 py-3 text-fg-muted">{g.email}</td>
@@ -146,8 +171,7 @@ function GuestList({ slug }: { slug: string }) {
                       )}
                     </td>
                   </tr>
-                ))
-              )}
+                ))}
             </tbody>
           </table>
         </div>
@@ -304,8 +328,21 @@ function ClientList({ slug }: { slug: string }) {
     }
   }
 
-  if (loading) return <p className="text-sm text-fg-muted">Loading {terminology.client_plural.toLowerCase()}…</p>;
+  if (loading) return <SectionLoading />;
   if (error) return <p className="text-sm text-red-500">{error}</p>;
+
+  if (clients.length === 0) {
+    return (
+      <div className="space-y-4">
+        <h2 className="text-sm font-semibold text-fg">{terminology.client_plural}</h2>
+        <EmptyState
+          icon={<ClientsIcon />}
+          title={`No ${terminology.client_plural.toLowerCase()} yet`}
+          description={`${terminology.client_plural} appear here once they create an account.`}
+        />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-4">
@@ -325,14 +362,7 @@ function ClientList({ slug }: { slug: string }) {
               </tr>
             </thead>
             <tbody className="divide-y divide-border">
-              {clients.length === 0 ? (
-                <tr>
-                  <td colSpan={6} className="px-3 py-6 text-center text-fg-muted text-sm">
-                    No {terminology.client_plural.toLowerCase()} yet.
-                  </td>
-                </tr>
-              ) : (
-                clients.map(c => {
+              {clients.map(c => {
                   const busy = busyId === c.id;
                   return (
                     <tr key={c.id} className="hover:bg-elevated">
@@ -373,8 +403,7 @@ function ClientList({ slug }: { slug: string }) {
                       </td>
                     </tr>
                   );
-                })
-              )}
+                })}
             </tbody>
           </table>
         </div>

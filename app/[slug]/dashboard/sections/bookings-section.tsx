@@ -4,6 +4,8 @@ import { useCallback, useEffect, useState } from 'react';
 import { toast } from 'sonner';
 import { useTenantConfig } from '@/lib/context/tenant-config';
 import Badge, { type BadgeVariant } from '@/components/ui/badge';
+import Spinner from '@/components/ui/spinner';
+import EmptyState from '@/components/ui/empty-state';
 import CreateBookingModal from './create-booking-modal';
 
 interface JoinObj {
@@ -261,10 +263,39 @@ export default function BookingsSection({ slug }: { slug: string }) {
     .slice(0, 30);
 
   if (loading) {
-    return <p className="text-sm text-fg-muted">Loading {terminology.booking_plural.toLowerCase()}…</p>;
+    return (
+      <div className="flex justify-center py-16 text-fg-muted">
+        <Spinner size="lg" />
+      </div>
+    );
   }
   if (error) {
     return <p className="text-sm text-red-500">{error}</p>;
+  }
+
+  if (bookings.length === 0) {
+    return (
+      <div className="space-y-6">
+        <h2 className="text-sm font-semibold text-fg">{terminology.booking_plural}</h2>
+        <EmptyState
+          icon={<CalendarIcon />}
+          title={`No ${terminology.booking_plural.toLowerCase()} yet`}
+          description={`Once ${terminology.client_plural.toLowerCase()} start booking, everything shows up here. You can also create one manually.`}
+          actionLabel={`Create a ${terminology.booking.toLowerCase()}`}
+          onAction={() => setShowCreate(true)}
+        />
+        {showCreate && (
+          <CreateBookingModal
+            slug={slug}
+            onClose={() => setShowCreate(false)}
+            onCreated={() => {
+              setShowCreate(false);
+              reload();
+            }}
+          />
+        )}
+      </div>
+    );
   }
 
   return (

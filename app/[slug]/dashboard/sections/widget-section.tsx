@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
+import Spinner from '@/components/ui/spinner';
 import {
   PRESETS,
   DEFAULT_WIDGET_THEME,
@@ -203,7 +204,11 @@ export default function WidgetSection({ slug }: { slug: string }) {
   }
 
   if (loading) {
-    return <p className="text-sm text-fg-muted">Loading widget settings…</p>;
+    return (
+      <div className="flex justify-center py-16 text-fg-muted">
+        <Spinner size="lg" />
+      </div>
+    );
   }
 
   return (

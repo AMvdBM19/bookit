@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import { toast } from 'sonner';
+import Spinner from '@/components/ui/spinner';
 
 interface Template {
   id: string;
@@ -121,7 +122,13 @@ export default function TemplatesSection({ slug }: { slug: string }) {
     }
   }
 
-  if (loading) return <p className="text-sm text-fg-muted">Loading templates…</p>;
+  if (loading) {
+    return (
+      <div className="flex justify-center py-16 text-fg-muted">
+        <Spinner size="lg" />
+      </div>
+    );
+  }
   if (error) return <p className="text-sm text-red-500">{error}</p>;
   if (!data) return null;
 

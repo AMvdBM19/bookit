@@ -3,6 +3,8 @@
 import { useCallback, useEffect, useState } from 'react';
 import { toast } from 'sonner';
 import { useTenantConfig } from '@/lib/context/tenant-config';
+import Spinner from '@/components/ui/spinner';
+import EmptyState from '@/components/ui/empty-state';
 
 interface Settings {
   currency: string;
@@ -148,7 +150,13 @@ export default function PricingSection({ slug }: { slug: string }) {
     }
   }
 
-  if (loading) return <p className="text-sm text-fg-muted">Loading pricing…</p>;
+  if (loading) {
+    return (
+      <div className="flex justify-center py-16 text-fg-muted">
+        <Spinner size="lg" />
+      </div>
+    );
+  }
   if (error) return <p className="text-sm text-red-500">{error}</p>;
   if (!summary) return null;
 
@@ -507,10 +515,27 @@ function PerServicePricing({ slug, currency }: { slug: string; currency: string 
         Extra price is the additional charge on top of the base rate for each service type.
       </p>
 
-      {loading && <p className="text-sm text-fg-muted">Loading services…</p>}
+      {loading && (
+        <div className="flex justify-center py-10 text-fg-muted">
+          <Spinner size="md" />
+        </div>
+      )}
       {error && <p className="text-sm text-red-500">{error}</p>}
 
-      {!loading && !error && (
+      {!loading && !error && tags.length === 0 && (
+        <EmptyState
+          icon={
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z" />
+              <line x1="7" y1="7" x2="7.01" y2="7" />
+            </svg>
+          }
+          title="No services yet"
+          description="Service tags created during setup show up here with their extra pricing."
+        />
+      )}
+
+      {!loading && !error && tags.length > 0 && (
         <div className="border border-border rounded-lg overflow-hidden bg-surface">
           <table className="w-full text-sm">
             <thead className="bg-elevated border-b border-border">
@@ -522,17 +547,9 @@ function PerServicePricing({ slug, currency }: { slug: string; currency: string 
               </tr>
             </thead>
             <tbody className="divide-y divide-border">
-              {tags.length === 0 ? (
-                <tr>
-                  <td colSpan={4} className="px-3 py-6 text-center text-fg-muted text-sm">
-                    No services yet.
-                  </td>
-                </tr>
-              ) : (
-                tags.map(tag => (
-                  <TagPriceRow key={tag.id} slug={slug} tag={tag} currency={currency} />
-                ))
-              )}
+              {tags.map(tag => (
+                <TagPriceRow key={tag.id} slug={slug} tag={tag} currency={currency} />
+              ))}
             </tbody>
           </table>
         </div>

@@ -6,7 +6,17 @@ import { toast } from 'sonner';
 import { createClient } from '@/lib/supabase/client';
 import { useTenantConfig } from '@/lib/context/tenant-config';
 import ThemeToggle from '@/app/components/theme-toggle';
+import EmptyState from '@/components/ui/empty-state';
 import StaffBookingCard from './staff-booking-card';
+
+function BookingsEmptyIcon() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <rect x="3" y="4" width="18" height="18" rx="2" />
+      <path d="M16 2v4M8 2v4M3 10h18" />
+    </svg>
+  );
+}
 
 interface BookingRow {
   id: string;
@@ -170,7 +180,11 @@ export default function StaffDashboard({
             )}
           </div>
           {pendingBookings.length === 0 ? (
-            <p className="text-fg-subtle text-sm">No pending requests right now.</p>
+            <EmptyState
+              icon={<BookingsEmptyIcon />}
+              title="No pending requests"
+              description={`New ${terminology.booking} requests that need your response will appear here.`}
+            />
           ) : (
             <div className="space-y-3">
               {pendingBookings.map(b => (
@@ -189,9 +203,11 @@ export default function StaffDashboard({
         <section>
           <h2 className="text-fg text-sm font-medium mb-4">Upcoming This Week</h2>
           {upcomingBookings.length === 0 ? (
-            <p className="text-fg-subtle text-sm">
-              No upcoming {terminology.booking_plural.toLowerCase()} yet — they&apos;ll appear here once clients book with you.
-            </p>
+            <EmptyState
+              icon={<BookingsEmptyIcon />}
+              title={`No upcoming ${terminology.booking_plural.toLowerCase()}`}
+              description={`They'll appear here once ${terminology.client_plural.toLowerCase()} book with you.`}
+            />
           ) : (
             <div className="space-y-3">
               {upcomingBookings.map(b => (

@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import Spinner from '@/components/ui/spinner';
 
 interface Slot {
   start: string;
@@ -139,7 +140,9 @@ export default function DateTimeSelect({
           <p className="text-xs w-tx2 mb-2">Choose a time</p>
 
           {loading && (
-            <p className="text-xs w-tx3 italic">Loading slots…</p>
+            <div className="flex justify-center py-6 w-tx3">
+              <Spinner size="md" />
+            </div>
           )}
 
           {!loading && error && (

@@ -5,6 +5,8 @@ import { toast } from 'sonner';
 import { useTenantConfig } from '@/lib/context/tenant-config';
 import Badge, { type BadgeVariant } from '@/components/ui/badge';
 import Modal from '@/components/ui/modal';
+import Spinner from '@/components/ui/spinner';
+import EmptyState from '@/components/ui/empty-state';
 
 interface StaffRow {
   id: string;
@@ -115,10 +117,30 @@ export default function StaffSection({ slug }: { slug: string }) {
         </button>
       </div>
 
-      {loading && <p className="text-sm text-fg-muted">Loading {terminology.staff_plural.toLowerCase()}…</p>}
+      {loading && (
+        <div className="flex justify-center py-16 text-fg-muted">
+          <Spinner size="lg" />
+        </div>
+      )}
       {error && <p className="text-sm text-red-500">{error}</p>}
 
-      {!loading && !error && (
+      {!loading && !error && staff.length === 0 && (
+        <EmptyState
+          icon={
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+              <circle cx="9" cy="7" r="4" />
+              <path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75" />
+            </svg>
+          }
+          title={`No ${terminology.staff_plural.toLowerCase()} yet`}
+          description={`Add your first team member so ${terminology.client_plural.toLowerCase()} can book with them.`}
+          actionLabel={`Add ${terminology.staff.toLowerCase()}`}
+          onAction={() => setShowCreate(true)}
+        />
+      )}
+
+      {!loading && !error && staff.length > 0 && (
         <div className="border border-border rounded-lg overflow-hidden bg-surface">
           <div className="overflow-x-auto">
           <table className="w-full text-sm min-w-[760px]">
@@ -134,14 +156,7 @@ export default function StaffSection({ slug }: { slug: string }) {
               </tr>
             </thead>
             <tbody className="divide-y divide-border">
-              {staff.length === 0 ? (
-                <tr>
-                  <td colSpan={7} className="px-3 py-6 text-center text-fg-muted text-sm">
-                    No {terminology.staff_plural.toLowerCase()} yet.
-                  </td>
-                </tr>
-              ) : (
-                staff.map(s => {
+              {staff.map(s => {
                   const tags = tagNamesOf(s);
                   const photo = s.photo_urls?.[0];
                   const isInvited = s.first_login && !s.wizard_completed;
@@ -214,8 +229,7 @@ export default function StaffSection({ slug }: { slug: string }) {
                       </td>
                     </tr>
                   );
-                })
-              )}
+                })}
             </tbody>
           </table>
           </div>

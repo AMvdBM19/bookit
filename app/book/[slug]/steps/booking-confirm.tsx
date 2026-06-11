@@ -1,5 +1,6 @@
 'use client';
 
+import Spinner from '@/components/ui/spinner';
 import type { CatalogSettings, CatalogStaff } from '../catalog-loader';
 
 interface Tag {
@@ -171,9 +172,10 @@ export default function BookingConfirm({
         type="button"
         onClick={onSubmit}
         disabled={submitting}
-        className="w-full w-round py-2.5 text-sm font-medium transition-opacity hover:opacity-90 disabled:opacity-50 focus:outline-none w-focus"
+        className="w-full w-round py-2.5 text-sm font-medium transition-opacity hover:opacity-90 disabled:opacity-50 focus:outline-none w-focus inline-flex items-center justify-center gap-2"
         style={{ backgroundColor: brandColor, color: '#fff' }}
       >
+        {submitting && <Spinner size="sm" />}
         {submitting ? 'Submitting…' : 'Submit Booking'}
       </button>
 
