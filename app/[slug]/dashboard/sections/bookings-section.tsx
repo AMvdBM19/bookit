@@ -6,6 +6,7 @@ import { useTenantConfig } from '@/lib/context/tenant-config';
 import Badge, { type BadgeVariant } from '@/components/ui/badge';
 import Spinner from '@/components/ui/spinner';
 import EmptyState from '@/components/ui/empty-state';
+import ConfirmDialog from '@/components/ui/confirm-dialog';
 import CreateBookingModal from './create-booking-modal';
 
 interface JoinObj {
@@ -121,6 +122,7 @@ export default function BookingsSection({ slug }: { slug: string }) {
   const [assignChoice, setAssignChoice] = useState<Record<string, string>>({});
   const [staffOptions, setStaffOptions] = useState<Array<{ id: string; pseudonym: string }>>([]);
   const [showCreate, setShowCreate] = useState(false);
+  const [confirmNoShowId, setConfirmNoShowId] = useState<string | null>(null);
 
   const reload = useCallback(async () => {
     setLoading(true);
@@ -524,7 +526,7 @@ export default function BookingsSection({ slug }: { slug: string }) {
                               </button>
                               <button
                                 type="button"
-                                onClick={() => handleStatus(b.id, 'no_show')}
+                                onClick={() => setConfirmNoShowId(b.id)}
                                 disabled={busy}
                                 className="text-xs px-2 py-1 bg-elevated hover:bg-sunken text-fg-muted rounded disabled:opacity-50"
                               >
@@ -602,6 +604,19 @@ export default function BookingsSection({ slug }: { slug: string }) {
             setShowCreate(false);
             reload();
           }}
+        />
+      )}
+
+      {confirmNoShowId && (
+        <ConfirmDialog
+          title="Mark as no-show?"
+          description={`The ${terminology.client.toLowerCase()} will be recorded as not having shown up. This affects revenue reporting.`}
+          confirmLabel="Mark as no-show"
+          onConfirm={async () => {
+            await handleStatus(confirmNoShowId, 'no_show');
+            setConfirmNoShowId(null);
+          }}
+          onClose={() => setConfirmNoShowId(null)}
         />
       )}
     </div>

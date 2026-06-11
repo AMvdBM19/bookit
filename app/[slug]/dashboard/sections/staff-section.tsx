@@ -7,6 +7,7 @@ import Badge, { type BadgeVariant } from '@/components/ui/badge';
 import Modal from '@/components/ui/modal';
 import Spinner from '@/components/ui/spinner';
 import EmptyState from '@/components/ui/empty-state';
+import ConfirmDialog from '@/components/ui/confirm-dialog';
 
 interface StaffRow {
   id: string;
@@ -60,6 +61,7 @@ export default function StaffSection({ slug }: { slug: string }) {
   const [error, setError] = useState<string | null>(null);
   const [showCreate, setShowCreate] = useState(false);
   const [busyId, setBusyId] = useState<string | null>(null);
+  const [deactivateTarget, setDeactivateTarget] = useState<StaffRow | null>(null);
 
   const reload = useCallback(async () => {
     setLoading(true);
@@ -220,7 +222,7 @@ export default function StaffSection({ slug }: { slug: string }) {
                       <td className="px-3 py-3 text-right">
                         <button
                           type="button"
-                          onClick={() => toggleStatus(s)}
+                          onClick={() => (s.status === 'active' ? setDeactivateTarget(s) : toggleStatus(s))}
                           disabled={busyId === s.id}
                           className="text-xs px-2 py-1 bg-elevated hover:bg-sunken text-fg rounded disabled:opacity-50"
                         >
@@ -244,6 +246,19 @@ export default function StaffSection({ slug }: { slug: string }) {
             setShowCreate(false);
             reload();
           }}
+        />
+      )}
+
+      {deactivateTarget && (
+        <ConfirmDialog
+          title={`Deactivate ${deactivateTarget.pseudonym}?`}
+          description={`They will no longer appear in the booking widget or receive new ${terminology.booking_plural.toLowerCase()}. Existing ${terminology.booking_plural.toLowerCase()} are not affected.`}
+          confirmLabel="Deactivate"
+          onConfirm={async () => {
+            await toggleStatus(deactivateTarget);
+            setDeactivateTarget(null);
+          }}
+          onClose={() => setDeactivateTarget(null)}
         />
       )}
     </div>

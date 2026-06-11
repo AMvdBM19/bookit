@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
+import ConfirmDialog from '@/components/ui/confirm-dialog';
 
 interface Props {
   slug: string;
@@ -69,6 +70,7 @@ export default function StaffBookingCard({ slug, booking, showActions, canComple
   const [calendarUrl, setCalendarUrl] = useState<string | null>(null);
   const [accepted, setAccepted] = useState(false);
   const [completing, setCompleting] = useState(false);
+  const [confirmNoShow, setConfirmNoShow] = useState(false);
 
   const showCompletion =
     !showActions &&
@@ -251,7 +253,7 @@ export default function StaffBookingCard({ slug, booking, showActions, canComple
             </button>
             <button
               type="button"
-              onClick={() => handleStatus('no_show')}
+              onClick={() => setConfirmNoShow(true)}
               disabled={completing}
               className="px-4 py-1.5 bg-elevated hover:bg-sunken text-fg-muted text-xs rounded-lg transition-colors disabled:opacity-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
             >
@@ -259,6 +261,18 @@ export default function StaffBookingCard({ slug, booking, showActions, canComple
             </button>
           </div>
           {error && <p className="text-red-500 text-xs">{error}</p>}
+          {confirmNoShow && (
+            <ConfirmDialog
+              title="Mark as no-show?"
+              description={`${booking.clientName} will be recorded as not having shown up.`}
+              confirmLabel="Mark as no-show"
+              onConfirm={async () => {
+                await handleStatus('no_show');
+                setConfirmNoShow(false);
+              }}
+              onClose={() => setConfirmNoShow(false)}
+            />
+          )}
         </div>
       )}
 

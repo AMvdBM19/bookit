@@ -2,6 +2,7 @@
 
 import { Fragment, useCallback, useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
+import ConfirmDialog from '@/components/ui/confirm-dialog';
 import type {
   Terminology,
   FeatureFlags,
@@ -197,6 +198,7 @@ function TenantsTab({ apiKey, onAuthError }: { apiKey: string; onAuthError: () =
   const [expanded, setExpanded] = useState<string | null>(null);
   const [statsCache, setStatsCache] = useState<Record<string, Stats>>({});
   const [statsLoading, setStatsLoading] = useState<string | null>(null);
+  const [deactivateTarget, setDeactivateTarget] = useState<TenantRow | null>(null);
 
   const reload = useCallback(async () => {
     setLoading(true);
@@ -358,7 +360,7 @@ function TenantsTab({ apiKey, onAuthError }: { apiKey: string; onAuthError: () =
                           </button>
                           <button
                             type="button"
-                            onClick={() => toggleActive(t)}
+                            onClick={() => (t.is_active ? setDeactivateTarget(t) : toggleActive(t))}
                             disabled={busyId === t.id}
                             className="text-xs px-2 py-1 bg-zinc-100 hover:bg-zinc-200 text-zinc-800 rounded disabled:opacity-50"
                           >
@@ -395,6 +397,19 @@ function TenantsTab({ apiKey, onAuthError }: { apiKey: string; onAuthError: () =
             setShowCreate(false);
             reload();
           }}
+        />
+      )}
+
+      {deactivateTarget && (
+        <ConfirmDialog
+          title={`Deactivate ${deactivateTarget.name}?`}
+          description="The tenant's booking widget and dashboard will stop working until reactivated."
+          confirmLabel="Deactivate tenant"
+          onConfirm={async () => {
+            await toggleActive(deactivateTarget);
+            setDeactivateTarget(null);
+          }}
+          onClose={() => setDeactivateTarget(null)}
         />
       )}
     </>
