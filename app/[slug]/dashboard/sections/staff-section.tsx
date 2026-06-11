@@ -2,6 +2,8 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import { useTenantConfig } from '@/lib/context/tenant-config';
+import Badge, { type BadgeVariant } from '@/components/ui/badge';
+import Modal from '@/components/ui/modal';
 
 interface StaffRow {
   id: string;
@@ -42,10 +44,10 @@ function initialOf(name: string): string {
   return (name?.[0] ?? '?').toUpperCase();
 }
 
-const STATUS_BADGE: Record<string, string> = {
-  active: 'bg-emerald-100 text-emerald-800 border-emerald-200 dark:bg-emerald-500/15 dark:text-emerald-400 dark:border-emerald-500/30',
-  inactive: 'bg-sunken text-fg-muted border-border-strong',
-  offline: 'bg-amber-100 text-amber-800 border-amber-200 dark:bg-amber-500/15 dark:text-amber-400 dark:border-amber-500/30',
+const STATUS_VARIANT: Record<string, BadgeVariant> = {
+  active: 'success',
+  inactive: 'outline',
+  offline: 'warning',
 };
 
 export default function StaffSection({ slug }: { slug: string }) {
@@ -166,27 +168,15 @@ export default function StaffSection({ slug }: { slug: string }) {
                         </div>
                       </td>
                       <td className="px-3 py-3">
-                        <span
-                          className={`inline-block px-2 py-0.5 text-[10px] font-medium uppercase tracking-wider rounded border ${
-                            STATUS_BADGE[s.status] ?? STATUS_BADGE.inactive
-                          }`}
-                        >
-                          {s.status}
-                        </span>
+                        <Badge variant={STATUS_VARIANT[s.status] ?? 'outline'}>{s.status}</Badge>
                       </td>
                       <td className="px-3 py-3">
                         {isInvited ? (
-                          <span className="inline-block px-2 py-0.5 text-[10px] font-medium uppercase tracking-wider rounded border bg-amber-100 text-amber-800 border-amber-200 dark:bg-amber-500/15 dark:text-amber-400 dark:border-amber-500/30">
-                            Invited
-                          </span>
+                          <Badge variant="warning">Invited</Badge>
                         ) : s.wizard_completed ? (
-                          <span className="inline-block px-2 py-0.5 text-[10px] font-medium uppercase tracking-wider rounded border bg-emerald-100 text-emerald-800 border-emerald-200 dark:bg-emerald-500/15 dark:text-emerald-400 dark:border-emerald-500/30">
-                            Complete
-                          </span>
+                          <Badge variant="success">Complete</Badge>
                         ) : (
-                          <span className="inline-block px-2 py-0.5 text-[10px] font-medium uppercase tracking-wider rounded border bg-sunken text-fg border-border-strong">
-                            Setup pending
-                          </span>
+                          <Badge variant="outline">Setup pending</Badge>
                         )}
                       </td>
                       <td className="px-3 py-3">
@@ -286,20 +276,7 @@ function CreateStaffModal({
   }
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
-      <div className="bg-surface rounded-lg shadow-xl w-full max-w-sm p-6">
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="text-base font-semibold text-fg">Add {terminology.staff}</h3>
-          <button
-            type="button"
-            onClick={onClose}
-            className="text-fg-muted hover:text-fg"
-            aria-label="Close"
-          >
-            ✕
-          </button>
-        </div>
-
+    <Modal title={`Add ${terminology.staff}`} onClose={onClose} maxWidth="max-w-sm">
         {success ? (
           <div className="rounded-lg bg-emerald-50 border border-emerald-200 p-3 text-sm text-emerald-800 dark:bg-emerald-500/10 dark:border-emerald-500/30 dark:text-emerald-400">
             {terminology.staff} created. They can sign in with the password you set, then they&apos;ll be prompted
@@ -372,7 +349,6 @@ function CreateStaffModal({
             </div>
           </form>
         )}
-      </div>
-    </div>
+    </Modal>
   );
 }

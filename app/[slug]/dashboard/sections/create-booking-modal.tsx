@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useTenantConfig } from '@/lib/context/tenant-config';
+import Modal from '@/components/ui/modal';
 
 interface SearchResult {
   id: string;
@@ -221,15 +222,7 @@ export default function CreateBookingModal({
   }
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
-      <div className="bg-surface border border-border rounded-lg shadow-xl w-full max-w-md p-6 max-h-[90vh] overflow-y-auto">
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="text-base font-semibold text-fg">New {terminology.booking}</h3>
-          <button type="button" onClick={onClose} className="text-fg-muted hover:text-fg" aria-label="Close">
-            ✕
-          </button>
-        </div>
-
+    <Modal title={`New ${terminology.booking}`} onClose={onClose}>
         <form onSubmit={submit} className="space-y-4">
           {/* Client */}
           <div>
@@ -456,7 +449,6 @@ export default function CreateBookingModal({
             </button>
           </div>
         </form>
-      </div>
-    </div>
+    </Modal>
   );
 }

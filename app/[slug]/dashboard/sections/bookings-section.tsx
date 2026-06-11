@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import { useTenantConfig } from '@/lib/context/tenant-config';
+import Badge, { type BadgeVariant } from '@/components/ui/badge';
 import CreateBookingModal from './create-booking-modal';
 
 interface JoinObj {
@@ -78,12 +79,12 @@ function formatRelative(iso: string): string {
   return `${days}d ago`;
 }
 
-const STATUS_COLORS: Record<string, string> = {
-  pending_staff: 'bg-amber-100 text-amber-800 border-amber-200 dark:bg-amber-500/15 dark:text-amber-400 dark:border-amber-500/30',
-  confirmed: 'bg-emerald-100 text-emerald-800 border-emerald-200 dark:bg-emerald-500/15 dark:text-emerald-400 dark:border-emerald-500/30',
-  cancelled: 'bg-elevated text-fg-muted border-border',
-  completed: 'bg-blue-100 text-blue-800 border-blue-200 dark:bg-blue-500/15 dark:text-blue-400 dark:border-blue-500/30',
-  no_show: 'bg-red-100 text-red-800 border-red-200 dark:bg-red-500/15 dark:text-red-400 dark:border-red-500/30',
+const STATUS_VARIANTS: Record<string, BadgeVariant> = {
+  pending_staff: 'warning',
+  confirmed: 'success',
+  cancelled: 'default',
+  completed: 'info',
+  no_show: 'danger',
 };
 
 const tableWrap = 'border border-border rounded-lg overflow-hidden bg-surface';
@@ -91,13 +92,8 @@ const theadCls = 'bg-elevated border-b border-border';
 const thCls = 'text-left text-[11px] font-medium uppercase tracking-wider text-fg-muted';
 
 function StatusBadge({ status }: { status: string }) {
-  const cls = STATUS_COLORS[status] ?? 'bg-elevated text-fg-muted border-border';
   return (
-    <span
-      className={`inline-block px-2 py-0.5 text-[10px] font-medium uppercase tracking-wider rounded border ${cls}`}
-    >
-      {status.replace('_', ' ')}
-    </span>
+    <Badge variant={STATUS_VARIANTS[status] ?? 'default'}>{status.replace('_', ' ')}</Badge>
   );
 }
 
