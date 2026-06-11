@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { useTenantConfig } from '@/lib/context/tenant-config';
 import ThemeToggle from '@/app/components/theme-toggle';
+import OnboardingChecklist from '@/components/onboarding-checklist';
 import BookingsSection from './sections/bookings-section';
 import StaffSection from './sections/staff-section';
 import ClientsSection from './sections/clients-section';
@@ -19,6 +20,7 @@ interface Props {
   tenantName: string;
   agentEmail: string;
   clientMode: 'guest' | 'account';
+  wizardCompleted?: boolean;
 }
 
 const TAB_IDS: Tab[] = ['bookings', 'staff', 'clients', 'pricing', 'widget', 'templates', 'settings'];
@@ -92,6 +94,7 @@ export default function AgentDashboard({
   tenantName,
   agentEmail,
   clientMode,
+  wizardCompleted = false,
 }: Props) {
   const { terminology } = useTenantConfig();
   const [tab, setTab] = useState<Tab>('bookings');
@@ -220,6 +223,9 @@ export default function AgentDashboard({
         </header>
 
         <div className="p-4 sm:p-6 flex-1">
+          {wizardCompleted && (
+            <OnboardingChecklist slug={slug} onNavigate={id => selectTab(id)} />
+          )}
           {tab === 'bookings' && <BookingsSection slug={slug} />}
           {tab === 'staff' && <StaffSection slug={slug} />}
           {tab === 'clients' && <ClientsSection slug={slug} clientMode={clientMode} />}

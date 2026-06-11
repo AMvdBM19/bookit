@@ -160,6 +160,7 @@ export default async function DashboardPage({
         tenantName={tenant?.name ?? slug}
         agentEmail={user.email}
         clientMode={tenant?.clientMode ?? 'guest'}
+        wizardCompleted={tenant?.wizardCompleted ?? false}
       />
     );
   }
