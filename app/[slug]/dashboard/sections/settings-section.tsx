@@ -27,6 +27,8 @@ interface Settings {
   reminder_lead_time_minutes: number;
   deposit_pct: number | null;
   deposit_required_above_minutes: number | null;
+  buffer_before_minutes?: number;
+  buffer_after_minutes?: number;
 }
 
 interface Summary {
@@ -281,6 +283,8 @@ export default function SettingsSection({ slug }: { slug: string }) {
               'min_lead_time_hours',
               'max_booking_days_ahead',
               'reminder_lead_time_minutes',
+              'buffer_before_minutes',
+              'buffer_after_minutes',
             ])
           }
           saving={saving}
@@ -325,6 +329,30 @@ export default function SettingsSection({ slug }: { slug: string }) {
                   className={inputCls}
                 />
               </EditRow>
+              <EditRow label="Buffer before (min)">
+                <input
+                  type="number"
+                  min={0}
+                  max={60}
+                  step={5}
+                  value={draft.buffer_before_minutes ?? 0}
+                  onChange={e => patchDraft({ buffer_before_minutes: Number(e.target.value) })}
+                  className={inputCls}
+                />
+                <p className="text-[11px] text-fg-muted mt-1">Prep time blocked before each {terminology.booking.toLowerCase()}.</p>
+              </EditRow>
+              <EditRow label="Buffer after (min)">
+                <input
+                  type="number"
+                  min={0}
+                  max={60}
+                  step={5}
+                  value={draft.buffer_after_minutes ?? 0}
+                  onChange={e => patchDraft({ buffer_after_minutes: Number(e.target.value) })}
+                  className={inputCls}
+                />
+                <p className="text-[11px] text-fg-muted mt-1">Cleanup time blocked after each {terminology.booking.toLowerCase()}.</p>
+              </EditRow>
             </>
           ) : (
             <>
@@ -344,6 +372,10 @@ export default function SettingsSection({ slug }: { slug: string }) {
               <Row
                 label="Reminder lead time"
                 value={`${settings?.reminder_lead_time_minutes ?? '—'} min`}
+              />
+              <Row
+                label="Buffer before / after"
+                value={`${settings?.buffer_before_minutes ?? 0} / ${settings?.buffer_after_minutes ?? 0} min`}
               />
               <Row label="Client mode" value={tenant?.client_mode} />
             </>
