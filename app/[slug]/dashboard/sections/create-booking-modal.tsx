@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { toast } from 'sonner';
 import { useTenantConfig } from '@/lib/context/tenant-config';
 import Modal from '@/components/ui/modal';
 
@@ -211,8 +212,10 @@ export default function CreateBookingModal({
       const data = await res.json().catch(() => ({}));
       if (!res.ok) {
         setError(data.error ?? 'Failed to create booking');
+        toast.error(data.error ?? "Couldn't create booking. Please try again.");
         return;
       }
+      toast.success(`${terminology.booking} created.`);
       onCreated();
     } catch {
       setError('Network error');

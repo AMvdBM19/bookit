@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
+import { toast } from 'sonner';
 import { useTenantConfig } from '@/lib/context/tenant-config';
 
 interface Settings {
@@ -132,13 +133,16 @@ export default function PricingSection({ slug }: { slug: string }) {
       const data = await res.json();
       if (!res.ok) {
         setSaveError(data.error ?? 'Failed to save');
+        toast.error(data.error ?? "Couldn't save settings. Please try again.");
         return;
       }
+      toast.success('Settings saved.');
       setEditingSection(null);
       setDraft({});
       await reload();
     } catch {
       setSaveError('Network error');
+      toast.error("Couldn't save settings. Please try again.");
     } finally {
       setSaving(false);
     }
@@ -566,11 +570,13 @@ function TagPriceRow({
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
         setError(data.error ?? 'Failed');
+        toast.error(data.error ?? "Couldn't save. Please try again.");
         return false;
       }
       return true;
     } catch {
       setError('Network error');
+      toast.error("Couldn't save. Please try again.");
       return false;
     } finally {
       setBusy(false);
@@ -579,13 +585,19 @@ function TagPriceRow({
 
   async function savePrice() {
     const ok = await patch({ extra_price: num(price) });
-    if (ok) setSavedPrice(num(price));
+    if (ok) {
+      setSavedPrice(num(price));
+      toast.success('Price saved.');
+    }
   }
 
   async function toggleActive() {
     const next = !active;
     const ok = await patch({ is_active: next });
-    if (ok) setActive(next);
+    if (ok) {
+      setActive(next);
+      toast.success(next ? 'Service activated.' : 'Service deactivated.');
+    }
   }
 
   return (

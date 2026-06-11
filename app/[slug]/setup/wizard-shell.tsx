@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { toast } from 'sonner';
 import { useTenantConfig } from '@/lib/context/tenant-config';
 import type { ComplianceFlags, FeatureFlags, Terminology } from '@/lib/types/tenant-config';
 import StepTemplatePicker from './steps/step-template-picker';
@@ -211,8 +212,10 @@ export default function WizardShell({ slug, tenantName, initialServiceTags }: Pr
       const data = await res.json();
       if (!res.ok) {
         setSubmitError(data.error ?? 'Something went wrong. Please try again.');
+        toast.error(data.error ?? "Couldn't complete setup. Please try again.");
         return;
       }
+      toast.success('Setup complete.');
       router.push(`/${slug}/dashboard`);
       router.refresh();
     } catch {

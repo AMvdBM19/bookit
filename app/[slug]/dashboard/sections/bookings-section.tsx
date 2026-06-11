@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
+import { toast } from 'sonner';
 import { useTenantConfig } from '@/lib/context/tenant-config';
 import Badge, { type BadgeVariant } from '@/components/ui/badge';
 import CreateBookingModal from './create-booking-modal';
@@ -171,9 +172,10 @@ export default function BookingsSection({ slug }: { slug: string }) {
       });
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
-        alert(data.error ?? 'Failed to assign');
+        toast.error(data.error ?? "Couldn't assign. Please try again.");
         return;
       }
+      toast.success(`${terminology.booking} assigned.`);
       setAssignChoice(prev => {
         const next = { ...prev };
         delete next[id];
@@ -191,9 +193,10 @@ export default function BookingsSection({ slug }: { slug: string }) {
       const res = await fetch(`/api/${slug}/bookings/${id}/accept`, { method: 'POST' });
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
-        alert(data.error ?? 'Failed to accept');
+        toast.error(data.error ?? "Couldn't accept. Please try again.");
         return;
       }
+      toast.success(`${terminology.booking} confirmed.`);
       await reload();
     } finally {
       setActionState(prev => ({ ...prev, [id]: 'idle' }));
@@ -210,9 +213,10 @@ export default function BookingsSection({ slug }: { slug: string }) {
       });
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
-        alert(data.error ?? 'Failed to update');
+        toast.error(data.error ?? "Couldn't update. Please try again.");
         return;
       }
+      toast.success(status === 'completed' ? 'Marked completed.' : 'Marked as no-show.');
       await reload();
     } finally {
       setActionState(prev => ({ ...prev, [id]: 'idle' }));
@@ -230,9 +234,10 @@ export default function BookingsSection({ slug }: { slug: string }) {
       });
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
-        alert(data.error ?? 'Failed to decline');
+        toast.error(data.error ?? "Couldn't decline. Please try again.");
         return;
       }
+      toast.success(`${terminology.booking} declined.`);
       setDeclineMode(prev => {
         const next = { ...prev };
         delete next[id];

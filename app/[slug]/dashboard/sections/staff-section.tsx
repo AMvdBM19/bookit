@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
+import { toast } from 'sonner';
 import { useTenantConfig } from '@/lib/context/tenant-config';
 import Badge, { type BadgeVariant } from '@/components/ui/badge';
 import Modal from '@/components/ui/modal';
@@ -91,9 +92,10 @@ export default function StaffSection({ slug }: { slug: string }) {
       });
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
-        alert(data.error ?? 'Failed to update status');
+        toast.error(data.error ?? "Couldn't update status. Please try again.");
         return;
       }
+      toast.success(next === 'active' ? `${terminology.staff} activated.` : `${terminology.staff} deactivated.`);
       setStaff(prev => prev.map(r => (r.id === s.id ? { ...r, status: next } : r)));
     } finally {
       setBusyId(null);
@@ -264,8 +266,10 @@ function CreateStaffModal({
       const data = await res.json();
       if (!res.ok) {
         setError(data.error ?? 'Failed to create staff');
+        toast.error(data.error ?? "Couldn't create staff. Please try again.");
         return;
       }
+      toast.success(`${terminology.staff} created.`);
       setSuccess(true);
       window.setTimeout(onCreated, 800);
     } catch {

@@ -1,6 +1,7 @@
 'use client';
 
 import { Fragment, useCallback, useEffect, useRef, useState } from 'react';
+import { toast } from 'sonner';
 import type {
   Terminology,
   FeatureFlags,
@@ -244,9 +245,10 @@ function TenantsTab({ apiKey, onAuthError }: { apiKey: string; onAuthError: () =
       });
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
-        alert(data.error ?? 'Failed to update');
+        toast.error(data.error ?? "Couldn't update tenant. Please try again.");
         return;
       }
+      toast.success(t.is_active ? 'Tenant deactivated.' : 'Tenant activated.');
       setTenants(prev => prev.map(r => (r.id === t.id ? { ...r, is_active: !t.is_active } : r)));
     } finally {
       setBusyId(null);
@@ -843,9 +845,10 @@ function TemplatesTab({ apiKey }: { apiKey: string }) {
       });
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
-        alert(data.error ?? 'Failed to update');
+        toast.error(data.error ?? "Couldn't update template. Please try again.");
         return;
       }
+      toast.success(t.is_active ? 'Template deactivated.' : 'Template activated.');
       reload();
     } finally {
       setBusyId(null);
@@ -873,9 +876,10 @@ function TemplatesTab({ apiKey }: { apiKey: string }) {
       });
       const data = await res.json();
       if (!res.ok) {
-        alert(data.error ?? 'Failed to duplicate');
+        toast.error(data.error ?? "Couldn't duplicate template. Please try again.");
         return;
       }
+      toast.success('Template duplicated.');
       reload();
     } finally {
       setBusyId(null);

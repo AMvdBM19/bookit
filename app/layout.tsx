@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import { Inter } from 'next/font/google';
+import { Toaster } from 'sonner';
 import './globals.css';
 import { ThemeProvider, THEME_INIT_SCRIPT } from '@/lib/context/theme';
 
@@ -26,6 +27,7 @@ export default function RootLayout({
       </head>
       <body className={`${inter.variable} font-sans antialiased`}>
         <ThemeProvider>{children}</ThemeProvider>
+        <Toaster position="bottom-right" richColors closeButton />
       </body>
     </html>
   );

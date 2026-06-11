@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
+import { toast } from 'sonner';
 import { useTenantConfig } from '@/lib/context/tenant-config';
 
 interface Tenant {
@@ -135,13 +136,16 @@ export default function SettingsSection({ slug }: { slug: string }) {
       const data = await res.json();
       if (!res.ok) {
         setSaveError(data.error ?? 'Failed to save');
+        toast.error(data.error ?? "Couldn't save settings. Please try again.");
         return;
       }
+      toast.success('Settings saved.');
       setEditingSection(null);
       setDraft({});
       await reload();
     } catch {
       setSaveError('Network error');
+      toast.error("Couldn't save settings. Please try again.");
     } finally {
       setSaving(false);
     }

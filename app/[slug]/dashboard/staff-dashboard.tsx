@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { toast } from 'sonner';
 import { createClient } from '@/lib/supabase/client';
 import { useTenantConfig } from '@/lib/context/tenant-config';
 import ThemeToggle from '@/app/components/theme-toggle';
@@ -300,12 +301,15 @@ function ProfileSection({ slug, profile }: { slug: string; profile: StaffProfile
       const data = await res.json();
       if (!res.ok) {
         setError(data.error ?? 'Failed to save');
+        toast.error(data.error ?? "Couldn't save profile. Please try again.");
         return;
       }
+      toast.success('Profile saved.');
       setEditing(false);
       router.refresh();
     } catch {
       setError('Network error');
+      toast.error("Couldn't save profile. Please try again.");
     } finally {
       setSaving(false);
     }
@@ -435,12 +439,15 @@ function TagsSection({ slug, tagIds, tenantTags }: { slug: string; tagIds: strin
       const data = await res.json();
       if (!res.ok) {
         setError(data.error ?? 'Failed to save');
+        toast.error(data.error ?? "Couldn't save tags. Please try again.");
         return;
       }
+      toast.success('Tags saved.');
       setEditing(false);
       router.refresh();
     } catch {
       setError('Network error');
+      toast.error("Couldn't save tags. Please try again.");
     } finally {
       setSaving(false);
     }
@@ -566,12 +573,15 @@ function ScheduleSection({ slug, rawSchedule }: { slug: string; rawSchedule: Arr
       const data = await res.json();
       if (!res.ok) {
         setError(data.error ?? 'Failed to save');
+        toast.error(data.error ?? "Couldn't save schedule. Please try again.");
         return;
       }
+      toast.success('Schedule saved.');
       setEditing(false);
       router.refresh();
     } catch {
       setError('Network error');
+      toast.error("Couldn't save schedule. Please try again.");
     } finally {
       setSaving(false);
     }

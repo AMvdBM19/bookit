@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { toast } from 'sonner';
 
 interface Props {
   slug: string;
@@ -87,11 +88,14 @@ export default function StaffBookingCard({ slug, booking, showActions, canComple
       const data = await res.json().catch(() => ({}));
       if (!res.ok) {
         setError(data.error ?? 'Failed to update');
+        toast.error(data.error ?? "Couldn't update. Please try again.");
         return;
       }
+      toast.success(status === 'completed' ? 'Marked completed.' : 'Marked as no-show.');
       router.refresh();
     } catch {
       setError('Network error');
+      toast.error("Couldn't update. Please try again.");
     } finally {
       setCompleting(false);
     }
@@ -105,8 +109,10 @@ export default function StaffBookingCard({ slug, booking, showActions, canComple
       const data = await res.json().catch(() => ({}));
       if (!res.ok) {
         setError(data.error ?? 'Failed to accept');
+        toast.error(data.error ?? "Couldn't accept. Please try again.");
         return;
       }
+      toast.success(`${bookingLabel} accepted.`);
       setAccepted(true);
       setCalendarUrl(buildGoogleCalUrl(booking, bookingLabel));
       router.refresh();
@@ -125,8 +131,10 @@ export default function StaffBookingCard({ slug, booking, showActions, canComple
       const data = await res.json();
       if (!res.ok) {
         setError(data.error ?? 'Failed to accept');
+        toast.error(data.error ?? "Couldn't accept. Please try again.");
         return;
       }
+      toast.success(`${bookingLabel} accepted.`);
       setAccepted(true);
       setCalendarUrl(data.calendarUrl ?? null);
       router.refresh();
@@ -149,11 +157,14 @@ export default function StaffBookingCard({ slug, booking, showActions, canComple
       const data = await res.json();
       if (!res.ok) {
         setError(data.error ?? 'Failed to decline');
+        toast.error(data.error ?? "Couldn't decline. Please try again.");
         return;
       }
+      toast.success(`${bookingLabel} declined.`);
       router.refresh();
     } catch {
       setError('Network error');
+      toast.error("Couldn't decline. Please try again.");
     } finally {
       setDeclining(false);
     }

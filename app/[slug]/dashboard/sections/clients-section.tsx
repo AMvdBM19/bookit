@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
+import { toast } from 'sonner';
 import { useTenantConfig } from '@/lib/context/tenant-config';
 import Badge, { type BadgeVariant } from '@/components/ui/badge';
 import Modal from '@/components/ui/modal';
@@ -196,8 +197,10 @@ function BlockGuestModal({
       const data = await res.json().catch(() => ({}));
       if (!res.ok) {
         setError(data.error ?? 'Failed to block');
+        toast.error(data.error ?? "Couldn't block. Please try again.");
         return;
       }
+      toast.success(`${guest.name} blocked.`);
       onBlocked();
     } catch {
       setError('Network error');
@@ -291,9 +294,10 @@ function ClientList({ slug }: { slug: string }) {
       });
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
-        alert(data.error ?? 'Failed to update status');
+        toast.error(data.error ?? "Couldn't update status. Please try again.");
         return;
       }
+      toast.success(next === 'approved' ? `${terminology.client} approved.` : `${terminology.client} suspended.`);
       setClients(prev => prev.map(r => (r.id === c.id ? { ...r, status: next } : r)));
     } finally {
       setBusyId(null);

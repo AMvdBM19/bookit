@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { toast } from 'sonner';
 import {
   PRESETS,
   DEFAULT_WIDGET_THEME,
@@ -171,11 +172,14 @@ export default function WidgetSection({ slug }: { slug: string }) {
       const data = await res.json().catch(() => ({}));
       if (!res.ok) {
         setError(data.error ?? 'Failed to save');
+        toast.error(data.error ?? "Couldn't save theme. Please try again.");
         return;
       }
       setSaveMsg('Saved — your widget is live with this theme.');
+      toast.success('Widget theme saved.');
     } catch {
       setError('Network error');
+      toast.error("Couldn't save theme. Please try again.");
     } finally {
       setSaving(false);
     }

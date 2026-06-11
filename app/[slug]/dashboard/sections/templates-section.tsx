@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
+import { toast } from 'sonner';
 
 interface Template {
   id: string;
@@ -106,12 +107,15 @@ export default function TemplatesSection({ slug }: { slug: string }) {
       const body = await res.json();
       if (!res.ok) {
         setSaveError(body.error ?? 'Failed to save');
+        toast.error(body.error ?? "Couldn't save template. Please try again.");
         return;
       }
+      toast.success('Template saved.');
       setDraft(null);
       await reload();
     } catch {
       setSaveError('Network error');
+      toast.error("Couldn't save template. Please try again.");
     } finally {
       setSaving(false);
     }
