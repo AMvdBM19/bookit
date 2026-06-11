@@ -112,13 +112,22 @@ export default function StaffSection({ slug }: { slug: string }) {
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <h2 className="text-sm font-semibold text-fg">{terminology.staff_plural}</h2>
-        <button
-          type="button"
-          onClick={() => setShowCreate(true)}
-          className="text-xs px-3 py-1.5 bg-fg text-canvas rounded hover:opacity-90 transition-opacity"
-        >
-          + Add {terminology.staff}
-        </button>
+        <div className="flex items-center gap-2">
+          <a
+            href={`/api/${slug}/export/staff`}
+            download
+            className="text-xs px-3 py-1.5 border border-border text-fg rounded hover:bg-elevated transition-colors"
+          >
+            Export CSV
+          </a>
+          <button
+            type="button"
+            onClick={() => setShowCreate(true)}
+            className="text-xs px-3 py-1.5 bg-fg text-canvas rounded hover:opacity-90 transition-opacity"
+          >
+            + Add {terminology.staff}
+          </button>
+        </div>
       </div>
 
       {loading && (

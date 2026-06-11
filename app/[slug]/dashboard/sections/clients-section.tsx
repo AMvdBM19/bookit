@@ -132,7 +132,16 @@ function GuestList({ slug }: { slug: string }) {
 
   return (
     <div className="space-y-4">
-      <h2 className="text-sm font-semibold text-fg">{terminology.client_plural}</h2>
+      <div className="flex items-center justify-between">
+        <h2 className="text-sm font-semibold text-fg">{terminology.client_plural}</h2>
+        <a
+          href={`/api/${slug}/export/clients`}
+          download
+          className="text-xs px-3 py-1.5 border border-border text-fg rounded hover:bg-elevated transition-colors"
+        >
+          Export CSV
+        </a>
+      </div>
 
       <div className={tableWrap}>
         <div className="overflow-x-auto">
@@ -346,7 +355,16 @@ function ClientList({ slug }: { slug: string }) {
 
   return (
     <div className="space-y-4">
-      <h2 className="text-sm font-semibold text-fg">{terminology.client_plural}</h2>
+      <div className="flex items-center justify-between">
+        <h2 className="text-sm font-semibold text-fg">{terminology.client_plural}</h2>
+        <a
+          href={`/api/${slug}/export/clients`}
+          download
+          className="text-xs px-3 py-1.5 border border-border text-fg rounded hover:bg-elevated transition-colors"
+        >
+          Export CSV
+        </a>
+      </div>
 
       <div className={tableWrap}>
         <div className="overflow-x-auto">
