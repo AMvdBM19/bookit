@@ -3,6 +3,14 @@
 > Feature history for the AI assistant: what exists and since when. Newest
 > first. Maintained per the AI Docs Maintenance Protocol in CLAUDE.md.
 
+## 2026-06-12 — Templates tab redesign (Phase 15-B6)
+
+- The Templates tab now navigates by event dropdown → WhatsApp/Email
+  sub-tabs → one editor, with a configured-status badge, click-to-insert
+  placeholder chips, a live preview with sample values, and a confirmed
+  "Reset to default" that loads standard wording. Same templates API
+  underneath — existing templates are untouched.
+
 ## 2026-06-12 — Conditional booking fields: reference image + address (Phase 15-B5)
 
 - The booking widget can now collect a **reference image** (optional
