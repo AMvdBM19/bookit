@@ -653,7 +653,6 @@ function CreateTenantModal({
   const [slug, setSlug] = useState('');
   const [templateSlug, setTemplateSlug] = useState(templates[0]?.slug ?? '');
   const [businessName, setBusinessName] = useState('');
-  const [brandColor, setBrandColor] = useState('#2BB673');
   const [clientModeOverride, setClientModeOverride] = useState<'' | 'guest' | 'account'>('');
   const [agentEmail, setAgentEmail] = useState('');
   const [agentPassword, setAgentPassword] = useState('');
@@ -673,7 +672,6 @@ function CreateTenantModal({
           slug,
           template_slug: templateSlug,
           business_name: businessName || undefined,
-          brand_color: brandColor || undefined,
           client_mode_override: clientModeOverride || undefined,
           agent_email: agentEmail,
           agent_password: agentPassword,
@@ -740,25 +738,15 @@ function CreateTenantModal({
               ))}
             </select>
           </Field>
-          <div className="grid grid-cols-2 gap-3">
-            <Field label="Business name" hint="Defaults to Name">
-              <input
-                type="text"
-                value={businessName}
-                onChange={e => setBusinessName(e.target.value)}
-                className="w-full text-sm border border-zinc-300 rounded px-3 py-2 focus:outline-none focus:border-zinc-500"
-                placeholder="Optional"
-              />
-            </Field>
-            <Field label="Brand color">
-              <input
-                type="color"
-                value={brandColor}
-                onChange={e => setBrandColor(e.target.value)}
-                className="w-full h-9 border border-zinc-300 rounded px-1 py-0.5"
-              />
-            </Field>
-          </div>
+          <Field label="Business name" hint="Defaults to Name">
+            <input
+              type="text"
+              value={businessName}
+              onChange={e => setBusinessName(e.target.value)}
+              className="w-full text-sm border border-zinc-300 rounded px-3 py-2 focus:outline-none focus:border-zinc-500"
+              placeholder="Optional"
+            />
+          </Field>
           <Field label="Client mode override" hint="Leave as template default if unsure">
             <select
               value={clientModeOverride}

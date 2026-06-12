@@ -142,7 +142,8 @@ export async function POST(request: NextRequest) {
   const agentEmail: string | undefined = body.agent_email?.trim()?.toLowerCase();
   const agentPassword: string | undefined = body.agent_password;
   const businessName: string | undefined = body.business_name?.trim();
-  const brandColor: string | undefined = body.brand_color?.trim();
+  // body.brand_color is intentionally ignored (kept for API back-compat):
+  // brand color is chosen in the onboarding wizard's Branding step.
   const clientModeOverride = body.client_mode_override ?? body.client_mode;
 
   if (!name || !slug || !templateSlug || !agentEmail || !agentPassword) {
@@ -273,7 +274,7 @@ export async function POST(request: NextRequest) {
   const { error: settingsError } = await supabase.from('tenant_settings').insert({
     tenant_id: tenantId,
     agency_display_name: businessName || name,
-    brand_color: brandColor || '#2BB673',
+    brand_color: '#2BB673',
     booking_confirm_mode: templateDefaults.booking_confirm_mode,
     default_slot_minutes: templateDefaults.default_slot_minutes,
     client_approval_mode: templateDefaults.client_approval_mode,

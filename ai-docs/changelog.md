@@ -3,6 +3,12 @@
 > Feature history for the AI assistant: what exists and since when. Newest
 > first. Maintained per the AI Docs Maintenance Protocol in CLAUDE.md.
 
+## 2026-06-12 — Brand color set in onboarding only (Phase 14-A6)
+
+- Platform-side tenant creation no longer picks a brand color; the owner
+  chooses it in the setup wizard's Branding step and can change it later
+  in Settings. (No change to tenant-facing flows.)
+
 ## 2026-06-12 — Staff roster: honest activation actions (Phase 14-A5)
 
 - The misleading **Activate** button is gone for staff who haven't
