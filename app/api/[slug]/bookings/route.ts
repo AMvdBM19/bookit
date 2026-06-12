@@ -27,11 +27,12 @@ export async function GET(request: NextRequest) {
     .from('bookings')
     .select(`
       id, slot_date, slot_start, slot_end, duration_minutes, booking_notes, status, source,
-      total_price, created_at: requested_at, confirmed_at, cancelled_at, cancellation_reason,
+      total_price, tag_extras_total, base_rate_per_30,
+      created_at: requested_at, confirmed_at, cancelled_at, cancellation_reason,
       staff:staff_id(id, pseudonym),
-      clients:client_id(id, display_name),
-      guest_clients:guest_client_id(id, name),
-      booking_service_tags(tag_name)
+      clients:client_id(id, display_name, email, phone, wa_opt_in),
+      guest_clients:guest_client_id(id, name, email, phone, wa_opt_in),
+      booking_service_tags(tag_name, extra_price)
     `)
     .eq('tenant_id', user.tenantId)
     .order('slot_date', { ascending: false })

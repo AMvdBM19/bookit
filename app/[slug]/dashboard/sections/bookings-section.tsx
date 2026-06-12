@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { Fragment, useCallback, useEffect, useState } from 'react';
 import { toast } from 'sonner';
 import { useTenantConfig } from '@/lib/context/tenant-config';
 import Badge, { type BadgeVariant } from '@/components/ui/badge';
@@ -10,26 +10,22 @@ import ConfirmDialog from '@/components/ui/confirm-dialog';
 import AddToCalendar from '@/components/add-to-calendar';
 import type { CalendarEvent } from '@/lib/calendar/buildUrl';
 import CreateBookingModal from './create-booking-modal';
+import BookingDetailPanel, { type BookingDetail } from './booking-detail-panel';
 
 interface JoinObj {
   pseudonym?: string;
   display_name?: string;
   name?: string;
+  email?: string | null;
+  phone?: string | null;
+  wa_opt_in?: boolean | null;
 }
 
-interface Booking {
-  id: string;
-  slot_date: string;
-  slot_start: string;
-  slot_end: string;
-  duration_minutes: number;
-  status: string;
-  source?: string;
+interface Booking extends BookingDetail {
   created_at: string;
   staff: JoinObj | JoinObj[] | null;
   clients: JoinObj | JoinObj[] | null;
   guest_clients: JoinObj | JoinObj[] | null;
-  booking_service_tags: Array<{ tag_name: string }>;
 }
 
 function pickOne<T>(v: T | T[] | null): T | null {
@@ -115,6 +111,40 @@ function CalendarIcon() {
   );
 }
 
+function DetailsToggle({
+  open,
+  onToggle,
+}: {
+  open: boolean;
+  onToggle: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onToggle}
+      title={open ? 'Hide details' : 'See details'}
+      aria-label={open ? 'Hide details' : 'See details'}
+      aria-expanded={open}
+      className="p-1 text-fg-muted hover:text-fg rounded transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+    >
+      <svg
+        width="14"
+        height="14"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        aria-hidden="true"
+        className={`transition-transform ${open ? 'rotate-90' : ''}`}
+      >
+        <polyline points="9 18 15 12 9 6" />
+      </svg>
+    </button>
+  );
+}
+
 export default function BookingsSection({ slug }: { slug: string }) {
   const { terminology } = useTenantConfig();
   const [bookings, setBookings] = useState<Booking[]>([]);
@@ -126,6 +156,26 @@ export default function BookingsSection({ slug }: { slug: string }) {
   const [staffOptions, setStaffOptions] = useState<Array<{ id: string; pseudonym: string }>>([]);
   const [showCreate, setShowCreate] = useState(false);
   const [confirmNoShowId, setConfirmNoShowId] = useState<string | null>(null);
+  const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [currency, setCurrency] = useState('EUR');
+
+  // Currency for the detail panel's price breakdown.
+  useEffect(() => {
+    let cancelled = false;
+    fetch(`/api/${slug}/settings/summary`)
+      .then(res => res.json())
+      .then(data => {
+        if (!cancelled && data?.settings?.currency) setCurrency(data.settings.currency);
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [slug]);
+
+  function toggleExpanded(id: string) {
+    setExpandedId(prev => (prev === id ? null : id));
+  }
 
   const reload = useCallback(async () => {
     setLoading(true);
@@ -344,6 +394,7 @@ export default function BookingsSection({ slug }: { slug: string }) {
               <table className="w-full text-sm min-w-[760px]">
                 <thead className={theadCls}>
                   <tr className={thCls}>
+                    <th className="px-3 py-2 w-8"><span className="sr-only">Details</span></th>
                     <th className="px-3 py-2">Ref</th>
                     <th className="px-3 py-2">{terminology.staff}</th>
                     <th className="px-3 py-2">{terminology.client}</th>
@@ -358,7 +409,11 @@ export default function BookingsSection({ slug }: { slug: string }) {
                     const busy = actionState[b.id] === 'busy';
                     const inDecline = b.id in declineMode;
                     return (
-                      <tr key={b.id} className="hover:bg-elevated">
+                      <Fragment key={b.id}>
+                      <tr className="hover:bg-elevated">
+                        <td className="px-3 py-3">
+                          <DetailsToggle open={expandedId === b.id} onToggle={() => toggleExpanded(b.id)} />
+                        </td>
                         <td className="px-3 py-3 font-mono text-[11px] text-fg-muted">
                           {b.id.slice(0, 8)}
                         </td>
@@ -481,6 +536,14 @@ export default function BookingsSection({ slug }: { slug: string }) {
                           )}
                         </td>
                       </tr>
+                      {expandedId === b.id && (
+                        <tr>
+                          <td colSpan={8} className="p-0">
+                            <BookingDetailPanel booking={b} currency={currency} />
+                          </td>
+                        </tr>
+                      )}
+                      </Fragment>
                     );
                   })}
                 </tbody>
@@ -501,6 +564,7 @@ export default function BookingsSection({ slug }: { slug: string }) {
               <table className="w-full text-sm min-w-[680px]">
                 <thead className={theadCls}>
                   <tr className={thCls}>
+                    <th className="px-3 py-2 w-8"><span className="sr-only">Details</span></th>
                     <th className="px-3 py-2">{terminology.staff}</th>
                     <th className="px-3 py-2">{terminology.client}</th>
                     <th className="px-3 py-2">Date</th>
@@ -512,7 +576,11 @@ export default function BookingsSection({ slug }: { slug: string }) {
                   {upcoming.map(b => {
                     const busy = actionState[b.id] === 'busy';
                     return (
-                    <tr key={b.id} className="hover:bg-elevated">
+                    <Fragment key={b.id}>
+                    <tr className="hover:bg-elevated">
+                      <td className="px-3 py-3">
+                        <DetailsToggle open={expandedId === b.id} onToggle={() => toggleExpanded(b.id)} />
+                      </td>
                       <td className="px-3 py-3 text-fg">{staffNameOf(b)}</td>
                       <td className="px-3 py-3 text-fg">
                         {clientNameOf(b)}
@@ -550,6 +618,14 @@ export default function BookingsSection({ slug }: { slug: string }) {
                         </div>
                       </td>
                     </tr>
+                    {expandedId === b.id && (
+                      <tr>
+                        <td colSpan={6} className="p-0">
+                          <BookingDetailPanel booking={b} currency={currency} />
+                        </td>
+                      </tr>
+                    )}
+                    </Fragment>
                     );
                   })}
                 </tbody>
@@ -570,6 +646,7 @@ export default function BookingsSection({ slug }: { slug: string }) {
               <table className="w-full text-sm min-w-[560px]">
                 <thead className={theadCls}>
                   <tr className={thCls}>
+                    <th className="px-3 py-2 w-8"><span className="sr-only">Details</span></th>
                     <th className="px-3 py-2">{terminology.staff}</th>
                     <th className="px-3 py-2">{terminology.client}</th>
                     <th className="px-3 py-2">Date</th>
@@ -578,7 +655,11 @@ export default function BookingsSection({ slug }: { slug: string }) {
                 </thead>
                 <tbody className="divide-y divide-border">
                   {past.map(b => (
-                    <tr key={b.id} className="hover:bg-elevated">
+                    <Fragment key={b.id}>
+                    <tr className="hover:bg-elevated">
+                      <td className="px-3 py-3">
+                        <DetailsToggle open={expandedId === b.id} onToggle={() => toggleExpanded(b.id)} />
+                      </td>
                       <td className="px-3 py-3 text-fg">{staffNameOf(b)}</td>
                       <td className="px-3 py-3 text-fg">
                         {clientNameOf(b)}
@@ -591,6 +672,14 @@ export default function BookingsSection({ slug }: { slug: string }) {
                         <StatusBadge status={b.status} />
                       </td>
                     </tr>
+                    {expandedId === b.id && (
+                      <tr>
+                        <td colSpan={5} className="p-0">
+                          <BookingDetailPanel booking={b} currency={currency} />
+                        </td>
+                      </tr>
+                    )}
+                    </Fragment>
                   ))}
                 </tbody>
               </table>

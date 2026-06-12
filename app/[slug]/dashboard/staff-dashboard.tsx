@@ -28,6 +28,8 @@ interface BookingRow {
   duration_minutes: number;
   booking_notes: string | null;
   status: string;
+  source?: string | null;
+  requested_at?: string | null;
   clients: Array<{ display_name: string }> | { display_name: string } | null;
   guest_clients: Array<{ name: string }> | { name: string } | null;
   booking_service_tags: Array<{ tag_name: string }>;
@@ -48,6 +50,8 @@ function toCardBooking(b: BookingRow) {
     duration_minutes: b.duration_minutes,
     booking_notes: b.booking_notes,
     status: b.status,
+    source: b.source ?? null,
+    requested_at: b.requested_at ?? null,
     tags: b.booking_service_tags?.map(t => t.tag_name) ?? [],
     clientName: getClientName(b),
   };

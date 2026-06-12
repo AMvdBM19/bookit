@@ -30,6 +30,15 @@ Three sections:
   cards.
 - **Past (last 30)** — history with status badges.
 
+Every row in all three tables has a chevron ("See details") that expands an
+inline panel showing, when present: {client} contact (email, phone,
+WhatsApp opt-in), the booking notes, selected services with per-service
+extras and the total price, the assigned {staff} (or "Unassigned — pool"),
+the source (Widget/Manual), and requested/confirmed/cancelled timestamps
+plus cancellation reason. Staff see a slimmer "See details" on their own
+booking cards (full notes, source, requested time — no client contact
+details or pricing).
+
 The **Export CSV** button downloads all bookings (see data-export-guide.md).
 The **+ New** button opens manual creation.
 

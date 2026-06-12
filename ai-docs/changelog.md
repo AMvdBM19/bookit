@@ -3,6 +3,15 @@
 > Feature history for the AI assistant: what exists and since when. Newest
 > first. Maintained per the AI Docs Maintenance Protocol in CLAUDE.md.
 
+## 2026-06-12 — Booking rows expand into a full detail panel (Phase 14-A7)
+
+- All three Bookings-tab tables (pending / upcoming / past) gained a
+  chevron per row that expands client contact (email, phone, WhatsApp
+  opt-in), booking notes, services + per-service extras + total price,
+  assigned staff or pool status, source, and lifecycle timestamps.
+- Staff booking cards gained a slimmer "See details" (full notes, source,
+  requested time) — client contact details and pricing stay agent-only.
+
 ## 2026-06-12 — Brand color set in onboarding only (Phase 14-A6)
 
 - Platform-side tenant creation no longer picks a brand color; the owner

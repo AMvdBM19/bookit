@@ -17,6 +17,8 @@ interface Props {
     duration_minutes: number;
     booking_notes: string | null;
     status?: string;
+    source?: string | null;
+    requested_at?: string | null;
     tags: string[];
     clientName: string;
   };
@@ -61,6 +63,7 @@ export default function StaffBookingCard({ slug, booking, showActions, canComple
   const [accepted, setAccepted] = useState(false);
   const [completing, setCompleting] = useState(false);
   const [confirmNoShow, setConfirmNoShow] = useState(false);
+  const [showDetails, setShowDetails] = useState(false);
 
   const showCompletion =
     !showActions &&
@@ -209,7 +212,35 @@ export default function StaffBookingCard({ slug, booking, showActions, canComple
       )}
 
       {booking.booking_notes && (
-        <p className="text-xs text-fg-subtle line-clamp-2">{booking.booking_notes}</p>
+        <p className={`text-xs text-fg-subtle ${showDetails ? 'whitespace-pre-wrap' : 'line-clamp-2'}`}>
+          {booking.booking_notes}
+        </p>
+      )}
+
+      <button
+        type="button"
+        onClick={() => setShowDetails(v => !v)}
+        aria-expanded={showDetails}
+        className="text-[11px] text-fg-muted hover:text-fg transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded"
+      >
+        {showDetails ? 'Hide details' : 'See details'}
+      </button>
+
+      {showDetails && (
+        <div className="text-[11px] text-fg-muted border-t border-border pt-2 space-y-0.5">
+          <p>Source: {booking.source === 'manual' ? 'Manual' : 'Widget'}</p>
+          {booking.requested_at && (
+            <p>
+              Requested{' '}
+              {new Date(booking.requested_at).toLocaleString('en-GB', {
+                day: 'numeric',
+                month: 'short',
+                hour: '2-digit',
+                minute: '2-digit',
+              })}
+            </p>
+          )}
+        </div>
       )}
 
       {showCompletion && (
