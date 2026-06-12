@@ -4,6 +4,8 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import ConfirmDialog from '@/components/ui/confirm-dialog';
+import AddToCalendar from '@/components/add-to-calendar';
+import type { CalendarEvent } from '@/lib/calendar/buildUrl';
 
 interface Props {
   slug: string;
@@ -39,25 +41,14 @@ function formatDuration(mins: number): string {
   return `${mins} min`;
 }
 
-function buildGoogleCalUrl(booking: Props['booking'], bookingLabel: string): string {
-  const start = `${booking.slot_date.replace(/-/g, '')}T${booking.slot_start.replace(/:/g, '')}00`;
-  const end = `${booking.slot_date.replace(/-/g, '')}T${booking.slot_end.replace(/:/g, '')}00`;
-  const title = encodeURIComponent(`${bookingLabel} with ${booking.clientName}`);
-  const details = encodeURIComponent(
-    booking.tags.length > 0 ? `Services: ${booking.tags.join(', ')}` : ''
-  );
-  return `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${title}&dates=${start}/${end}&details=${details}`;
-}
-
-function CalendarIcon() {
-  return (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-      <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
-      <line x1="16" y1="2" x2="16" y2="6" />
-      <line x1="8" y1="2" x2="8" y2="6" />
-      <line x1="3" y1="10" x2="21" y2="10" />
-    </svg>
-  );
+function calendarEventOf(booking: Props['booking'], bookingLabel: string): CalendarEvent {
+  return {
+    title: `${bookingLabel} with ${booking.clientName}`,
+    date: booking.slot_date,
+    startTime: booking.slot_start,
+    endTime: booking.slot_end,
+    ...(booking.tags.length > 0 ? { description: `Services: ${booking.tags.join(', ')}` } : {}),
+  };
 }
 
 export default function StaffBookingCard({ slug, booking, showActions, canComplete = false, claimable = false, bookingLabel }: Props) {
@@ -67,7 +58,6 @@ export default function StaffBookingCard({ slug, booking, showActions, canComple
   const [showDeclineInput, setShowDeclineInput] = useState(false);
   const [declineReason, setDeclineReason] = useState('');
   const [error, setError] = useState('');
-  const [calendarUrl, setCalendarUrl] = useState<string | null>(null);
   const [accepted, setAccepted] = useState(false);
   const [completing, setCompleting] = useState(false);
   const [confirmNoShow, setConfirmNoShow] = useState(false);
@@ -116,7 +106,6 @@ export default function StaffBookingCard({ slug, booking, showActions, canComple
       }
       toast.success(`${bookingLabel} accepted.`);
       setAccepted(true);
-      setCalendarUrl(buildGoogleCalUrl(booking, bookingLabel));
       router.refresh();
     } catch {
       setError('Network error');
@@ -138,7 +127,6 @@ export default function StaffBookingCard({ slug, booking, showActions, canComple
       }
       toast.success(`${bookingLabel} accepted.`);
       setAccepted(true);
-      setCalendarUrl(data.calendarUrl ?? null);
       router.refresh();
     } catch {
       setError('Network error');
@@ -178,16 +166,10 @@ export default function StaffBookingCard({ slug, booking, showActions, canComple
         <p className="text-emerald-600 dark:text-emerald-400 text-sm font-medium">
           Confirmed
         </p>
-        {calendarUrl && (
-          <a
-            href={calendarUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-xs text-fg-muted hover:text-fg transition-colors mt-1 inline-flex items-center gap-1 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded"
-          >
-            <CalendarIcon /> Add to Google Calendar
-          </a>
-        )}
+        <div className="mt-1 flex items-center gap-1 text-xs text-fg-muted">
+          <span>Add to calendar:</span>
+          <AddToCalendar event={calendarEventOf(booking, bookingLabel)} uid={booking.id} />
+        </div>
       </div>
     );
   }
@@ -205,17 +187,7 @@ export default function StaffBookingCard({ slug, booking, showActions, canComple
         </div>
         {!showActions && (
           <div className="flex items-center gap-2 shrink-0">
-            <a
-              href={buildGoogleCalUrl(booking, bookingLabel)}
-              target="_blank"
-              rel="noopener noreferrer"
-              title="Add to Calendar"
-              aria-label="Add to Calendar"
-              onClick={e => e.stopPropagation()}
-              className="text-fg-muted hover:text-fg transition-colors p-1 rounded focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-            >
-              <CalendarIcon />
-            </a>
+            <AddToCalendar event={calendarEventOf(booking, bookingLabel)} uid={booking.id} />
             <span className="text-[10px] text-fg-subtle uppercase tracking-wider">
               {bookingLabel}
             </span>

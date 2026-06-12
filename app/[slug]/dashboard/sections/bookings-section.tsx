@@ -7,6 +7,8 @@ import Badge, { type BadgeVariant } from '@/components/ui/badge';
 import Spinner from '@/components/ui/spinner';
 import EmptyState from '@/components/ui/empty-state';
 import ConfirmDialog from '@/components/ui/confirm-dialog';
+import AddToCalendar from '@/components/add-to-calendar';
+import type { CalendarEvent } from '@/lib/calendar/buildUrl';
 import CreateBookingModal from './create-booking-modal';
 
 interface JoinObj {
@@ -56,14 +58,15 @@ function formatDate(s: string) {
   });
 }
 
-function buildGoogleCalUrl(b: Booking, bookingLabel: string): string {
-  const clientName = clientNameOf(b);
-  const start = `${b.slot_date.replace(/-/g, '')}T${b.slot_start.replace(/:/g, '')}00`;
-  const end = `${b.slot_date.replace(/-/g, '')}T${b.slot_end.replace(/:/g, '')}00`;
-  const title = encodeURIComponent(`${bookingLabel} with ${clientName}`);
+function calendarEventOf(b: Booking, bookingLabel: string): CalendarEvent {
   const tags = b.booking_service_tags.map(t => t.tag_name).join(', ');
-  const details = encodeURIComponent(tags ? `Services: ${tags}` : '');
-  return `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${title}&dates=${start}/${end}&details=${details}`;
+  return {
+    title: `${bookingLabel} with ${clientNameOf(b)}`,
+    date: b.slot_date,
+    startTime: b.slot_start,
+    endTime: b.slot_end,
+    ...(tags ? { description: `Services: ${tags}` } : {}),
+  };
 }
 
 function isActionable(b: Booking): boolean {
@@ -543,16 +546,7 @@ export default function BookingsSection({ slug }: { slug: string }) {
                               </button>
                             </>
                           )}
-                          <a
-                            href={buildGoogleCalUrl(b, terminology.booking)}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            title="Add to Calendar"
-                            aria-label="Add to Calendar"
-                            className="text-fg-muted hover:text-fg transition-colors inline-flex p-1 rounded focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                          >
-                            <CalendarIcon />
-                          </a>
+                          <AddToCalendar event={calendarEventOf(b, terminology.booking)} uid={b.id} />
                         </div>
                       </td>
                     </tr>

@@ -24,8 +24,10 @@ Three sections:
   or — for unassigned pool bookings — pick a staff member and **Assign**.
 - **Upcoming (next 14 days)** — confirmed bookings. Once a booking's end time
   has passed, **Mark completed** / **Mark as no-show** buttons appear
-  (no-show asks for confirmation). An add-to-Google-Calendar shortcut is on
-  each row.
+  (no-show asks for confirmation). Each row has two add-to-calendar icons:
+  one opens Google Calendar pre-filled, the other downloads a `.ics` file
+  for Apple Calendar / Outlook. Staff see the same pair on their booking
+  cards.
 - **Past (last 30)** — history with status badges.
 
 The **Export CSV** button downloads all bookings (see data-export-guide.md).

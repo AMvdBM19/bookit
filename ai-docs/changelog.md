@@ -3,6 +3,14 @@
 > Feature history for the AI assistant: what exists and since when. Newest
 > first. Maintained per the AI Docs Maintenance Protocol in CLAUDE.md.
 
+## 2026-06-12 — Calendar links fixed + ICS download (Phase 14-A1)
+
+- Add-to-calendar links on booking rows/cards now always open Google
+  Calendar's universal event template (a malformed time format previously
+  bounced some users to the Google Workspace landing page).
+- New download-`.ics` icon next to the Google Calendar icon on agent
+  booking rows and staff booking cards, for Apple Calendar / Outlook users.
+
 ## 2026-06-11 — Audit hotfix (Phase 13 post-deployment audit)
 
 - ai-docs knowledge base is now bundled into the Docker runtime image (the
