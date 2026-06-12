@@ -3,6 +3,14 @@
 > Feature history for the AI assistant: what exists and since when. Newest
 > first. Maintained per the AI Docs Maintenance Protocol in CLAUDE.md.
 
+## 2026-06-12 — Revenue split slider (Phase 14-B3)
+
+- The Pricing tab's Revenue Split section shows a 0–100 range slider for
+  the staff payout (agency share auto-computed as the complement), in sync
+  with the numeric inputs. Disabled with a Locked tag when the split is
+  wizard-locked (the normal case). The setup wizard's Financial step also
+  uses the slider.
+
 ## 2026-06-12 — Calendar view on the Bookings tab (Phase 14-B2)
 
 - New List ⇄ Calendar toggle on the Bookings tab. Week and day views

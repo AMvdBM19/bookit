@@ -92,7 +92,7 @@ A table of the tenant's service tags with inline editing:
 | Locked after onboarding | Editable anytime |
 |---|---|
 | Tax rate % | Currency, base rate per 30 min (confirm dialog: future bookings only) |
-| Revenue split percentages | Pricing enabled, show price to client |
+| Revenue split percentages (slider shows the split but is disabled) | Pricing enabled, show price to client |
 | (sometimes) minimum age | Tax period |
 | | Deposit % and threshold (if supported) |
 | | No-show policy, per-service prices/durations, service add/rename/delete |

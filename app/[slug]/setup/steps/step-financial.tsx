@@ -62,18 +62,34 @@ export default function StepFinancial({ state, onChange, error }: Props) {
         <label className={labelCls} htmlFor="staff_payout_pct">
           Staff Payout % <span className="text-red-400">*</span>
         </label>
-        <input
-          id="staff_payout_pct"
-          type="number"
-          min={0}
-          max={100}
-          step={1}
-          value={state.staff_payout_pct}
-          onChange={e => onChange({ staff_payout_pct: Number(e.target.value) })}
-          className={inputCls}
-        />
+        <div className="flex items-center gap-3">
+          <input
+            type="range"
+            min={0}
+            max={100}
+            step={1}
+            value={state.staff_payout_pct}
+            onChange={e => onChange({ staff_payout_pct: Number(e.target.value) })}
+            aria-label="Staff payout percentage"
+            className="flex-1 accent-white"
+          />
+          <input
+            id="staff_payout_pct"
+            type="number"
+            min={0}
+            max={100}
+            step={1}
+            value={state.staff_payout_pct}
+            onChange={e =>
+              onChange({
+                staff_payout_pct: Math.max(0, Math.min(100, Number(e.target.value))),
+              })
+            }
+            className={inputCls + ' w-20 flex-none'}
+          />
+        </div>
         <p className="text-xs text-zinc-600 mt-1">
-          Agency keeps {agencyPct}%. This is locked after setup.
+          Staff {state.staff_payout_pct}% / Agency {agencyPct}%. This is locked after setup.
         </p>
       </div>
 
@@ -110,8 +126,9 @@ export default function StepFinancial({ state, onChange, error }: Props) {
       </div>
 
       <div className="rounded-lg border border-zinc-800 bg-zinc-900/50 p-3 text-xs text-zinc-500">
-        Currency, staff payout %, tax rate and tax label are <span className="text-zinc-300">locked</span> after
-        launch and cannot be changed without contacting support.
+        Staff payout %, tax rate and tax label are <span className="text-zinc-300">locked</span> after
+        launch and cannot be changed without contacting support. Currency and base
+        rate stay editable in the dashboard.
       </div>
 
       {error && <p className="text-red-400 text-xs">{error}</p>}

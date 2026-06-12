@@ -170,6 +170,7 @@ export default function PricingSection({ slug }: { slug: string }) {
   const lockedSet = new Set(summary.locked_fields ?? []);
   const currencyLocked = lockedSet.has('currency');
   const baseRateLocked = lockedSet.has('base_rate_per_30min');
+  const splitLocked = lockedSet.has('staff_payout_pct') || lockedSet.has('agency_share_pct');
 
   // Live split values while editing (linked), otherwise the saved values.
   const splitEditing = editingSection === 'revenue';
@@ -330,16 +331,39 @@ export default function PricingSection({ slug }: { slug: string }) {
 
       {/* Revenue Split */}
       <section>
-        <SectionHeader
-          title="Revenue Split"
-          editing={editingSection === 'revenue'}
-          onEdit={() => startEdit('revenue')}
-          onCancel={cancelEdit}
-          onSave={() => saveSection(['staff_payout_pct', 'agency_share_pct'])}
-          saving={saving}
-        />
+        {splitLocked ? (
+          <div className="flex items-center justify-between mb-2">
+            <h3 className="text-xs font-semibold text-fg-muted uppercase tracking-wider">
+              Revenue Split
+            </h3>
+            <span className="text-[10px] uppercase tracking-wider text-fg-subtle">Locked</span>
+          </div>
+        ) : (
+          <SectionHeader
+            title="Revenue Split"
+            editing={editingSection === 'revenue'}
+            onEdit={() => startEdit('revenue')}
+            onCancel={cancelEdit}
+            onSave={() => saveSection(['staff_payout_pct', 'agency_share_pct'])}
+            saving={saving}
+          />
+        )}
         <div className="bg-surface rounded-lg border border-border px-4 py-3 space-y-3">
-          {editingSection === 'revenue' ? (
+          <input
+            type="range"
+            min={0}
+            max={100}
+            step={1}
+            value={staffPct}
+            disabled={splitLocked || editingSection !== 'revenue'}
+            onChange={e => {
+              const v = Math.max(0, Math.min(100, num(e.target.value)));
+              patchDraft({ staff_payout_pct: v, agency_share_pct: 100 - v });
+            }}
+            aria-label="Staff payout percentage"
+            className="w-full accent-emerald-500 disabled:opacity-40 disabled:cursor-not-allowed"
+          />
+          {editingSection === 'revenue' && !splitLocked ? (
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <label className="block text-xs text-fg-muted mb-1">Staff payout %</label>
@@ -381,6 +405,11 @@ export default function PricingSection({ slug }: { slug: string }) {
             </div>
           )}
           <SplitBar staffPct={staffPct} agencyPct={agencyPct} />
+          {splitLocked && (
+            <p className="text-[11px] text-fg-muted">
+              The revenue split was fixed during onboarding. Contact support to change it.
+            </p>
+          )}
         </div>
       </section>
 
