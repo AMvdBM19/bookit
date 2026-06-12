@@ -101,10 +101,13 @@ client has picked services, the sum of the selected services' durations.
 ## Getting started checklist
 
 New owners see a dismissible **"Getting started"** card at the top of the
-dashboard until its two steps are done: **Add your first team member**
-(jumps to the Staff tab) and **Customize your widget** (jumps to the
-Widget tab, where the booking link and embed code also live). It
-disappears once completed or dismissed.
+dashboard until its three steps are done: **Add your first team member**
+(jumps to the Staff tab), **Customize your widget** (jumps to the Widget
+tab; done once a widget theme has been saved) and **Share your booking
+link** (copies the public booking URL to the clipboard). It disappears
+once all steps are complete. Dismissing it asks for confirmation, and it
+can be brought back any time via Settings → **Getting started** →
+Re-open checklist.
 
 ## Technical shape (for grounding, not for explaining to users)
 

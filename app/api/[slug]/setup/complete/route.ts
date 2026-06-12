@@ -13,6 +13,14 @@ const LOCKED_FIELDS = [
   'gdpr_retention_years',
 ];
 
+// `Number(x) || fallback` coerces a legitimate 0 to the fallback (falsy-zero
+// trap). 0 is a valid value for rates and percentages; `min` guards the
+// fields where it is not (durations, ages).
+function numberOr(value: unknown, fallback: number, min = 0): number {
+  const n = Number(value);
+  return Number.isFinite(n) && n >= min ? n : fallback;
+}
+
 export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ slug: string }> }
@@ -35,7 +43,8 @@ export async function POST(
   const tenantId = user.tenantId;
 
   // 1. UPSERT tenant_settings
-  const agency_share_pct = Math.max(0, 100 - (Number(body.staff_payout_pct) || 70));
+  const staff_payout_pct = Math.min(100, numberOr(body.staff_payout_pct, 70));
+  const agency_share_pct = Math.max(0, 100 - staff_payout_pct);
   const { error: settingsError } = await supabase
     .from('tenant_settings')
     .upsert({
@@ -43,17 +52,17 @@ export async function POST(
       agency_display_name: body.agency_display_name || null,
       brand_color: body.brand_color || '#2BB673',
       logo_url: body.logo_url || null,
-      default_slot_minutes: Number(body.default_slot_minutes) || 30,
-      min_lead_time_hours: Number(body.min_lead_time_hours) || 2,
+      default_slot_minutes: numberOr(body.default_slot_minutes, 30, 1),
+      min_lead_time_hours: numberOr(body.min_lead_time_hours, 2),
       per_service_duration_enabled: body.per_service_duration_enabled === true,
       booking_confirm_mode: body.booking_confirm_mode || 'staff_must_accept',
-      base_rate_per_30min: Number(body.base_rate_per_30min) || 60,
-      staff_payout_pct: Number(body.staff_payout_pct) || 70,
+      base_rate_per_30min: numberOr(body.base_rate_per_30min, 60),
+      staff_payout_pct,
       agency_share_pct,
       currency: body.currency || 'EUR',
-      tax_rate_pct: Number(body.tax_rate_pct) || 21,
+      tax_rate_pct: numberOr(body.tax_rate_pct, 21),
       tax_label: body.tax_label || 'BTW',
-      age_gate_minimum: Number(body.age_gate_minimum) || 18,
+      age_gate_minimum: numberOr(body.age_gate_minimum, 18, 1),
       require_age_confirm: body.require_age_confirm ?? true,
       require_id_upload: body.require_id_upload ?? false,
     });

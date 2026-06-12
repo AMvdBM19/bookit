@@ -6,6 +6,7 @@ import { useTenantConfig } from '@/lib/context/tenant-config';
 import Spinner from '@/components/ui/spinner';
 import Badge from '@/components/ui/badge';
 import Modal from '@/components/ui/modal';
+import { ONBOARDING_REOPEN_EVENT } from '@/components/onboarding-checklist';
 
 interface Tenant {
   name: string;
@@ -425,6 +426,9 @@ export default function SettingsSection({ slug }: { slug: string }) {
         </div>
       </section>
 
+      {/* Booking form — conditional widget fields (tenant_config flags) */}
+      <BookingFormSection slug={slug} />
+
       {/* Integrations */}
       <section>
         <h3 className="text-xs font-semibold text-fg-muted uppercase tracking-wider mb-2">
@@ -463,6 +467,30 @@ export default function SettingsSection({ slug }: { slug: string }) {
         </div>
       </section>
 
+      {/* Getting started — re-open the onboarding checklist */}
+      <section>
+        <h3 className="text-xs font-semibold text-fg-muted uppercase tracking-wider mb-2">
+          Getting started
+        </h3>
+        <div className="bg-surface rounded-lg border border-border px-4">
+          <Row
+            label="Setup checklist"
+            value={
+              <button
+                type="button"
+                onClick={() => {
+                  window.dispatchEvent(new Event(ONBOARDING_REOPEN_EVENT));
+                  toast.success('Checklist re-opened — see the top of the dashboard.');
+                }}
+                className="text-xs px-2 py-1 bg-elevated hover:bg-sunken text-fg rounded"
+              >
+                Re-open checklist
+              </button>
+            }
+          />
+        </div>
+      </section>
+
       {showWaConfig && (
         <WhatsAppConfigModal
           slug={slug}
@@ -480,6 +508,118 @@ export default function SettingsSection({ slug }: { slug: string }) {
         </div>
       )}
     </div>
+  );
+}
+
+/**
+ * Booking form flags live on tenant_config.feature_flags (not
+ * tenant_settings), so this section talks to /api/{slug}/config. The PATCH
+ * validator requires the full flag object — toggles merge into the fetched
+ * flags before saving.
+ */
+function BookingFormSection({ slug }: { slug: string }) {
+  const [flags, setFlags] = useState<Record<string, unknown> | null>(null);
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch(`/api/${slug}/config`);
+        const data = await res.json().catch(() => ({}));
+        if (!cancelled && res.ok) {
+          setFlags(data.config?.feature_flags ?? null);
+        }
+      } catch {
+        /* section simply stays hidden on failure */
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [slug]);
+
+  async function toggle(
+    key: 'booking_reference_image' | 'booking_address_field' | 'staff_can_edit_bookings',
+    next: boolean
+  ) {
+    if (!flags) return;
+    const updated = { ...flags, [key]: next };
+    setSaving(true);
+    try {
+      const res = await fetch(`/api/${slug}/config`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ feature_flags: updated }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        toast.error(data.error ?? "Couldn't save. Please try again.");
+        return;
+      }
+      setFlags(updated);
+      toast.success('Booking form updated.');
+    } catch {
+      toast.error("Couldn't save. Please try again.");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  if (!flags) return null;
+
+  return (
+    <section>
+      <h3 className="text-xs font-semibold text-fg-muted uppercase tracking-wider mb-2">
+        Booking form
+      </h3>
+      <div className="bg-surface rounded-lg border border-border px-4 py-1">
+        <div className="py-2 border-b border-border">
+          <label className="flex items-center gap-2 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={flags.booking_reference_image === true}
+              disabled={saving}
+              onChange={e => toggle('booking_reference_image', e.target.checked)}
+            />
+            <span className="text-sm text-fg">Reference image upload</span>
+          </label>
+          <p className="text-[11px] text-fg-muted mt-1 ml-6">
+            Clients can attach an optional image (e.g. a design idea) when booking.
+          </p>
+        </div>
+        <div className="py-2 border-b border-border">
+          <label className="flex items-center gap-2 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={flags.booking_address_field === true}
+              disabled={saving}
+              onChange={e => toggle('booking_address_field', e.target.checked)}
+            />
+            <span className="text-sm text-fg">Service address field</span>
+          </label>
+          <p className="text-[11px] text-fg-muted mt-1 ml-6">
+            Asks clients for a required address — for services performed at the
+            client&apos;s location.
+          </p>
+        </div>
+        <div className="py-2">
+          <label className="flex items-center gap-2 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={flags.staff_can_edit_bookings === true}
+              disabled={saving}
+              onChange={e => toggle('staff_can_edit_bookings', e.target.checked)}
+            />
+            <span className="text-sm text-fg">Staff can edit bookings</span>
+          </label>
+          <p className="text-[11px] text-fg-muted mt-1 ml-6">
+            Lets team members edit services, notes and price on their own
+            bookings. Every edit is recorded in an audit trail.
+          </p>
+        </div>
+      </div>
+    </section>
   );
 }
 

@@ -1,5 +1,6 @@
 'use client';
 
+import { useEffect, useState } from 'react';
 import { useTenantConfig } from '@/lib/context/tenant-config';
 import Badge from '@/components/ui/badge';
 
@@ -21,6 +22,9 @@ export interface BookingDetail {
   status: string;
   source?: string | null;
   booking_notes?: string | null;
+  service_address?: string | null;
+  reference_image_url?: string | null;
+  edited_at?: string | null;
   total_price?: number | string | null;
   tag_extras_total?: number | string | null;
   base_rate_per_30?: number | string | null;
@@ -76,12 +80,57 @@ function DetailItem({ label, children }: { label: string; children: React.ReactN
  * source and lifecycle timestamps. Used by the expandable rows on the
  * Bookings tab and by the calendar view.
  */
+// Lazy signed-URL loader for the private reference image.
+function ReferenceImage({ slug, bookingId }: { slug: string; bookingId: string }) {
+  const [url, setUrl] = useState<string | null>(null);
+  const [failed, setFailed] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch(`/api/${slug}/bookings/${bookingId}/reference-image`);
+        const data = await res.json().catch(() => ({}));
+        if (cancelled) return;
+        if (!res.ok || !data.url) {
+          setFailed(true);
+          return;
+        }
+        setUrl(data.url);
+      } catch {
+        if (!cancelled) setFailed(true);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [slug, bookingId]);
+
+  if (failed) return <span className="text-fg-muted">Couldn&apos;t load image.</span>;
+  if (!url) return <span className="text-fg-muted">Loading…</span>;
+  return (
+    <a href={url} target="_blank" rel="noopener noreferrer" title="Open full size">
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
+        src={url}
+        alt="Client reference"
+        className="w-24 h-24 rounded-lg object-cover border border-border hover:opacity-90"
+      />
+    </a>
+  );
+}
+
 export default function BookingDetailPanel({
   booking,
   currency = 'EUR',
+  slug,
+  onEdit,
 }: {
   booking: BookingDetail;
   currency?: string;
+  slug?: string;
+  /** When provided, shows an Edit button for editable statuses (B7). */
+  onEdit?: (bookingId: string) => void;
 }) {
   const { terminology, featureFlags } = useTenantConfig();
 
@@ -154,18 +203,50 @@ export default function BookingDetailPanel({
           </DetailItem>
         )}
 
+        {booking.service_address && (
+          <DetailItem label="Service address">
+            <p className="whitespace-pre-wrap">{booking.service_address}</p>
+          </DetailItem>
+        )}
+
+        {booking.reference_image_url && slug && (
+          <DetailItem label="Reference image">
+            <ReferenceImage slug={slug} bookingId={booking.id} />
+          </DetailItem>
+        )}
+
         <DetailItem label="History">
           <p className="text-fg-muted">
             Source: <Badge variant="outline">{booking.source === 'manual' ? 'Manual' : 'Widget'}</Badge>
+            {booking.edited_at && (
+              <span className="ml-1.5">
+                <Badge variant="warning">Edited</Badge>
+              </span>
+            )}
           </p>
           {requested && <p className="text-fg-muted mt-0.5">Requested {requested}</p>}
           {confirmed && <p className="text-fg-muted">Confirmed {confirmed}</p>}
           {cancelled && <p className="text-fg-muted">Cancelled {cancelled}</p>}
+          {booking.edited_at && (
+            <p className="text-fg-muted">Edited {fmtTimestamp(booking.edited_at)}</p>
+          )}
           {booking.cancellation_reason && (
             <p className="text-fg-muted">Reason: {booking.cancellation_reason}</p>
           )}
         </DetailItem>
       </div>
+
+      {onEdit && ['pending_staff', 'confirmed', 'completed'].includes(booking.status) && (
+        <div className="flex justify-end mt-3">
+          <button
+            type="button"
+            onClick={() => onEdit(booking.id)}
+            className="text-xs px-3 py-1 bg-elevated hover:bg-sunken text-fg rounded"
+          >
+            Edit
+          </button>
+        </div>
+      )}
     </div>
   );
 }

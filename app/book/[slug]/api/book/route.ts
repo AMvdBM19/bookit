@@ -25,6 +25,8 @@ interface BookingBody {
   client_id?: string;
   booking_notes?: string;
   age_confirmed?: boolean;
+  service_address?: string;
+  reference_image_path?: string;
 }
 
 export async function POST(
@@ -101,6 +103,36 @@ export async function POST(
       { error: `${featureFlags.booking_notes_label} is required` },
       { status: 400 }
     );
+  }
+
+  // Conditional booking fields (Phase 15-B5): accepted only when the
+  // corresponding feature flag is on; silently ignored otherwise.
+  let serviceAddress: string | null = null;
+  if (featureFlags.booking_address_field) {
+    const addr =
+      typeof body.service_address === 'string'
+        ? stripHtml(body.service_address).slice(0, 500)
+        : '';
+    if (!addr) {
+      return NextResponse.json({ error: 'Service address is required' }, { status: 400 });
+    }
+    serviceAddress = addr;
+  }
+
+  let referenceImagePath: string | null = null;
+  if (featureFlags.booking_reference_image && body.reference_image_path) {
+    const p = String(body.reference_image_path);
+    // Must be an object path produced by our reference-upload endpoint for
+    // this tenant — blocks cross-tenant references and path tricks.
+    if (
+      !p.startsWith(`${tenant.id}/`) ||
+      p.includes('..') ||
+      p.length > 300 ||
+      !/\.(jpg|png|webp)$/.test(p)
+    ) {
+      return NextResponse.json({ error: 'Invalid reference image' }, { status: 400 });
+    }
+    referenceImagePath = p;
   }
 
   let staff: { id: string; pseudonym: string } | null = null;
@@ -326,6 +358,8 @@ export async function POST(
       slot_end: body.slot_end,
       duration_minutes: durationMinutes,
       booking_notes: body.booking_notes ? stripHtml(body.booking_notes) : null,
+      service_address: serviceAddress,
+      reference_image_url: referenceImagePath,
       base_rate_per_30: pricing.baseRatePer30,
       tag_extras_total: pricing.tagExtrasTotal,
       total_price: pricing.totalPrice,

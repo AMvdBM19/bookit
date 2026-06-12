@@ -24,6 +24,7 @@ interface ManualBookingBody {
   slot_end?: string;
   tag_ids?: string[];
   booking_notes?: string;
+  service_address?: string;
   total_price?: number;
   status: 'pending_staff' | 'confirmed' | 'completed';
   notify_client?: boolean;
@@ -244,6 +245,9 @@ export async function POST(
       slot_end: slotEnd,
       duration_minutes: durationMinutes,
       booking_notes: body.booking_notes ? stripHtml(body.booking_notes) : null,
+      service_address: body.service_address
+        ? stripHtml(body.service_address).slice(0, 500) || null
+        : null,
       base_rate_per_30: baseRatePer30,
       tag_extras_total: tagExtrasTotal,
       total_price: totalPrice,

@@ -10,7 +10,9 @@ import ConfirmDialog from '@/components/ui/confirm-dialog';
 import AddToCalendar from '@/components/add-to-calendar';
 import type { CalendarEvent } from '@/lib/calendar/buildUrl';
 import CreateBookingModal from './create-booking-modal';
+import EditBookingModal from '@/components/edit-booking-modal';
 import BookingDetailPanel, { type BookingDetail } from './booking-detail-panel';
+import BookingsCalendar from './bookings-calendar';
 
 interface JoinObj {
   pseudonym?: string;
@@ -155,9 +157,11 @@ export default function BookingsSection({ slug }: { slug: string }) {
   const [assignChoice, setAssignChoice] = useState<Record<string, string>>({});
   const [staffOptions, setStaffOptions] = useState<Array<{ id: string; pseudonym: string }>>([]);
   const [showCreate, setShowCreate] = useState(false);
+  const [editBookingId, setEditBookingId] = useState<string | null>(null);
   const [confirmNoShowId, setConfirmNoShowId] = useState<string | null>(null);
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [currency, setCurrency] = useState('EUR');
+  const [viewMode, setViewMode] = useState<'list' | 'calendar'>('list');
 
   // Currency for the detail panel's price breakdown.
   useEffect(() => {
@@ -358,6 +362,21 @@ export default function BookingsSection({ slug }: { slug: string }) {
       <div className="flex items-center justify-between">
         <h2 className="text-sm font-semibold text-fg">{terminology.booking_plural}</h2>
         <div className="flex items-center gap-2">
+          <div className="flex items-center rounded border border-border overflow-hidden">
+            {(['list', 'calendar'] as const).map(v => (
+              <button
+                key={v}
+                type="button"
+                onClick={() => setViewMode(v)}
+                aria-pressed={viewMode === v}
+                className={`text-xs px-3 py-1.5 capitalize transition-colors ${
+                  viewMode === v ? 'bg-fg text-canvas' : 'bg-surface text-fg-muted hover:bg-elevated'
+                }`}
+              >
+                {v}
+              </button>
+            ))}
+          </div>
           <a
             href={`/api/${slug}/export/bookings`}
             download
@@ -375,6 +394,10 @@ export default function BookingsSection({ slug }: { slug: string }) {
         </div>
       </div>
 
+      {viewMode === 'calendar' ? (
+        <BookingsCalendar bookings={bookings} currency={currency} slug={slug} onEdit={setEditBookingId} />
+      ) : (
+      <>
       {/* Pending */}
       <section>
         <div className="flex items-center gap-2 mb-3">
@@ -539,7 +562,7 @@ export default function BookingsSection({ slug }: { slug: string }) {
                       {expandedId === b.id && (
                         <tr>
                           <td colSpan={8} className="p-0">
-                            <BookingDetailPanel booking={b} currency={currency} />
+                            <BookingDetailPanel booking={b} currency={currency} slug={slug} onEdit={setEditBookingId} />
                           </td>
                         </tr>
                       )}
@@ -621,7 +644,7 @@ export default function BookingsSection({ slug }: { slug: string }) {
                     {expandedId === b.id && (
                       <tr>
                         <td colSpan={6} className="p-0">
-                          <BookingDetailPanel booking={b} currency={currency} />
+                          <BookingDetailPanel booking={b} currency={currency} slug={slug} onEdit={setEditBookingId} />
                         </td>
                       </tr>
                     )}
@@ -675,7 +698,7 @@ export default function BookingsSection({ slug }: { slug: string }) {
                     {expandedId === b.id && (
                       <tr>
                         <td colSpan={5} className="p-0">
-                          <BookingDetailPanel booking={b} currency={currency} />
+                          <BookingDetailPanel booking={b} currency={currency} slug={slug} onEdit={setEditBookingId} />
                         </td>
                       </tr>
                     )}
@@ -687,6 +710,8 @@ export default function BookingsSection({ slug }: { slug: string }) {
           </div>
         )}
       </section>
+      </>
+      )}
 
       {showCreate && (
         <CreateBookingModal
@@ -694,6 +719,18 @@ export default function BookingsSection({ slug }: { slug: string }) {
           onClose={() => setShowCreate(false)}
           onCreated={() => {
             setShowCreate(false);
+            reload();
+          }}
+        />
+      )}
+
+      {editBookingId && (
+        <EditBookingModal
+          slug={slug}
+          bookingId={editBookingId}
+          onClose={() => setEditBookingId(null)}
+          onSaved={() => {
+            setEditBookingId(null);
             reload();
           }}
         />

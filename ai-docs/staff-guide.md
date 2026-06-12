@@ -24,7 +24,9 @@ After changing their password, a new staff member runs a 4-step wizard at
 
 1. **Profile** — pseudonym, bio, and optional personal details (gender,
    nationality, age, languages, social links). Which fields appear is
-   template-driven.
+   template-driven. A **Photos** block lets them upload profile photos
+   (JPEG/PNG/WebP, max 5 MB, up to 6) or add one by URL; the first photo
+   shows on the booking widget.
 2. **Schedule** — weekly working hours: pick weekdays and a start/end time per
    day. This is the base layer of their availability.
 3. **Services** — pick which of the tenant's service tags they offer. Only
@@ -84,7 +86,10 @@ Staff log in at `/{slug}/login` like the owner, but get a simpler dashboard:
   links, service tags, and weekly schedule directly from the dashboard.
   Social links accept a bare handle, an @handle, or a full URL; the widget
   shows a clickable icon for every filled-in network and hides the row
-  entirely when none are set.
+  entirely when none are set. The profile editor includes a **Photos**
+  block: upload (JPEG/PNG/WebP, max 5 MB, up to 6 photos) or add by URL,
+  remove with the ✕ on a thumbnail. Photo changes save immediately —
+  no Save click needed. The first photo is the one clients see.
 - **Days off** — add/remove their own exception dates.
 
 Staff never see other staff members' bookings, the client list, pricing,
@@ -123,4 +128,7 @@ A staff member is offered to clients on a given date/time when:
   (agent, or the staff member themselves).
 - `GET|PATCH /api/{slug}/staff/profile`, `/api/{slug}/staff/schedule`,
   `/api/{slug}/staff/tags` — staff self-service.
+- `POST|DELETE /api/{slug}/staff/{id}/photo` — upload (multipart `file`
+  or JSON `{url}`) / remove a profile photo (agent, or the staff member
+  themselves).
 - `GET /api/{slug}/export/staff` — CSV export (agent).

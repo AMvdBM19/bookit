@@ -41,7 +41,7 @@ export default function CreateBookingModal({
   onClose: () => void;
   onCreated: () => void;
 }) {
-  const { terminology } = useTenantConfig();
+  const { terminology, featureFlags } = useTenantConfig();
 
   const [staff, setStaff] = useState<StaffOption[]>([]);
   const [tags, setTags] = useState<TagOption[]>([]);
@@ -63,6 +63,7 @@ export default function CreateBookingModal({
   const [slotEnd, setSlotEnd] = useState('');
   const [selectedTags, setSelectedTags] = useState<Set<string>>(new Set());
   const [notes, setNotes] = useState('');
+  const [serviceAddress, setServiceAddress] = useState('');
   const [price, setPrice] = useState('');
   const [priceTouched, setPriceTouched] = useState(false);
   const [status, setStatus] = useState<Status>('confirmed');
@@ -178,6 +179,7 @@ export default function CreateBookingModal({
       staff_id: staffId || null,
       tag_ids: Array.from(selectedTags),
       booking_notes: notes.trim() || undefined,
+      service_address: serviceAddress.trim() || undefined,
       status,
       notify_client: notifyClient,
     };
@@ -363,6 +365,21 @@ export default function CreateBookingModal({
                   );
                 })}
               </div>
+            </div>
+          )}
+
+          {/* Service address — only when the tenant's booking form has it */}
+          {featureFlags.booking_address_field && (
+            <div>
+              <label className={labelCls}>Service address</label>
+              <input
+                type="text"
+                value={serviceAddress}
+                onChange={e => setServiceAddress(e.target.value)}
+                className={inputCls}
+                placeholder="Street, number, city"
+                maxLength={500}
+              />
             </div>
           )}
 

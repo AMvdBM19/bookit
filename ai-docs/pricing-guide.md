@@ -17,16 +17,22 @@ price = base_rate_per_30min × (duration_minutes / 30) + Σ extra_price of selec
 
 ## The Pricing tab, section by section
 
-Each section has an **Edit** button (then **Save** / **Cancel**). Fields
-marked **Locked** were fixed during onboarding and require platform support
-to change.
+Sections appear in this order: **Base Pricing**, **Services & Pricing**,
+**Deposits** (only when supported), **Tax**, **Revenue Split**, **No-Show
+Policy**. Each editable section has an **Edit** button (then **Save** /
+**Cancel**). Fields marked **Locked** were fixed during onboarding and
+require platform support to change.
 
 ### Base Pricing
 
 - **Pricing enabled** — master toggle for pricing on this tenant.
 - **Show price to client** — display the price breakdown in the widget.
-- **Currency** — *locked*.
-- **Base rate** — *locked*; the per-30-minutes rate everything builds on.
+- **Currency** — editable.
+- **Per-booking price** — shown and edited in the tenant's own appointment
+  length (e.g. "€40 per 60-min booking"). Internally the platform always
+  stores a per-30-minutes rate; the muted helper line shows that stored
+  equivalent. Entering a per-booking price converts it back automatically.
+  **0 is a valid price** — it means free bookings or consultations.
 
 ### Tax
 
@@ -63,7 +69,7 @@ What counts as revenue when a booking is marked no-show:
 - **Full revenue**
 - **Partial revenue** — reveals a **Partial revenue %** field.
 
-### Per-Service Pricing (bottom of the tab)
+### Services & Pricing (second section of the tab)
 
 A table of the tenant's service tags with inline editing:
 
@@ -92,14 +98,14 @@ A table of the tenant's service tags with inline editing:
 | Locked after onboarding | Editable anytime |
 |---|---|
 | Tax rate % | Currency, base rate per 30 min (confirm dialog: future bookings only) |
-| Revenue split percentages | Pricing enabled, show price to client |
+| Revenue split percentages (slider shows the split but is disabled) | Pricing enabled, show price to client |
 | (sometimes) minimum age | Tax period |
 | | Deposit % and threshold (if supported) |
 | | No-show policy, per-service prices/durations, service add/rename/delete |
 
 ## Common owner questions
 
-- *"How do I charge more for service X?"* — Pricing tab → Per-Service
+- *"How do I charge more for service X?"* — Pricing tab → Services &
   Pricing → set its Extra price → Save on that row.
 - *"Service X takes 90 minutes, not 30"* — enable **Per-service duration**,
   then set 90 in its Duration column. The widget will offer 90-minute slots

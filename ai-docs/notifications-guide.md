@@ -27,12 +27,22 @@ normally.
 
 ## The Templates tab
 
-One card per event, each with a WhatsApp row and an email row, plus the
-event's available variables shown as chips. Per row: **Add** (no template
-yet) or **Edit**, then a body textarea (and a subject field for email).
+Navigation is: **Event dropdown** (shows how many channels are configured
+per event, e.g. "Booking confirmed (1/2 set)") → **channel sub-tabs**
+(WhatsApp / Email, each with a green dot when configured) → a single
+editor. The editor has:
+
+- a body textarea (plus a subject field on the Email tab),
+- an **Active / Not configured** status badge,
+- **click-to-insert placeholder chips** — clicking `[client_name]` inserts
+  it at the cursor,
+- a live **preview pane** that fills placeholders with sample values,
+- **Save template**, and **Reset to default** (asks for confirmation, then
+  loads standard wording into the editor — nothing changes until Save).
+
 Placeholders use square brackets: `Hi [client_name], see you on [date] at
-[time]!`. An unconfigured row means messages for that event/channel are
-simply not sent.
+[time]!`. An unconfigured event/channel means messages for it are simply
+not sent.
 
 > **Email status:** email templates can be written and saved, but email
 > *dispatch is not yet wired* — only WhatsApp messages actually send today.

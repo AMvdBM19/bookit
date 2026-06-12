@@ -3,6 +3,89 @@
 > Feature history for the AI assistant: what exists and since when. Newest
 > first. Maintained per the AI Docs Maintenance Protocol in CLAUDE.md.
 
+## 2026-06-12 — Booking editing (Phase 15-B7)
+
+- Bookings can now be edited (services, notes, price) from the detail
+  panel's Edit button. Owners always can; staff can edit their own
+  bookings when the new "Staff can edit bookings" toggle (Settings →
+  Booking form) is on. Price recomputes from base rate + extras with a
+  manual override; price changes require confirmation. Allowed on
+  pending, confirmed, and completed-within-24h bookings; no
+  rescheduling. Edits show an "Edited" badge and are stored in an audit
+  trail. Planned `edit_booking` assistant tool documented.
+
+## 2026-06-12 — Templates tab redesign (Phase 15-B6)
+
+- The Templates tab now navigates by event dropdown → WhatsApp/Email
+  sub-tabs → one editor, with a configured-status badge, click-to-insert
+  placeholder chips, a live preview with sample values, and a confirmed
+  "Reset to default" that loads standard wording. Same templates API
+  underneath — existing templates are untouched.
+
+## 2026-06-12 — Conditional booking fields: reference image + address (Phase 15-B5)
+
+- The booking widget can now collect a **reference image** (optional
+  upload, private storage, viewed via the booking detail panel) and/or a
+  required **service address**, controlled per tenant in Settings →
+  Booking form. Reference image is on by default for tattoo-template
+  tenants. The manual booking modal gets an optional address field when
+  the address flag is on.
+
+## 2026-06-12 — Staff photo upload (Phase 15-B4)
+
+- Staff profile photos can now be uploaded directly (JPEG/PNG/WebP, max
+  5 MB, up to 6 photos) instead of URL-only. The Photos block appears in
+  the staff setup wizard's Profile step and in the staff dashboard's
+  profile editor; a URL input remains as fallback. Removing a photo also
+  deletes the uploaded file. The first photo shows on the booking widget.
+
+## 2026-06-12 — Getting-started checklist rework (Phase 15-A3)
+
+- The dashboard checklist now has three steps: add a team member,
+  customize the widget (done once a theme is actually saved) and share
+  the booking link (copies the URL). Dismissing asks for confirmation,
+  and a dismissed checklist can be re-opened from Settings → "Getting
+  started". While loading it shows a skeleton instead of disappearing.
+
+## 2026-06-12 — Pricing tab shows per-booking prices (Phase 15-A2)
+
+- The Pricing tab's base rate now displays and edits in the tenant's own
+  appointment length ("€40 per 60-min booking") with the stored
+  per-30-minutes equivalent as a muted helper line. Storage is unchanged —
+  the platform still keeps a per-30-min rate.
+- Sections reordered: Base Pricing, Services & Pricing (renamed from
+  Per-Service Pricing and moved up), Deposits, Tax (rate shows a Locked
+  tag), Revenue Split, No-Show Policy.
+
+## 2026-06-12 — Zero values respected in setup wizard (Phase 15-A1)
+
+- The setup wizard's Financial step now stores 0 correctly for the base
+  rate, staff payout %, tax rate % and minimum lead time (previously a 0
+  was silently replaced by the default, e.g. base rate 0 became 60). A
+  base rate of 0 means free bookings or consultations; the wizard says so
+  under the field.
+
+## 2026-06-12 — Revenue split slider (Phase 14-B3)
+
+- The Pricing tab's Revenue Split section shows a 0–100 range slider for
+  the staff payout (agency share auto-computed as the complement), in sync
+  with the numeric inputs. Disabled with a Locked tag when the split is
+  wizard-locked (the normal case). The setup wizard's Financial step also
+  uses the slider.
+
+## 2026-06-12 — Calendar view on the Bookings tab (Phase 14-B2)
+
+- New List ⇄ Calendar toggle on the Bookings tab. Week and day views
+  (hour grid), bookings colored by status, dashed outline for
+  pool/unassigned, click opens the booking detail panel. Read-only — no
+  drag-to-reschedule yet.
+
+## 2026-06-12 — Widget month calendar for far-ahead bookings (Phase 14-B1)
+
+- The widget's 14-day date strip is replaced by a month-grid calendar with
+  month navigation, bounded by the minimum lead time and the tenant's max
+  booking window (out-of-range days disabled). Time-slot chips unchanged.
+
 ## 2026-06-12 — Self-service WhatsApp integration setup (Phase 14-A11)
 
 - Settings → Integrations is interactive: a **Configure** button opens a

@@ -50,6 +50,11 @@ function num(v: unknown): number {
   return Number.isFinite(n) ? n : 0;
 }
 
+// NUMERIC(10,2)-safe rounding for unit conversions.
+function round2(n: number): number {
+  return Math.round(n * 100) / 100;
+}
+
 function money(amount: unknown, currency: string): string {
   const n = num(amount);
   try {
@@ -84,6 +89,10 @@ export default function PricingSection({ slug }: { slug: string }) {
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
   const [confirmBaseSave, setConfirmBaseSave] = useState(false);
+  // Per-booking price as typed by the user. Storage stays canonical
+  // (base_rate_per_30min); this is only the presentation value, so an
+  // untouched field never round-trips through the unit conversion.
+  const [baseRateInput, setBaseRateInput] = useState('');
 
   const reload = useCallback(async () => {
     setLoading(true);
@@ -110,6 +119,12 @@ export default function PricingSection({ slug }: { slug: string }) {
   function startEdit(section: string) {
     if (!summary?.settings) return;
     setDraft(summary.settings);
+    if (section === 'base') {
+      const slotMin = num(summary.settings.default_slot_minutes) || 30;
+      setBaseRateInput(
+        String(round2(num(summary.settings.base_rate_per_30min) * slotMin / 30))
+      );
+    }
     setSaveError(null);
     setEditingSection(section);
   }
@@ -167,9 +182,12 @@ export default function PricingSection({ slug }: { slug: string }) {
 
   const { settings } = summary;
   const currency = settings?.currency ?? 'EUR';
+  const slotMinutes = num(settings?.default_slot_minutes) || 30;
+  const perBookingRate = round2(num(settings?.base_rate_per_30min) * slotMinutes / 30);
   const lockedSet = new Set(summary.locked_fields ?? []);
   const currencyLocked = lockedSet.has('currency');
   const baseRateLocked = lockedSet.has('base_rate_per_30min');
+  const splitLocked = lockedSet.has('staff_payout_pct') || lockedSet.has('agency_share_pct');
 
   // Live split values while editing (linked), otherwise the saved values.
   const splitEditing = editingSection === 'revenue';
@@ -239,10 +257,10 @@ export default function PricingSection({ slug }: { slug: string }) {
                   />
                 )}
               </EditRow>
-              <EditRow label="Base rate per 30 min" locked={baseRateLocked}>
+              <EditRow label={`Price per ${slotMinutes}-min booking`} locked={baseRateLocked}>
                 {baseRateLocked ? (
                   <p className="text-sm text-fg-muted">
-                    {money(settings?.base_rate_per_30min, currency)} / 30 min
+                    {money(perBookingRate, currency)} per {slotMinutes}-min booking
                   </p>
                 ) : (
                   <>
@@ -250,12 +268,19 @@ export default function PricingSection({ slug }: { slug: string }) {
                       type="number"
                       min={0}
                       step={0.5}
-                      value={draft.base_rate_per_30min ?? 0}
-                      onChange={e => patchDraft({ base_rate_per_30min: num(e.target.value) })}
+                      value={baseRateInput}
+                      onChange={e => {
+                        setBaseRateInput(e.target.value);
+                        patchDraft({
+                          base_rate_per_30min: round2(num(e.target.value) * 30 / slotMinutes),
+                        });
+                      }}
                       className={inputCls}
                     />
                     <p className="text-[11px] text-fg-muted mt-1">
-                      Applies to future bookings only — past amounts are never recalculated.
+                      = {money(draft.base_rate_per_30min ?? 0, currency)} per 30 min (stored
+                      rate). Set 0 for free bookings. Applies to future bookings only — past
+                      amounts are never recalculated.
                     </p>
                   </>
                 )}
@@ -265,8 +290,15 @@ export default function PricingSection({ slug }: { slug: string }) {
             <>
               <Row label="Pricing enabled" value={settings?.pricing_enabled ? 'Yes' : 'No'} />
               <Row
-                label="Base rate"
-                value={`${money(settings?.base_rate_per_30min, currency)} / 30 min`}
+                label="Per-booking price"
+                value={
+                  <>
+                    {money(perBookingRate, currency)} per {slotMinutes}-min booking
+                    <span className="block text-[11px] text-fg-muted">
+                      = {money(settings?.base_rate_per_30min, currency)} per 30 min
+                    </span>
+                  </>
+                }
               />
               <Row label="Currency" value={currency} />
               <Row
@@ -278,111 +310,14 @@ export default function PricingSection({ slug }: { slug: string }) {
         </div>
       </section>
 
-      {/* Tax Configuration */}
-      <section>
-        <SectionHeader
-          title="Tax"
-          editing={editingSection === 'tax'}
-          onEdit={() => startEdit('tax')}
-          onCancel={cancelEdit}
-          onSave={() => saveSection(['tax_label', 'tax_period'])}
-          saving={saving}
-        />
-        <div className="bg-surface rounded-lg border border-border px-4">
-          {editingSection === 'tax' ? (
-            <>
-              <EditRow label="Tax rate" locked>
-                <p className="text-sm text-fg-muted">{num(settings?.tax_rate_pct)}%</p>
-              </EditRow>
-              <EditRow label="Tax label">
-                <input
-                  type="text"
-                  value={draft.tax_label ?? ''}
-                  onChange={e => patchDraft({ tax_label: e.target.value })}
-                  className={inputCls}
-                  placeholder="BTW"
-                />
-              </EditRow>
-              <EditRow label="Tax period">
-                <select
-                  value={draft.tax_period ?? 'quarterly'}
-                  onChange={e => patchDraft({ tax_period: e.target.value })}
-                  className={inputCls}
-                >
-                  {TAX_PERIODS.map(p => (
-                    <option key={p} value={p}>
-                      {p}
-                    </option>
-                  ))}
-                </select>
-              </EditRow>
-            </>
-          ) : (
-            <Row
-              label="Tax"
-              value={`${num(settings?.tax_rate_pct)}% ${settings?.tax_label ?? ''} (${
-                settings?.tax_period ?? '—'
-              })`}
-            />
-          )}
-        </div>
-      </section>
-
-      {/* Revenue Split */}
-      <section>
-        <SectionHeader
-          title="Revenue Split"
-          editing={editingSection === 'revenue'}
-          onEdit={() => startEdit('revenue')}
-          onCancel={cancelEdit}
-          onSave={() => saveSection(['staff_payout_pct', 'agency_share_pct'])}
-          saving={saving}
-        />
-        <div className="bg-surface rounded-lg border border-border px-4 py-3 space-y-3">
-          {editingSection === 'revenue' ? (
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label className="block text-xs text-fg-muted mb-1">Staff payout %</label>
-                <input
-                  type="number"
-                  min={0}
-                  max={100}
-                  step={0.5}
-                  value={staffPct}
-                  onChange={e => {
-                    const v = Math.max(0, Math.min(100, num(e.target.value)));
-                    patchDraft({ staff_payout_pct: v, agency_share_pct: 100 - v });
-                  }}
-                  className={inputCls}
-                />
-              </div>
-              <div>
-                <label className="block text-xs text-fg-muted mb-1">Agency share %</label>
-                <input
-                  type="number"
-                  min={0}
-                  max={100}
-                  step={0.5}
-                  value={agencyPct}
-                  onChange={e => {
-                    const v = Math.max(0, Math.min(100, num(e.target.value)));
-                    patchDraft({ agency_share_pct: v, staff_payout_pct: 100 - v });
-                  }}
-                  className={inputCls}
-                />
-              </div>
-            </div>
-          ) : (
-            <div className="flex justify-between text-sm">
-              <span className="text-fg-muted">Staff / Agency</span>
-              <span className="text-fg font-medium">
-                {staffPct}% / {agencyPct}%
-              </span>
-            </div>
-          )}
-          <SplitBar staffPct={staffPct} agencyPct={agencyPct} />
-        </div>
-      </section>
+      {/* Services & Pricing */}
+      <PerServicePricing
+        slug={slug}
+        currency={currency}
+        perServiceDuration={settings?.per_service_duration_enabled ?? false}
+        defaultSlotMinutes={settings?.default_slot_minutes ?? 30}
+        onToggleDuration={togglePerServiceDuration}
+      />
 
       {/* Deposits — only when the template supports them */}
       {featureFlags.deposits_supported && (
@@ -443,6 +378,151 @@ export default function PricingSection({ slug }: { slug: string }) {
           </div>
         </section>
       )}
+
+      {/* Tax Configuration */}
+      <section>
+        <SectionHeader
+          title="Tax"
+          editing={editingSection === 'tax'}
+          onEdit={() => startEdit('tax')}
+          onCancel={cancelEdit}
+          onSave={() => saveSection(['tax_label', 'tax_period'])}
+          saving={saving}
+        />
+        <div className="bg-surface rounded-lg border border-border px-4">
+          {editingSection === 'tax' ? (
+            <>
+              <EditRow label="Tax rate" locked>
+                <p className="text-sm text-fg-muted">{num(settings?.tax_rate_pct)}%</p>
+              </EditRow>
+              <EditRow label="Tax label">
+                <input
+                  type="text"
+                  value={draft.tax_label ?? ''}
+                  onChange={e => patchDraft({ tax_label: e.target.value })}
+                  className={inputCls}
+                  placeholder="BTW"
+                />
+              </EditRow>
+              <EditRow label="Tax period">
+                <select
+                  value={draft.tax_period ?? 'quarterly'}
+                  onChange={e => patchDraft({ tax_period: e.target.value })}
+                  className={inputCls}
+                >
+                  {TAX_PERIODS.map(p => (
+                    <option key={p} value={p}>
+                      {p}
+                    </option>
+                  ))}
+                </select>
+              </EditRow>
+            </>
+          ) : (
+            <>
+              <Row
+                label="Tax rate"
+                value={
+                  <>
+                    {num(settings?.tax_rate_pct)}%{' '}
+                    <span className="text-[10px] uppercase tracking-wider text-fg-subtle ml-1">
+                      Locked
+                    </span>
+                  </>
+                }
+              />
+              <Row
+                label="Label · period"
+                value={`${settings?.tax_label ?? '—'} · ${settings?.tax_period ?? '—'}`}
+              />
+            </>
+          )}
+        </div>
+      </section>
+
+      {/* Revenue Split */}
+      <section>
+        {splitLocked ? (
+          <div className="flex items-center justify-between mb-2">
+            <h3 className="text-xs font-semibold text-fg-muted uppercase tracking-wider">
+              Revenue Split
+            </h3>
+            <span className="text-[10px] uppercase tracking-wider text-fg-subtle">Locked</span>
+          </div>
+        ) : (
+          <SectionHeader
+            title="Revenue Split"
+            editing={editingSection === 'revenue'}
+            onEdit={() => startEdit('revenue')}
+            onCancel={cancelEdit}
+            onSave={() => saveSection(['staff_payout_pct', 'agency_share_pct'])}
+            saving={saving}
+          />
+        )}
+        <div className="bg-surface rounded-lg border border-border px-4 py-3 space-y-3">
+          <input
+            type="range"
+            min={0}
+            max={100}
+            step={1}
+            value={staffPct}
+            disabled={splitLocked || editingSection !== 'revenue'}
+            onChange={e => {
+              const v = Math.max(0, Math.min(100, num(e.target.value)));
+              patchDraft({ staff_payout_pct: v, agency_share_pct: 100 - v });
+            }}
+            aria-label="Staff payout percentage"
+            className="w-full accent-emerald-500 disabled:opacity-40 disabled:cursor-not-allowed"
+          />
+          {editingSection === 'revenue' && !splitLocked ? (
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-xs text-fg-muted mb-1">Staff payout %</label>
+                <input
+                  type="number"
+                  min={0}
+                  max={100}
+                  step={0.5}
+                  value={staffPct}
+                  onChange={e => {
+                    const v = Math.max(0, Math.min(100, num(e.target.value)));
+                    patchDraft({ staff_payout_pct: v, agency_share_pct: 100 - v });
+                  }}
+                  className={inputCls}
+                />
+              </div>
+              <div>
+                <label className="block text-xs text-fg-muted mb-1">Agency share %</label>
+                <input
+                  type="number"
+                  min={0}
+                  max={100}
+                  step={0.5}
+                  value={agencyPct}
+                  onChange={e => {
+                    const v = Math.max(0, Math.min(100, num(e.target.value)));
+                    patchDraft({ agency_share_pct: v, staff_payout_pct: 100 - v });
+                  }}
+                  className={inputCls}
+                />
+              </div>
+            </div>
+          ) : (
+            <div className="flex justify-between text-sm">
+              <span className="text-fg-muted">Staff / Agency</span>
+              <span className="text-fg font-medium">
+                {staffPct}% / {agencyPct}%
+              </span>
+            </div>
+          )}
+          <SplitBar staffPct={staffPct} agencyPct={agencyPct} />
+          {splitLocked && (
+            <p className="text-[11px] text-fg-muted">
+              The revenue split was fixed during onboarding. Contact support to change it.
+            </p>
+          )}
+        </div>
+      </section>
 
       {/* No-Show Policy */}
       <section>
@@ -515,14 +595,6 @@ export default function PricingSection({ slug }: { slug: string }) {
         />
       )}
 
-      {/* Per-Service Pricing */}
-      <PerServicePricing
-        slug={slug}
-        currency={currency}
-        perServiceDuration={settings?.per_service_duration_enabled ?? false}
-        defaultSlotMinutes={settings?.default_slot_minutes ?? 30}
-        onToggleDuration={togglePerServiceDuration}
-      />
     </div>
   );
 
@@ -639,7 +711,7 @@ function PerServicePricing({
     <section>
       <div className="flex items-center justify-between mb-2">
         <h3 className="text-xs font-semibold text-fg-muted uppercase tracking-wider">
-          Per-Service Pricing
+          Services &amp; Pricing
         </h3>
         <button
           type="button"

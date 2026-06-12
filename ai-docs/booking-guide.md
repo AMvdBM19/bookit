@@ -17,7 +17,11 @@ Pending **and** confirmed bookings both block the time slot in availability.
 
 ## The Bookings tab (owner dashboard)
 
-Three sections:
+A **List ⇄ Calendar** toggle sits in the tab header. The calendar is a
+read-only week or day grid (hour rows × day columns): blocks are colored
+by status, pool/unassigned bookings show a dashed outline, and clicking a
+block opens the same detail panel as the list rows. Rescheduling from the
+calendar is not available yet. The list view has three sections:
 
 - **Pending requests** — every `pending_staff` booking. Per row the owner can
   **Accept**, **Decline** (with an optional reason that is sent to the client),
@@ -32,7 +36,9 @@ Three sections:
 
 Every row in all three tables has a chevron ("See details") that expands an
 inline panel showing, when present: {client} contact (email, phone,
-WhatsApp opt-in), the booking notes, selected services with per-service
+WhatsApp opt-in), the booking notes, the service address and a clickable
+reference-image thumbnail (when the tenant's booking form collects those —
+see Settings → Booking form), selected services with per-service
 extras and the total price, the assigned {staff} (or "Unassigned — pool"),
 the source (Widget/Manual), and requested/confirmed/cancelled timestamps
 plus cancellation reason. Staff see a slimmer "See details" on their own
@@ -41,6 +47,19 @@ details or pricing).
 
 The **Export CSV** button downloads all bookings (see data-export-guide.md).
 The **+ New** button opens manual creation.
+
+## Editing a booking
+
+The detail panel has an **Edit** button (owner always; staff only on their
+own bookings and only when Settings → Booking form → "Staff can edit
+bookings" is on). The edit modal changes **services** (checklist),
+**notes**, and the **total price** — the price recomputes from base rate +
+service extras as services change, and can be overridden manually; a price
+change asks for confirmation. Date, time and staff assignment can NOT be
+changed (no rescheduling). Editing is allowed on pending, confirmed, and
+completed-within-24-hours bookings. Edited bookings show an **Edited**
+badge and timestamp in the detail panel, and every edit is stored in an
+audit trail (who, when, what changed). Clients are not notified of edits.
 
 ## Manual booking creation
 
@@ -54,6 +73,8 @@ The owner can create bookings directly — useful for phone/walk-in requests:
   validation. Provide date, start and end together or not at all.
 - **Services, notes, price**: price auto-suggests from base rate × duration +
   service extras, but can be overridden.
+- **Service address**: shown only when the tenant's booking form has the
+  address field enabled (Settings → Booking form); optional here.
 - **Status**: Pending, Confirmed or Completed (for backfilling history).
 - **Notify**: optionally send the client a WhatsApp confirmation (requires a
   phone number and Confirmed status).
@@ -81,6 +102,10 @@ Staff members see, on their own dashboard:
    duration count as the default appointment length in that sum).
 3. **Details** — name, email, phone, service selection, notes (label and
    required-ness are template-driven), age confirmation when the age gate is on.
+   Two optional template/tenant-driven fields can appear here (Settings →
+   Booking form): a **reference image** upload (optional for the client;
+   JPEG/PNG/WebP, max 5 MB — e.g. a tattoo design idea) and a required
+   **service address** (for at-home services).
    If changing services changes the appointment duration, the client is asked
    to re-pick a time slot.
 4. **Confirm** — summary, optional price breakdown, optional deposit notice,
@@ -128,5 +153,9 @@ the booking window.
 - `PATCH /api/{slug}/bookings/{id}/status` — completed / no_show.
 - `POST /api/{slug}/bookings/create` — manual creation (agent).
 - `GET /api/{slug}/export/bookings` — CSV export (agent).
+- `GET /api/{slug}/bookings/{id}/reference-image` — signed URL for the
+  private reference image (agent, or the assigned staff member).
+- `GET|PATCH /api/{slug}/bookings/{id}/edit` — edit context / apply an
+  edit (agent; staff when staff_can_edit_bookings and own booking).
 - Public: `GET /book/{slug}/api/availability`, `/pool-availability`,
-  `POST /book/{slug}/api/book`.
+  `POST /book/{slug}/api/book`, `POST /book/{slug}/api/reference-upload`.

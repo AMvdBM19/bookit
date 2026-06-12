@@ -108,6 +108,7 @@ export default async function StaffSetupPage({
       staffId={staffId}
       initialState={initialState}
       availableTags={tags ?? []}
+      initialPhotoUrls={(staff.photo_urls as string[] | null) ?? []}
     />
   );
 }
