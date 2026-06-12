@@ -2,8 +2,9 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase/server';
 import { requireRole } from '@/lib/auth/session';
 
+// currency and base_rate_per_30min are tenant-editable since Phase 14-A9
+// and must not be re-locked here.
 const LOCKED_FIELDS = [
-  'currency',
   'staff_payout_pct',
   'agency_share_pct',
   'tax_rate_pct',

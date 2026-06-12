@@ -16,8 +16,11 @@ const EDITABLE_FIELDS = [
   'require_age_confirm',
   'deposit_pct',
   'deposit_required_above_minutes',
-  // Pricing & finances (Phase 10B-1). currency, base_rate_per_30min and
-  // tax_rate_pct are intentionally excluded — they are locked after the wizard.
+  // Pricing & finances (Phase 10B-1). tax_rate_pct and the revenue split
+  // lock state stay wizard-locked; currency + base_rate_per_30min became
+  // tenant-editable in Phase 14-A9 (changes affect future bookings only).
+  'currency',
+  'base_rate_per_30min',
   'pricing_enabled',
   'staff_payout_pct',
   'agency_share_pct',
@@ -106,6 +109,31 @@ export async function PATCH(request: NextRequest) {
     if (lockedSet.has(field)) {
       return NextResponse.json({ error: `Field is locked: ${field}` }, { status: 403 });
     }
+  }
+
+  // Currency: ISO 4217-style three-letter code.
+  if ('currency' in update) {
+    const currency = String(update.currency ?? '').trim().toUpperCase();
+    if (!/^[A-Z]{3}$/.test(currency)) {
+      return NextResponse.json(
+        { error: 'currency must be a three-letter code (e.g. EUR)' },
+        { status: 400 }
+      );
+    }
+    update.currency = currency;
+  }
+
+  // Base rate: non-negative number. Affects future bookings only —
+  // historical booking amounts are never recalculated.
+  if ('base_rate_per_30min' in update) {
+    const rate = Number(update.base_rate_per_30min);
+    if (!Number.isFinite(rate) || rate < 0 || rate > 100000) {
+      return NextResponse.json(
+        { error: 'base_rate_per_30min must be a non-negative number' },
+        { status: 400 }
+      );
+    }
+    update.base_rate_per_30min = rate;
   }
 
   // Buffer minutes: 0–60 in whole minutes.

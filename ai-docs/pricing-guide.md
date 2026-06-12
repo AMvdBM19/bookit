@@ -90,11 +90,11 @@ A table of the tenant's service tags with inline editing:
 
 | Locked after onboarding | Editable anytime |
 |---|---|
-| Currency | Pricing enabled, show price to client |
-| Base rate per 30 min | Tax label, tax period |
-| Tax rate % | Revenue split percentages |
-| (sometimes) minimum age | Deposit % and threshold (if supported) |
-| | No-show policy, per-service prices/durations |
+| Tax rate % | Currency, base rate per 30 min (confirm dialog: future bookings only) |
+| Revenue split percentages | Pricing enabled, show price to client |
+| (sometimes) minimum age | Tax period |
+| | Deposit % and threshold (if supported) |
+| | No-show policy, per-service prices/durations, service add/rename/delete |
 
 ## Common owner questions
 
@@ -105,7 +105,9 @@ A table of the tenant's service tags with inline editing:
   when that service is selected.
 - *"Clients shouldn't see prices"* — Base Pricing → Edit → untick **Show
   price to client**.
-- *"I need a different base rate"* — locked; route to platform support.
+- *"I need a different base rate (or currency)"* — Base Pricing → Edit →
+  change it → Save → confirm. The change applies to future bookings only;
+  historical amounts are never converted or recalculated.
 - *"Do you take payments?"* — no. Pricing, deposits and splits are
   informational; collect money outside the platform.
 

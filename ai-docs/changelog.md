@@ -3,6 +3,13 @@
 > Feature history for the AI assistant: what exists and since when. Newest
 > first. Maintained per the AI Docs Maintenance Protocol in CLAUDE.md.
 
+## 2026-06-12 — Currency and base rate now tenant-editable (Phase 14-A9)
+
+- The Pricing tab's Base Pricing section lets the owner edit **currency**
+  and **base rate per 30 min**. Saving asks for confirmation and applies
+  to future bookings only — historical amounts are never converted or
+  recalculated. Tax rate and revenue split percentages remain locked.
+
 ## 2026-06-12 — Getting-started checklist ends on widget customization (Phase 14-A8)
 
 - The checklist's closing step is now **Customize your widget**, deep-

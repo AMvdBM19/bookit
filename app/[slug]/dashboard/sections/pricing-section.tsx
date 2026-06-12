@@ -83,6 +83,7 @@ export default function PricingSection({ slug }: { slug: string }) {
   const [draft, setDraft] = useState<Partial<Settings>>({});
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
+  const [confirmBaseSave, setConfirmBaseSave] = useState(false);
 
   const reload = useCallback(async () => {
     setLoading(true);
@@ -166,6 +167,9 @@ export default function PricingSection({ slug }: { slug: string }) {
 
   const { settings } = summary;
   const currency = settings?.currency ?? 'EUR';
+  const lockedSet = new Set(summary.locked_fields ?? []);
+  const currencyLocked = lockedSet.has('currency');
+  const baseRateLocked = lockedSet.has('base_rate_per_30min');
 
   // Live split values while editing (linked), otherwise the saved values.
   const splitEditing = editingSection === 'revenue';
@@ -186,7 +190,16 @@ export default function PricingSection({ slug }: { slug: string }) {
           editing={editingSection === 'base'}
           onEdit={() => startEdit('base')}
           onCancel={cancelEdit}
-          onSave={() => saveSection(['pricing_enabled', 'show_price_to_client'])}
+          onSave={() => {
+            const moneyFieldsChanged =
+              (!currencyLocked && draft.currency !== settings?.currency) ||
+              (!baseRateLocked && num(draft.base_rate_per_30min) !== num(settings?.base_rate_per_30min));
+            if (moneyFieldsChanged) {
+              setConfirmBaseSave(true);
+            } else {
+              saveSection(['pricing_enabled', 'show_price_to_client']);
+            }
+          }}
           saving={saving}
         />
         <div className="bg-surface rounded-lg border border-border px-4">
@@ -212,13 +225,40 @@ export default function PricingSection({ slug }: { slug: string }) {
                   <span className="text-sm text-fg">Display pricing in the booking widget</span>
                 </label>
               </EditRow>
-              <EditRow label="Currency" locked>
-                <p className="text-sm text-fg-muted">{currency}</p>
+              <EditRow label="Currency" locked={currencyLocked}>
+                {currencyLocked ? (
+                  <p className="text-sm text-fg-muted">{currency}</p>
+                ) : (
+                  <input
+                    type="text"
+                    value={draft.currency ?? ''}
+                    onChange={e => patchDraft({ currency: e.target.value.toUpperCase() })}
+                    maxLength={3}
+                    placeholder="EUR"
+                    className={inputCls + ' uppercase'}
+                  />
+                )}
               </EditRow>
-              <EditRow label="Base rate" locked>
-                <p className="text-sm text-fg-muted">
-                  {money(settings?.base_rate_per_30min, currency)} / 30 min
-                </p>
+              <EditRow label="Base rate per 30 min" locked={baseRateLocked}>
+                {baseRateLocked ? (
+                  <p className="text-sm text-fg-muted">
+                    {money(settings?.base_rate_per_30min, currency)} / 30 min
+                  </p>
+                ) : (
+                  <>
+                    <input
+                      type="number"
+                      min={0}
+                      step={0.5}
+                      value={draft.base_rate_per_30min ?? 0}
+                      onChange={e => patchDraft({ base_rate_per_30min: num(e.target.value) })}
+                      className={inputCls}
+                    />
+                    <p className="text-[11px] text-fg-muted mt-1">
+                      Applies to future bookings only — past amounts are never recalculated.
+                    </p>
+                  </>
+                )}
               </EditRow>
             </>
           ) : (
@@ -455,6 +495,24 @@ export default function PricingSection({ slug }: { slug: string }) {
         <div className="rounded-lg border border-red-200 bg-red-50 p-3 text-xs text-red-800 dark:border-red-500/30 dark:bg-red-500/10 dark:text-red-400">
           {saveError}
         </div>
+      )}
+
+      {confirmBaseSave && (
+        <ConfirmDialog
+          title="Change currency or base rate?"
+          description="This affects future bookings only. Historical booking amounts are not converted or recalculated and will keep their original currency and prices."
+          confirmLabel="Save changes"
+          onConfirm={async () => {
+            setConfirmBaseSave(false);
+            await saveSection([
+              'pricing_enabled',
+              'show_price_to_client',
+              ...(!currencyLocked ? (['currency'] as const) : []),
+              ...(!baseRateLocked ? (['base_rate_per_30min'] as const) : []),
+            ]);
+          }}
+          onClose={() => setConfirmBaseSave(false)}
+        />
       )}
 
       {/* Per-Service Pricing */}
