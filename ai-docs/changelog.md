@@ -3,6 +3,13 @@
 > Feature history for the AI assistant: what exists and since when. Newest
 > first. Maintained per the AI Docs Maintenance Protocol in CLAUDE.md.
 
+## 2026-06-12 — Calendar view on the Bookings tab (Phase 14-B2)
+
+- New List ⇄ Calendar toggle on the Bookings tab. Week and day views
+  (hour grid), bookings colored by status, dashed outline for
+  pool/unassigned, click opens the booking detail panel. Read-only — no
+  drag-to-reschedule yet.
+
 ## 2026-06-12 — Widget month calendar for far-ahead bookings (Phase 14-B1)
 
 - The widget's 14-day date strip is replaced by a month-grid calendar with

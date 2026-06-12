@@ -11,6 +11,7 @@ import AddToCalendar from '@/components/add-to-calendar';
 import type { CalendarEvent } from '@/lib/calendar/buildUrl';
 import CreateBookingModal from './create-booking-modal';
 import BookingDetailPanel, { type BookingDetail } from './booking-detail-panel';
+import BookingsCalendar from './bookings-calendar';
 
 interface JoinObj {
   pseudonym?: string;
@@ -158,6 +159,7 @@ export default function BookingsSection({ slug }: { slug: string }) {
   const [confirmNoShowId, setConfirmNoShowId] = useState<string | null>(null);
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [currency, setCurrency] = useState('EUR');
+  const [viewMode, setViewMode] = useState<'list' | 'calendar'>('list');
 
   // Currency for the detail panel's price breakdown.
   useEffect(() => {
@@ -358,6 +360,21 @@ export default function BookingsSection({ slug }: { slug: string }) {
       <div className="flex items-center justify-between">
         <h2 className="text-sm font-semibold text-fg">{terminology.booking_plural}</h2>
         <div className="flex items-center gap-2">
+          <div className="flex items-center rounded border border-border overflow-hidden">
+            {(['list', 'calendar'] as const).map(v => (
+              <button
+                key={v}
+                type="button"
+                onClick={() => setViewMode(v)}
+                aria-pressed={viewMode === v}
+                className={`text-xs px-3 py-1.5 capitalize transition-colors ${
+                  viewMode === v ? 'bg-fg text-canvas' : 'bg-surface text-fg-muted hover:bg-elevated'
+                }`}
+              >
+                {v}
+              </button>
+            ))}
+          </div>
           <a
             href={`/api/${slug}/export/bookings`}
             download
@@ -375,6 +392,10 @@ export default function BookingsSection({ slug }: { slug: string }) {
         </div>
       </div>
 
+      {viewMode === 'calendar' ? (
+        <BookingsCalendar bookings={bookings} currency={currency} />
+      ) : (
+      <>
       {/* Pending */}
       <section>
         <div className="flex items-center gap-2 mb-3">
@@ -687,6 +708,8 @@ export default function BookingsSection({ slug }: { slug: string }) {
           </div>
         )}
       </section>
+      </>
+      )}
 
       {showCreate && (
         <CreateBookingModal

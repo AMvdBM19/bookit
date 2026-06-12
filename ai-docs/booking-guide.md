@@ -17,7 +17,11 @@ Pending **and** confirmed bookings both block the time slot in availability.
 
 ## The Bookings tab (owner dashboard)
 
-Three sections:
+A **List ⇄ Calendar** toggle sits in the tab header. The calendar is a
+read-only week or day grid (hour rows × day columns): blocks are colored
+by status, pool/unassigned bookings show a dashed outline, and clicking a
+block opens the same detail panel as the list rows. Rescheduling from the
+calendar is not available yet. The list view has three sections:
 
 - **Pending requests** — every `pending_staff` booking. Per row the owner can
   **Accept**, **Decline** (with an optional reason that is sent to the client),
