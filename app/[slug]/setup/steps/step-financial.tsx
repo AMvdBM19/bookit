@@ -38,6 +38,7 @@ export default function StepFinancial({ state, onChange, error }: Props) {
               className="w-full bg-zinc-800 border border-zinc-700 rounded-lg pl-10 pr-3 py-2 text-sm text-white focus:outline-none focus:border-zinc-500"
             />
           </div>
+          <p className="text-xs text-zinc-600 mt-1">Set 0 for free bookings or consultations.</p>
         </div>
         <div>
           <label className={labelCls} htmlFor="currency">

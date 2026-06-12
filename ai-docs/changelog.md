@@ -3,6 +3,14 @@
 > Feature history for the AI assistant: what exists and since when. Newest
 > first. Maintained per the AI Docs Maintenance Protocol in CLAUDE.md.
 
+## 2026-06-12 — Zero values respected in setup wizard (Phase 15-A1)
+
+- The setup wizard's Financial step now stores 0 correctly for the base
+  rate, staff payout %, tax rate % and minimum lead time (previously a 0
+  was silently replaced by the default, e.g. base rate 0 became 60). A
+  base rate of 0 means free bookings or consultations; the wizard says so
+  under the field.
+
 ## 2026-06-12 — Revenue split slider (Phase 14-B3)
 
 - The Pricing tab's Revenue Split section shows a 0–100 range slider for
