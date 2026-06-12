@@ -35,6 +35,22 @@ export default function StepBookingRules({ state, onChange, error }: Props) {
         </select>
       </div>
 
+      <label className="flex items-start gap-3 rounded-lg border border-zinc-700 hover:border-zinc-600 p-3 cursor-pointer transition-colors">
+        <input
+          type="checkbox"
+          checked={state.per_service_duration_enabled}
+          onChange={e => onChange({ per_service_duration_enabled: e.target.checked })}
+          className="mt-0.5 accent-white"
+        />
+        <div>
+          <p className="text-sm text-white">Services have different durations</p>
+          <p className="text-xs text-zinc-500 mt-0.5">
+            Each service can set its own appointment length later (Pricing tab). Off
+            = every booking uses the default slot duration.
+          </p>
+        </div>
+      </label>
+
       <div>
         <label className={labelCls} htmlFor="min_lead_time_hours">
           Minimum Lead Time (hours) <span className="text-red-400">*</span>

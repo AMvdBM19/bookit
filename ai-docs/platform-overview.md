@@ -122,6 +122,8 @@ disappears once completed or dismissed.
   Pricing tab", "Settings → Bookings"), using the tenant's own terminology.
 - Distinguish tenant-editable settings from locked ones (locked fields were
   fixed during onboarding; changing them requires platform support).
+  Currency and base rate are tenant-editable since Phase 14; tax rate and
+  the revenue split remain locked.
 - Features gated by template flags (deposits, age gate, pool mode, etc.) may
   simply not exist for this tenant — check the feature flags before suggesting
   them.

@@ -3,6 +3,17 @@
 > Feature history for the AI assistant: what exists and since when. Newest
 > first. Maintained per the AI Docs Maintenance Protocol in CLAUDE.md.
 
+## 2026-06-12 — Per-service duration actually works + wizard toggle (Phase 14-A10)
+
+- Root cause fixed: a server-side data cache served a frozen copy of
+  tenant settings to the availability APIs, so enabling per-service
+  duration never took effect until a redeploy. Toggling it now applies on
+  the next widget load (same fix as the customizer staleness).
+- The setup wizard's Booking Configuration step gained a **"Services have
+  different durations"** checkbox so new tenants can enable it during
+  onboarding (default off). Per-service durations are then set on the
+  Pricing tab.
+
 ## 2026-06-12 — Currency and base rate now tenant-editable (Phase 14-A9)
 
 - The Pricing tab's Base Pricing section lets the owner edit **currency**

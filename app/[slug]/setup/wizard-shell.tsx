@@ -23,6 +23,7 @@ export interface WizardState {
   logo_url: string;
   default_slot_minutes: number;
   min_lead_time_hours: number;
+  per_service_duration_enabled: boolean;
   booking_confirm_mode: 'staff_must_accept' | 'auto_confirm';
   booking_mode: 'staff_select' | 'pool';
   base_rate_per_30min: number;
@@ -49,6 +50,7 @@ function buildDefaultState(
     logo_url: '',
     default_slot_minutes: 30,
     min_lead_time_hours: 2,
+    per_service_duration_enabled: false,
     booking_confirm_mode: 'staff_must_accept',
     booking_mode: featureFlags.booking_mode ?? 'staff_select',
     base_rate_per_30min: 60,

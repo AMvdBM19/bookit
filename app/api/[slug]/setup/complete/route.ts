@@ -45,6 +45,7 @@ export async function POST(
       logo_url: body.logo_url || null,
       default_slot_minutes: Number(body.default_slot_minutes) || 30,
       min_lead_time_hours: Number(body.min_lead_time_hours) || 2,
+      per_service_duration_enabled: body.per_service_duration_enabled === true,
       booking_confirm_mode: body.booking_confirm_mode || 'staff_must_accept',
       base_rate_per_30min: Number(body.base_rate_per_30min) || 60,
       staff_payout_pct: Number(body.staff_payout_pct) || 70,

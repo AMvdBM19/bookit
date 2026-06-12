@@ -78,7 +78,8 @@ A table of the tenant's service tags with inline editing:
   appointment length (5–600 min, in steps of 5). Blank = the default slot
   length. Selecting multiple services in the widget sums their durations —
   services without a custom duration count as the default appointment
-  length in that sum.
+  length in that sum. New tenants can also enable this during onboarding
+  ("Services have different durations" in the Booking Configuration step).
 - **Active/Inactive** toggle — inactive services disappear from the widget
   but keep their history.
 - **Delete** (trash icon, asks for confirmation) — permanently removes a
