@@ -3,6 +3,17 @@
 > Feature history for the AI assistant: what exists and since when. Newest
 > first. Maintained per the AI Docs Maintenance Protocol in CLAUDE.md.
 
+## 2026-06-12 — Booking editing (Phase 15-B7)
+
+- Bookings can now be edited (services, notes, price) from the detail
+  panel's Edit button. Owners always can; staff can edit their own
+  bookings when the new "Staff can edit bookings" toggle (Settings →
+  Booking form) is on. Price recomputes from base rate + extras with a
+  manual override; price changes require confirmation. Allowed on
+  pending, confirmed, and completed-within-24h bookings; no
+  rescheduling. Edits show an "Edited" badge and are stored in an audit
+  trail. Planned `edit_booking` assistant tool documented.
+
 ## 2026-06-12 — Templates tab redesign (Phase 15-B6)
 
 - The Templates tab now navigates by event dropdown → WhatsApp/Email

@@ -10,6 +10,7 @@ import ConfirmDialog from '@/components/ui/confirm-dialog';
 import AddToCalendar from '@/components/add-to-calendar';
 import type { CalendarEvent } from '@/lib/calendar/buildUrl';
 import CreateBookingModal from './create-booking-modal';
+import EditBookingModal from '@/components/edit-booking-modal';
 import BookingDetailPanel, { type BookingDetail } from './booking-detail-panel';
 import BookingsCalendar from './bookings-calendar';
 
@@ -156,6 +157,7 @@ export default function BookingsSection({ slug }: { slug: string }) {
   const [assignChoice, setAssignChoice] = useState<Record<string, string>>({});
   const [staffOptions, setStaffOptions] = useState<Array<{ id: string; pseudonym: string }>>([]);
   const [showCreate, setShowCreate] = useState(false);
+  const [editBookingId, setEditBookingId] = useState<string | null>(null);
   const [confirmNoShowId, setConfirmNoShowId] = useState<string | null>(null);
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [currency, setCurrency] = useState('EUR');
@@ -393,7 +395,7 @@ export default function BookingsSection({ slug }: { slug: string }) {
       </div>
 
       {viewMode === 'calendar' ? (
-        <BookingsCalendar bookings={bookings} currency={currency} slug={slug} />
+        <BookingsCalendar bookings={bookings} currency={currency} slug={slug} onEdit={setEditBookingId} />
       ) : (
       <>
       {/* Pending */}
@@ -560,7 +562,7 @@ export default function BookingsSection({ slug }: { slug: string }) {
                       {expandedId === b.id && (
                         <tr>
                           <td colSpan={8} className="p-0">
-                            <BookingDetailPanel booking={b} currency={currency} slug={slug} />
+                            <BookingDetailPanel booking={b} currency={currency} slug={slug} onEdit={setEditBookingId} />
                           </td>
                         </tr>
                       )}
@@ -642,7 +644,7 @@ export default function BookingsSection({ slug }: { slug: string }) {
                     {expandedId === b.id && (
                       <tr>
                         <td colSpan={6} className="p-0">
-                          <BookingDetailPanel booking={b} currency={currency} slug={slug} />
+                          <BookingDetailPanel booking={b} currency={currency} slug={slug} onEdit={setEditBookingId} />
                         </td>
                       </tr>
                     )}
@@ -696,7 +698,7 @@ export default function BookingsSection({ slug }: { slug: string }) {
                     {expandedId === b.id && (
                       <tr>
                         <td colSpan={5} className="p-0">
-                          <BookingDetailPanel booking={b} currency={currency} slug={slug} />
+                          <BookingDetailPanel booking={b} currency={currency} slug={slug} onEdit={setEditBookingId} />
                         </td>
                       </tr>
                     )}
@@ -717,6 +719,18 @@ export default function BookingsSection({ slug }: { slug: string }) {
           onClose={() => setShowCreate(false)}
           onCreated={() => {
             setShowCreate(false);
+            reload();
+          }}
+        />
+      )}
+
+      {editBookingId && (
+        <EditBookingModal
+          slug={slug}
+          bookingId={editBookingId}
+          onClose={() => setEditBookingId(null)}
+          onSaved={() => {
+            setEditBookingId(null);
             reload();
           }}
         />

@@ -75,6 +75,9 @@ live on the tenant's feature configuration, not regular settings):
   booking form, for businesses that work at the client's location. The
   address shows in the booking detail panel, and the manual booking modal
   gains an optional address field too.
+- **Staff can edit bookings** — lets team members edit services, notes
+  and price on their own bookings from their dashboard (the owner can
+  always edit). Every edit is recorded in an audit trail.
 
 ## Getting started section
 

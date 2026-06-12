@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import ConfirmDialog from '@/components/ui/confirm-dialog';
 import AddToCalendar from '@/components/add-to-calendar';
+import EditBookingModal from '@/components/edit-booking-modal';
 import type { CalendarEvent } from '@/lib/calendar/buildUrl';
 
 interface Props {
@@ -25,6 +26,8 @@ interface Props {
   showActions: boolean;
   canComplete?: boolean;
   claimable?: boolean;
+  /** staff_can_edit_bookings flag — shows an Edit button on own bookings. */
+  canEdit?: boolean;
   bookingLabel: string;
 }
 
@@ -53,7 +56,7 @@ function calendarEventOf(booking: Props['booking'], bookingLabel: string): Calen
   };
 }
 
-export default function StaffBookingCard({ slug, booking, showActions, canComplete = false, claimable = false, bookingLabel }: Props) {
+export default function StaffBookingCard({ slug, booking, showActions, canComplete = false, claimable = false, canEdit = false, bookingLabel }: Props) {
   const router = useRouter();
   const [accepting, setAccepting] = useState(false);
   const [declining, setDeclining] = useState(false);
@@ -64,6 +67,7 @@ export default function StaffBookingCard({ slug, booking, showActions, canComple
   const [completing, setCompleting] = useState(false);
   const [confirmNoShow, setConfirmNoShow] = useState(false);
   const [showDetails, setShowDetails] = useState(false);
+  const [showEdit, setShowEdit] = useState(false);
 
   const showCompletion =
     !showActions &&
@@ -217,14 +221,37 @@ export default function StaffBookingCard({ slug, booking, showActions, canComple
         </p>
       )}
 
-      <button
-        type="button"
-        onClick={() => setShowDetails(v => !v)}
-        aria-expanded={showDetails}
-        className="text-[11px] text-fg-muted hover:text-fg transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded"
-      >
-        {showDetails ? 'Hide details' : 'See details'}
-      </button>
+      <div className="flex items-center gap-3">
+        <button
+          type="button"
+          onClick={() => setShowDetails(v => !v)}
+          aria-expanded={showDetails}
+          className="text-[11px] text-fg-muted hover:text-fg transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded"
+        >
+          {showDetails ? 'Hide details' : 'See details'}
+        </button>
+        {canEdit && !claimable && (
+          <button
+            type="button"
+            onClick={() => setShowEdit(true)}
+            className="text-[11px] text-fg-muted hover:text-fg transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded"
+          >
+            Edit
+          </button>
+        )}
+      </div>
+
+      {showEdit && (
+        <EditBookingModal
+          slug={slug}
+          bookingId={booking.id}
+          onClose={() => setShowEdit(false)}
+          onSaved={() => {
+            setShowEdit(false);
+            router.refresh();
+          }}
+        />
+      )}
 
       {showDetails && (
         <div className="text-[11px] text-fg-muted border-t border-border pt-2 space-y-0.5">

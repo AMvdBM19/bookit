@@ -108,6 +108,7 @@ export default function StaffDashboard({
   const { terminology, featureFlags } = useTenantConfig();
   const bookingLabel = terminology.booking;
   const canComplete = featureFlags.booking_completion_by === 'staff_and_admin';
+  const canEdit = featureFlags.staff_can_edit_bookings === true;
 
   async function handleSignOut() {
     const supabase = createClient();
@@ -210,6 +211,7 @@ export default function StaffDashboard({
                   slug={slug}
                   booking={toCardBooking(b)}
                   showActions={true}
+                  canEdit={canEdit}
                   bookingLabel={bookingLabel}
                 />
               ))}
@@ -234,6 +236,7 @@ export default function StaffDashboard({
                   booking={toCardBooking(b)}
                   showActions={false}
                   canComplete={canComplete}
+                  canEdit={canEdit}
                   bookingLabel={bookingLabel}
                 />
               ))}

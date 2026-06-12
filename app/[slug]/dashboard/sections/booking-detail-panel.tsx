@@ -24,6 +24,7 @@ export interface BookingDetail {
   booking_notes?: string | null;
   service_address?: string | null;
   reference_image_url?: string | null;
+  edited_at?: string | null;
   total_price?: number | string | null;
   tag_extras_total?: number | string | null;
   base_rate_per_30?: number | string | null;
@@ -123,10 +124,13 @@ export default function BookingDetailPanel({
   booking,
   currency = 'EUR',
   slug,
+  onEdit,
 }: {
   booking: BookingDetail;
   currency?: string;
   slug?: string;
+  /** When provided, shows an Edit button for editable statuses (B7). */
+  onEdit?: (bookingId: string) => void;
 }) {
   const { terminology, featureFlags } = useTenantConfig();
 
@@ -214,15 +218,35 @@ export default function BookingDetailPanel({
         <DetailItem label="History">
           <p className="text-fg-muted">
             Source: <Badge variant="outline">{booking.source === 'manual' ? 'Manual' : 'Widget'}</Badge>
+            {booking.edited_at && (
+              <span className="ml-1.5">
+                <Badge variant="warning">Edited</Badge>
+              </span>
+            )}
           </p>
           {requested && <p className="text-fg-muted mt-0.5">Requested {requested}</p>}
           {confirmed && <p className="text-fg-muted">Confirmed {confirmed}</p>}
           {cancelled && <p className="text-fg-muted">Cancelled {cancelled}</p>}
+          {booking.edited_at && (
+            <p className="text-fg-muted">Edited {fmtTimestamp(booking.edited_at)}</p>
+          )}
           {booking.cancellation_reason && (
             <p className="text-fg-muted">Reason: {booking.cancellation_reason}</p>
           )}
         </DetailItem>
       </div>
+
+      {onEdit && ['pending_staff', 'confirmed', 'completed'].includes(booking.status) && (
+        <div className="flex justify-end mt-3">
+          <button
+            type="button"
+            onClick={() => onEdit(booking.id)}
+            className="text-xs px-3 py-1 bg-elevated hover:bg-sunken text-fg rounded"
+          >
+            Edit
+          </button>
+        </div>
+      )}
     </div>
   );
 }

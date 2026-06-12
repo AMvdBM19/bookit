@@ -47,6 +47,7 @@ export function validateFeatureFlags(value: unknown): string | null {
   }
   if (typeof value.booking_reference_image !== 'boolean') return 'feature_flags.booking_reference_image must be a boolean';
   if (typeof value.booking_address_field !== 'boolean') return 'feature_flags.booking_address_field must be a boolean';
+  if (typeof value.staff_can_edit_bookings !== 'boolean') return 'feature_flags.staff_can_edit_bookings must be a boolean';
   return null;
 }
 

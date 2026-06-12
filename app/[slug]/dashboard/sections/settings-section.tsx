@@ -539,7 +539,10 @@ function BookingFormSection({ slug }: { slug: string }) {
     };
   }, [slug]);
 
-  async function toggle(key: 'booking_reference_image' | 'booking_address_field', next: boolean) {
+  async function toggle(
+    key: 'booking_reference_image' | 'booking_address_field' | 'staff_can_edit_bookings',
+    next: boolean
+  ) {
     if (!flags) return;
     const updated = { ...flags, [key]: next };
     setSaving(true);
@@ -585,7 +588,7 @@ function BookingFormSection({ slug }: { slug: string }) {
             Clients can attach an optional image (e.g. a design idea) when booking.
           </p>
         </div>
-        <div className="py-2">
+        <div className="py-2 border-b border-border">
           <label className="flex items-center gap-2 cursor-pointer">
             <input
               type="checkbox"
@@ -598,6 +601,21 @@ function BookingFormSection({ slug }: { slug: string }) {
           <p className="text-[11px] text-fg-muted mt-1 ml-6">
             Asks clients for a required address — for services performed at the
             client&apos;s location.
+          </p>
+        </div>
+        <div className="py-2">
+          <label className="flex items-center gap-2 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={flags.staff_can_edit_bookings === true}
+              disabled={saving}
+              onChange={e => toggle('staff_can_edit_bookings', e.target.checked)}
+            />
+            <span className="text-sm text-fg">Staff can edit bookings</span>
+          </label>
+          <p className="text-[11px] text-fg-muted mt-1 ml-6">
+            Lets team members edit services, notes and price on their own
+            bookings. Every edit is recorded in an audit trail.
           </p>
         </div>
       </div>

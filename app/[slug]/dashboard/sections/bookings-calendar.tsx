@@ -56,10 +56,12 @@ export default function BookingsCalendar({
   bookings,
   currency,
   slug,
+  onEdit,
 }: {
   bookings: BookingDetail[];
   currency: string;
   slug?: string;
+  onEdit?: (bookingId: string) => void;
 }) {
   const { terminology } = useTenantConfig();
   const [view, setView] = useState<'week' | 'day'>('week');
@@ -276,7 +278,19 @@ export default function BookingsCalendar({
           onClose={() => setOpenBooking(null)}
           maxWidth="max-w-2xl"
         >
-          <BookingDetailPanel booking={openBooking} currency={currency} slug={slug} />
+          <BookingDetailPanel
+            booking={openBooking}
+            currency={currency}
+            slug={slug}
+            onEdit={
+              onEdit
+                ? id => {
+                    setOpenBooking(null);
+                    onEdit(id);
+                  }
+                : undefined
+            }
+          />
         </Modal>
       )}
     </div>

@@ -48,6 +48,19 @@ details or pricing).
 The **Export CSV** button downloads all bookings (see data-export-guide.md).
 The **+ New** button opens manual creation.
 
+## Editing a booking
+
+The detail panel has an **Edit** button (owner always; staff only on their
+own bookings and only when Settings → Booking form → "Staff can edit
+bookings" is on). The edit modal changes **services** (checklist),
+**notes**, and the **total price** — the price recomputes from base rate +
+service extras as services change, and can be overridden manually; a price
+change asks for confirmation. Date, time and staff assignment can NOT be
+changed (no rescheduling). Editing is allowed on pending, confirmed, and
+completed-within-24-hours bookings. Edited bookings show an **Edited**
+badge and timestamp in the detail panel, and every edit is stored in an
+audit trail (who, when, what changed). Clients are not notified of edits.
+
 ## Manual booking creation
 
 The owner can create bookings directly — useful for phone/walk-in requests:
@@ -142,5 +155,7 @@ the booking window.
 - `GET /api/{slug}/export/bookings` — CSV export (agent).
 - `GET /api/{slug}/bookings/{id}/reference-image` — signed URL for the
   private reference image (agent, or the assigned staff member).
+- `GET|PATCH /api/{slug}/bookings/{id}/edit` — edit context / apply an
+  edit (agent; staff when staff_can_edit_bookings and own booking).
 - Public: `GET /book/{slug}/api/availability`, `/pool-availability`,
   `POST /book/{slug}/api/book`, `POST /book/{slug}/api/reference-upload`.

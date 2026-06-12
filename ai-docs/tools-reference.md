@@ -52,6 +52,7 @@ will require explicit per-action user confirmation in the chat UI.
 | `update_service` | PATCH /api/{slug}/tags/{id} | Price, duration, active |
 | `accept_booking` / `decline_booking` | POST …/accept · /decline | Pending requests |
 | `create_booking` | POST /api/{slug}/bookings/create | Manual bookings |
+| `edit_booking` | PATCH /api/{slug}/bookings/{id}/edit | Edit services/notes/price on pending, confirmed, or recently completed bookings (audit-trailed) |
 | `add_staff_day_off` | POST …/staff/{id}/exceptions | Days off |
 | `update_notification_template` | POST …/notifications/templates | Template upsert |
 | `export_csv` | GET /api/{slug}/export/* | Generate a download link |
