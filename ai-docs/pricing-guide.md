@@ -67,6 +67,10 @@ What counts as revenue when a booking is marked no-show:
 
 A table of the tenant's service tags with inline editing:
 
+- **+ Add service** button (top right of the section) — create a new
+  service tag any time; it starts with extra price 0 and active.
+- **Service name** — editable inline; renaming takes effect on the widget
+  immediately after Save.
 - **Extra price** — added on top of the base-rate calculation when the
   client selects that service.
 - **Per-service duration** checkbox (above the table) — when enabled, a
@@ -76,8 +80,10 @@ A table of the tenant's service tags with inline editing:
   services without a custom duration count as the default appointment
   length in that sum.
 - **Active/Inactive** toggle — inactive services disappear from the widget
-  but keep their history. Services themselves are created during the setup
-  wizard.
+  but keep their history.
+- **Delete** (trash icon, asks for confirmation) — permanently removes a
+  service. Services that appear in past bookings cannot be deleted;
+  deactivate those instead.
 - Per-row **Save** activates once a row has unsaved changes.
 
 ## Locked vs editable summary
@@ -107,5 +113,7 @@ A table of the tenant's service tags with inline editing:
 
 - `GET /api/{slug}/settings/summary` — all pricing settings + locked list.
 - `PATCH /api/{slug}/settings` — editable pricing fields.
-- `GET /api/{slug}/tags`, `PATCH /api/{slug}/tags/{tagId}` — per-service
-  extra_price, duration_minutes, is_active.
+- `GET /api/{slug}/tags`, `POST /api/{slug}/tags` (create),
+  `PATCH /api/{slug}/tags/{tagId}` (name, description, extra_price,
+  duration_minutes, is_active, display_order),
+  `DELETE /api/{slug}/tags/{tagId}` (409 when booking history exists).

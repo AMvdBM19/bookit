@@ -3,6 +3,14 @@
 > Feature history for the AI assistant: what exists and since when. Newest
 > first. Maintained per the AI Docs Maintenance Protocol in CLAUDE.md.
 
+## 2026-06-12 — Tenants fully own their service tags (Phase 14-A2)
+
+- New **+ Add service** button, inline rename, and delete (with
+  confirmation) on the Pricing tab's Per-Service Pricing table. Services
+  with booking history can't be deleted — deactivate instead.
+- Super admin has no per-tenant service-tag editing surface (template seed
+  tags and template-reset stamping are unchanged).
+
 ## 2026-06-12 — Calendar links fixed + ICS download (Phase 14-A1)
 
 - Add-to-calendar links on booking rows/cards now always open Google

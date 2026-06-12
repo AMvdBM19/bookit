@@ -77,3 +77,51 @@ export async function PATCH(
 
   return NextResponse.json({ ok: true });
 }
+
+// DELETE — remove a service tag (agent-only, tenant-scoped). Tags referenced
+// by booking history are protected by FK and should be deactivated instead.
+export async function DELETE(
+  _request: NextRequest,
+  { params }: { params: Promise<{ slug: string; tagId: string }> }
+) {
+  const { tagId } = await params;
+
+  let user;
+  try {
+    user = await requireRole(['agent']);
+  } catch {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
+  const supabase = createServiceClient();
+
+  const { data: existing } = await supabase
+    .from('service_tags')
+    .select('id, tenant_id')
+    .eq('id', tagId)
+    .single();
+
+  if (!existing || existing.tenant_id !== user.tenantId) {
+    return NextResponse.json({ error: 'Not found' }, { status: 404 });
+  }
+
+  const { error } = await supabase
+    .from('service_tags')
+    .delete()
+    .eq('id', tagId)
+    .eq('tenant_id', user.tenantId);
+
+  if (error) {
+    // 23503 = foreign_key_violation: tag is referenced by past bookings.
+    if (error.code === '23503') {
+      return NextResponse.json(
+        { error: 'This service has booking history and cannot be deleted. Deactivate it instead.' },
+        { status: 409 }
+      );
+    }
+    console.error('[tags:delete] error:', error);
+    return NextResponse.json({ error: 'Failed to delete tag' }, { status: 500 });
+  }
+
+  return NextResponse.json({ ok: true });
+}

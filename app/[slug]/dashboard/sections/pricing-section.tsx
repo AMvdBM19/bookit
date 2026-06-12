@@ -5,6 +5,7 @@ import { toast } from 'sonner';
 import { useTenantConfig } from '@/lib/context/tenant-config';
 import Spinner from '@/components/ui/spinner';
 import EmptyState from '@/components/ui/empty-state';
+import ConfirmDialog from '@/components/ui/confirm-dialog';
 
 interface Settings {
   currency: string;
@@ -524,6 +525,9 @@ function PerServicePricing({
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [toggling, setToggling] = useState(false);
+  const [showAdd, setShowAdd] = useState(false);
+  const [newName, setNewName] = useState('');
+  const [adding, setAdding] = useState(false);
 
   const reload = useCallback(async () => {
     setLoading(true);
@@ -547,14 +551,84 @@ function PerServicePricing({
     reload();
   }, [reload]);
 
+  async function handleAdd() {
+    const name = newName.trim();
+    if (!name) return;
+    setAdding(true);
+    try {
+      const res = await fetch(`/api/${slug}/tags`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        toast.error(data.error ?? "Couldn't add service. Please try again.");
+        return;
+      }
+      toast.success('Service added.');
+      setNewName('');
+      setShowAdd(false);
+      await reload();
+    } catch {
+      toast.error("Couldn't add service. Please try again.");
+    } finally {
+      setAdding(false);
+    }
+  }
+
   return (
     <section>
-      <h3 className="text-xs font-semibold text-fg-muted uppercase tracking-wider mb-2">
-        Per-Service Pricing
-      </h3>
+      <div className="flex items-center justify-between mb-2">
+        <h3 className="text-xs font-semibold text-fg-muted uppercase tracking-wider">
+          Per-Service Pricing
+        </h3>
+        <button
+          type="button"
+          onClick={() => setShowAdd(v => !v)}
+          className="text-xs px-2 py-1 bg-elevated hover:bg-sunken text-fg rounded"
+        >
+          + Add service
+        </button>
+      </div>
       <p className="text-[11px] text-fg-muted mb-2">
         Extra price is the additional charge on top of the base rate for each service type.
       </p>
+
+      {showAdd && (
+        <div className="flex items-center gap-2 mb-3">
+          <input
+            type="text"
+            autoFocus
+            value={newName}
+            onChange={e => setNewName(e.target.value)}
+            onKeyDown={e => {
+              if (e.key === 'Enter') handleAdd();
+            }}
+            placeholder="Service name"
+            maxLength={80}
+            className="flex-1 max-w-xs text-sm bg-elevated text-fg border border-border rounded px-3 py-1.5 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          />
+          <button
+            type="button"
+            onClick={handleAdd}
+            disabled={adding || !newName.trim()}
+            className="text-xs px-3 py-1.5 bg-fg text-canvas rounded hover:opacity-90 transition-opacity disabled:opacity-40"
+          >
+            {adding ? 'Adding…' : 'Add'}
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              setShowAdd(false);
+              setNewName('');
+            }}
+            className="text-xs px-2 py-1.5 text-fg-muted hover:bg-elevated rounded"
+          >
+            Cancel
+          </button>
+        </div>
+      )}
 
       <label className="flex items-center gap-2 cursor-pointer mb-3">
         <input
@@ -616,6 +690,7 @@ function PerServicePricing({
                   tag={tag}
                   currency={currency}
                   showDuration={perServiceDuration}
+                  onDeleted={reload}
                 />
               ))}
             </tbody>
@@ -631,12 +706,16 @@ function TagPriceRow({
   tag,
   currency,
   showDuration,
+  onDeleted,
 }: {
   slug: string;
   tag: ServiceTag;
   currency: string;
   showDuration: boolean;
+  onDeleted: () => Promise<void>;
 }) {
+  const [name, setName] = useState(tag.name);
+  const [savedName, setSavedName] = useState(tag.name);
   const [price, setPrice] = useState(String(num(tag.extra_price)));
   const [savedPrice, setSavedPrice] = useState(num(tag.extra_price));
   const [duration, setDuration] = useState(tag.duration_minutes != null ? String(tag.duration_minutes) : '');
@@ -644,8 +723,12 @@ function TagPriceRow({
   const [active, setActive] = useState(tag.is_active);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [confirmDelete, setConfirmDelete] = useState(false);
 
-  const dirty = num(price) !== savedPrice || (showDuration && duration !== savedDuration);
+  const dirty =
+    num(price) !== savedPrice ||
+    (name.trim() !== savedName && name.trim() !== '') ||
+    (showDuration && duration !== savedDuration);
 
   async function patch(updates: Record<string, unknown>): Promise<boolean> {
     setBusy(true);
@@ -674,6 +757,7 @@ function TagPriceRow({
 
   async function savePrice() {
     const updates: Record<string, unknown> = { extra_price: num(price) };
+    if (name.trim() && name.trim() !== savedName) updates.name = name.trim();
     if (showDuration) {
       updates.duration_minutes = duration.trim() === '' ? null : num(duration);
     }
@@ -681,7 +765,28 @@ function TagPriceRow({
     if (ok) {
       setSavedPrice(num(price));
       setSavedDuration(duration);
+      if (typeof updates.name === 'string') setSavedName(updates.name);
       toast.success('Service saved.');
+    }
+  }
+
+  async function handleDelete() {
+    setBusy(true);
+    setError(null);
+    try {
+      const res = await fetch(`/api/${slug}/tags/${tag.id}`, { method: 'DELETE' });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        toast.error(data.error ?? "Couldn't delete. Please try again.");
+        return;
+      }
+      toast.success('Service deleted.');
+      await onDeleted();
+    } catch {
+      toast.error("Couldn't delete. Please try again.");
+    } finally {
+      setBusy(false);
+      setConfirmDelete(false);
     }
   }
 
@@ -696,7 +801,16 @@ function TagPriceRow({
 
   return (
     <tr className="hover:bg-elevated">
-      <td className="px-3 py-3 text-fg">{tag.name}</td>
+      <td className="px-3 py-3 text-fg">
+        <input
+          type="text"
+          value={name}
+          onChange={e => setName(e.target.value)}
+          maxLength={80}
+          aria-label="Service name"
+          className="w-full max-w-[180px] text-sm bg-transparent text-fg border border-transparent hover:border-border focus:border-border rounded px-2 py-1 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+        />
+      </td>
       <td className="px-3 py-3">
         <div className="flex items-center gap-1.5">
           <span className="text-fg-muted text-xs">{currency}</span>
@@ -740,14 +854,38 @@ function TagPriceRow({
         </button>
       </td>
       <td className="px-3 py-3 text-right">
-        <button
-          type="button"
-          onClick={savePrice}
-          disabled={busy || !dirty}
-          className="text-xs px-2 py-1 bg-fg text-canvas rounded hover:opacity-90 transition-opacity disabled:opacity-40"
-        >
-          {busy ? 'Saving…' : 'Save'}
-        </button>
+        <div className="inline-flex items-center gap-1">
+          <button
+            type="button"
+            onClick={savePrice}
+            disabled={busy || !dirty}
+            className="text-xs px-2 py-1 bg-fg text-canvas rounded hover:opacity-90 transition-opacity disabled:opacity-40"
+          >
+            {busy ? 'Saving…' : 'Save'}
+          </button>
+          <button
+            type="button"
+            onClick={() => setConfirmDelete(true)}
+            disabled={busy}
+            title="Delete service"
+            aria-label={`Delete ${savedName}`}
+            className="text-xs px-2 py-1 text-fg-muted hover:text-red-600 hover:bg-elevated rounded disabled:opacity-40"
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <polyline points="3 6 5 6 21 6" />
+              <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+            </svg>
+          </button>
+        </div>
+        {confirmDelete && (
+          <ConfirmDialog
+            title={`Delete "${savedName}"?`}
+            description="This removes the service from the booking widget and unassigns it from staff. Services with booking history cannot be deleted — deactivate those instead."
+            confirmLabel="Delete service"
+            onConfirm={handleDelete}
+            onClose={() => setConfirmDelete(false)}
+          />
+        )}
       </td>
     </tr>
   );
