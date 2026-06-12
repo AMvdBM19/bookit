@@ -150,6 +150,12 @@ export async function PATCH(request: NextRequest) {
     }
   }
 
+  // Saving any customizer field marks the "Customize widget" onboarding
+  // step complete (Phase 15-A3).
+  if (Object.keys(update).some(f => f.startsWith('widget_'))) {
+    update.widget_customized_at = new Date().toISOString();
+  }
+
   update.updated_at = new Date().toISOString();
 
   const { error } = await supabase

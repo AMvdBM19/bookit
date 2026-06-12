@@ -3,6 +3,14 @@
 > Feature history for the AI assistant: what exists and since when. Newest
 > first. Maintained per the AI Docs Maintenance Protocol in CLAUDE.md.
 
+## 2026-06-12 — Getting-started checklist rework (Phase 15-A3)
+
+- The dashboard checklist now has three steps: add a team member,
+  customize the widget (done once a theme is actually saved) and share
+  the booking link (copies the URL). Dismissing asks for confirmation,
+  and a dismissed checklist can be re-opened from Settings → "Getting
+  started". While loading it shows a skeleton instead of disappearing.
+
 ## 2026-06-12 — Pricing tab shows per-booking prices (Phase 15-A2)
 
 - The Pricing tab's base rate now displays and edits in the tenant's own

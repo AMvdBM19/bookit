@@ -62,6 +62,11 @@ acceptance) are template-level notices, not tenant-editable.
   WhatsApp messages are sent (templates can still be edited and saved).
 - **AI assistant** and **Email notifications** show as "Coming soon".
 
+## Getting started section
+
+- **Setup checklist** — a **Re-open checklist** button that brings the
+  dismissed "Getting started" card back to the top of the dashboard.
+
 ## What lives on OTHER tabs (don't look for it here)
 
 - Rates, tax, revenue split, deposits, no-show policy, per-service price &

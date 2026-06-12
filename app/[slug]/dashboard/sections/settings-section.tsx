@@ -6,6 +6,7 @@ import { useTenantConfig } from '@/lib/context/tenant-config';
 import Spinner from '@/components/ui/spinner';
 import Badge from '@/components/ui/badge';
 import Modal from '@/components/ui/modal';
+import { ONBOARDING_REOPEN_EVENT } from '@/components/onboarding-checklist';
 
 interface Tenant {
   name: string;
@@ -459,6 +460,30 @@ export default function SettingsSection({ slug }: { slug: string }) {
           <Row
             label="Email notifications"
             value={<Badge variant="outline">Coming soon</Badge>}
+          />
+        </div>
+      </section>
+
+      {/* Getting started — re-open the onboarding checklist */}
+      <section>
+        <h3 className="text-xs font-semibold text-fg-muted uppercase tracking-wider mb-2">
+          Getting started
+        </h3>
+        <div className="bg-surface rounded-lg border border-border px-4">
+          <Row
+            label="Setup checklist"
+            value={
+              <button
+                type="button"
+                onClick={() => {
+                  window.dispatchEvent(new Event(ONBOARDING_REOPEN_EVENT));
+                  toast.success('Checklist re-opened — see the top of the dashboard.');
+                }}
+                className="text-xs px-2 py-1 bg-elevated hover:bg-sunken text-fg rounded"
+              >
+                Re-open checklist
+              </button>
+            }
           />
         </div>
       </section>
