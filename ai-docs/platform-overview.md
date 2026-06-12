@@ -101,10 +101,10 @@ client has picked services, the sum of the selected services' durations.
 ## Getting started checklist
 
 New owners see a dismissible **"Getting started"** card at the top of the
-dashboard until its three steps are done: **Add your first team member**
-(jumps to the Staff tab), **Customize your booking page** (jumps to the
-Widget tab), and **Share your booking link** (copies `/book/{slug}` to the
-clipboard). It disappears once completed or dismissed.
+dashboard until its two steps are done: **Add your first team member**
+(jumps to the Staff tab) and **Customize your widget** (jumps to the
+Widget tab, where the booking link and embed code also live). It
+disappears once completed or dismissed.
 
 ## Technical shape (for grounding, not for explaining to users)
 

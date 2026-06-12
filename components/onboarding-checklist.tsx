@@ -1,7 +1,6 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { toast } from 'sonner';
 import { useTenantConfig } from '@/lib/context/tenant-config';
 import Button from '@/components/ui/button';
 
@@ -25,18 +24,15 @@ function CheckCircle({ done }: { done: boolean }) {
 export default function OnboardingChecklist({ slug, onNavigate }: Props) {
   const { terminology } = useTenantConfig();
   const dismissKey = `bookit:onboarding-dismissed:${slug}`;
-  const linkCopiedKey = `bookit:onboarding-link-copied:${slug}`;
 
   const [dismissed, setDismissed] = useState(true); // assume dismissed until localStorage read
   const [loaded, setLoaded] = useState(false);
   const [hasStaff, setHasStaff] = useState(false);
   const [widgetCustomized, setWidgetCustomized] = useState(false);
-  const [linkCopied, setLinkCopied] = useState(false);
 
   useEffect(() => {
     setDismissed(localStorage.getItem(dismissKey) === '1');
-    setLinkCopied(localStorage.getItem(linkCopiedKey) === '1');
-  }, [dismissKey, linkCopiedKey]);
+  }, [dismissKey]);
 
   useEffect(() => {
     let cancelled = false;
@@ -67,18 +63,6 @@ export default function OnboardingChecklist({ slug, onNavigate }: Props) {
     setDismissed(true);
   }
 
-  async function copyLink() {
-    const url = `${window.location.origin}/book/${slug}`;
-    try {
-      await navigator.clipboard.writeText(url);
-      toast.success('Booking link copied.');
-      localStorage.setItem(linkCopiedKey, '1');
-      setLinkCopied(true);
-    } catch {
-      toast.error("Couldn't copy link. Please try again.");
-    }
-  }
-
   const items = [
     {
       key: 'staff',
@@ -91,18 +75,10 @@ export default function OnboardingChecklist({ slug, onNavigate }: Props) {
     {
       key: 'widget',
       done: widgetCustomized,
-      title: 'Customize your booking page',
-      description: 'Match the widget to your brand with colors and fonts.',
+      title: 'Customize your widget',
+      description: 'Match the booking widget to your brand, then grab your link and embed code there.',
       actionLabel: 'Open Widget tab',
       action: () => onNavigate('widget'),
-    },
-    {
-      key: 'link',
-      done: linkCopied,
-      title: 'Share your booking link',
-      description: 'Put it on your website, socials or WhatsApp.',
-      actionLabel: 'Copy link',
-      action: copyLink,
     },
   ];
 

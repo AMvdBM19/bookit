@@ -3,6 +3,12 @@
 > Feature history for the AI assistant: what exists and since when. Newest
 > first. Maintained per the AI Docs Maintenance Protocol in CLAUDE.md.
 
+## 2026-06-12 — Getting-started checklist ends on widget customization (Phase 14-A8)
+
+- The checklist's closing step is now **Customize your widget**, deep-
+  linking to the Widget tab (which also holds the booking link and embed
+  code). The separate "Share your booking link" copy step was removed.
+
 ## 2026-06-12 — Booking rows expand into a full detail panel (Phase 14-A7)
 
 - All three Bookings-tab tables (pending / upcoming / past) gained a
