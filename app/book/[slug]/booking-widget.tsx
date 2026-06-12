@@ -316,6 +316,8 @@ export default function BookingWidget({ slug, catalog }: Props) {
                 onSelectDate={d => update({ selectedDate: d, selectedSlot: null })}
                 onSelectSlot={handleSelectSlot}
                 brandColor={brandColor}
+                minLeadTimeHours={catalog.settings?.min_lead_time_hours ?? 0}
+                maxBookingDaysAhead={catalog.settings?.max_booking_days_ahead ?? 30}
               />
               {state.validationError && (
                 <p className="text-red-400 text-xs">{state.validationError}</p>

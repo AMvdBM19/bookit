@@ -20,6 +20,9 @@ interface Props {
   onSelectDate: (date: string) => void;
   onSelectSlot: (slot: Slot) => void;
   brandColor: string;
+  /** Booking window bounds — dates outside are disabled in the calendar. */
+  minLeadTimeHours?: number;
+  maxBookingDaysAhead?: number;
 }
 
 interface AvailabilityResponse {
@@ -29,23 +32,124 @@ interface AvailabilityResponse {
   slotDurationMinutes?: number;
 }
 
-function buildDateChips(): Array<{ value: string; label: string }> {
-  const chips: Array<{ value: string; label: string }> = [];
-  const now = new Date();
-  for (let i = 0; i < 14; i++) {
-    const d = new Date(now.getTime() + i * 86400000);
-    const year = d.getFullYear();
-    const month = String(d.getMonth() + 1).padStart(2, '0');
-    const day = String(d.getDate()).padStart(2, '0');
-    const value = `${year}-${month}-${day}`;
-    const label = d.toLocaleDateString('en-GB', {
-      weekday: 'short',
-      day: 'numeric',
-      month: 'short',
-    });
-    chips.push({ value, label });
+function toDateStr(d: Date): string {
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
+const WEEKDAYS = ['Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa', 'Su'];
+
+/**
+ * Compact month-grid date picker. Bounded below by the minimum lead time and
+ * above by max_booking_days_ahead; out-of-range days are disabled. Per-day
+ * availability hints are intentionally not shown (no month-level availability
+ * API yet — noted as a follow-up).
+ */
+function MonthCalendar({
+  selectedDate,
+  onSelectDate,
+  brandColor,
+  minDateStr,
+  maxDateStr,
+}: {
+  selectedDate: string | null;
+  onSelectDate: (date: string) => void;
+  brandColor: string;
+  minDateStr: string;
+  maxDateStr: string;
+}) {
+  const initial = selectedDate ?? minDateStr;
+  const [viewYear, setViewYear] = useState(() => Number(initial.slice(0, 4)));
+  const [viewMonth, setViewMonth] = useState(() => Number(initial.slice(5, 7)) - 1); // 0-based
+
+  const firstOfMonth = new Date(viewYear, viewMonth, 1);
+  const monthLabel = firstOfMonth.toLocaleDateString('en-GB', { month: 'long', year: 'numeric' });
+
+  // Monday-first column offset for the 1st of the month.
+  const leadingBlanks = (firstOfMonth.getDay() + 6) % 7;
+  const daysInMonth = new Date(viewYear, viewMonth + 1, 0).getDate();
+
+  const monthStartStr = toDateStr(firstOfMonth);
+  const monthEndStr = toDateStr(new Date(viewYear, viewMonth, daysInMonth));
+  const canPrev = monthStartStr > minDateStr;
+  const canNext = monthEndStr < maxDateStr;
+
+  function shiftMonth(delta: number) {
+    const next = new Date(viewYear, viewMonth + delta, 1);
+    setViewYear(next.getFullYear());
+    setViewMonth(next.getMonth());
   }
-  return chips;
+
+  const cells: Array<string | null> = [
+    ...Array.from({ length: leadingBlanks }, () => null),
+    ...Array.from({ length: daysInMonth }, (_, i) =>
+      toDateStr(new Date(viewYear, viewMonth, i + 1))
+    ),
+  ];
+
+  return (
+    <div className="w-card w-pad-sm">
+      <div className="flex items-center justify-between mb-2">
+        <button
+          type="button"
+          onClick={() => shiftMonth(-1)}
+          disabled={!canPrev}
+          aria-label="Previous month"
+          className="w-round border w-bd w-sf w-hbd px-2 py-1 text-sm w-tx-soft disabled:opacity-30 disabled:cursor-not-allowed focus:outline-none w-focus"
+        >
+          ‹
+        </button>
+        <p className="text-sm w-tx font-medium">{monthLabel}</p>
+        <button
+          type="button"
+          onClick={() => shiftMonth(1)}
+          disabled={!canNext}
+          aria-label="Next month"
+          className="w-round border w-bd w-sf w-hbd px-2 py-1 text-sm w-tx-soft disabled:opacity-30 disabled:cursor-not-allowed focus:outline-none w-focus"
+        >
+          ›
+        </button>
+      </div>
+
+      <div className="grid grid-cols-7 gap-1 mb-1">
+        {WEEKDAYS.map(d => (
+          <p key={d} className="text-center text-[10px] w-tx3 uppercase tracking-wider">
+            {d}
+          </p>
+        ))}
+      </div>
+
+      <div className="grid grid-cols-7 gap-1">
+        {cells.map((dateStr, i) => {
+          if (!dateStr) return <span key={`blank-${i}`} />;
+          const inRange = dateStr >= minDateStr && dateStr <= maxDateStr;
+          const isSelected = dateStr === selectedDate;
+          return (
+            <button
+              key={dateStr}
+              type="button"
+              disabled={!inRange}
+              onClick={() => onSelectDate(dateStr)}
+              aria-pressed={isSelected}
+              aria-label={dateStr}
+              className={`w-round text-xs py-1.5 transition-colors focus:outline-none w-focus ${
+                isSelected
+                  ? 'text-white'
+                  : inRange
+                    ? 'w-tx-soft w-el hover:opacity-80'
+                    : 'w-tx3 opacity-35 cursor-not-allowed'
+              }`}
+              style={isSelected ? { backgroundColor: brandColor } : undefined}
+            >
+              {Number(dateStr.slice(8, 10))}
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
 }
 
 export default function DateTimeSelect({
@@ -59,8 +163,9 @@ export default function DateTimeSelect({
   onSelectDate,
   onSelectSlot,
   brandColor,
+  minLeadTimeHours = 0,
+  maxBookingDaysAhead = 30,
 }: Props) {
-  const [dateChips] = useState(buildDateChips);
   const [slots, setSlots] = useState<Slot[]>([]);
   const [loading, setLoading] = useState(false);
   const [reason, setReason] = useState<string | null>(null);
@@ -107,36 +212,28 @@ export default function DateTimeSelect({
     };
   }, [slug, staffId, selectedDate, poolMode, poolTagKey, serviceTagKey]);
 
+  // Earliest bookable day = the date of (now + lead time): no earlier date
+  // can have a valid slot. Latest = max_booking_days_ahead.
+  const now = new Date();
+  const minDateStr = toDateStr(new Date(now.getTime() + Math.max(0, minLeadTimeHours) * 3600000));
+  const maxDateStr = toDateStr(new Date(now.getTime() + maxBookingDaysAhead * 86400000));
+
   return (
     <div className="space-y-4">
       <div>
         <p className="text-xs w-tx2 mb-2">Choose a date</p>
-        <div className="flex gap-2 overflow-x-auto pb-2 -mx-1 px-1 snap-x snap-mandatory">
-          {dateChips.map(d => {
-            const isSelected = d.value === selectedDate;
-            return (
-              <button
-                key={d.value}
-                type="button"
-                onClick={() => onSelectDate(d.value)}
-                aria-pressed={isSelected}
-                className={`shrink-0 snap-start w-round border px-3 py-2 text-xs transition-colors focus:outline-none w-focus ${
-                  isSelected
-                    ? 'text-white border-transparent'
-                    : 'w-tx-soft w-bd w-sf w-hbd'
-                }`}
-                style={isSelected ? { backgroundColor: brandColor } : undefined}
-              >
-                {d.label}
-              </button>
-            );
-          })}
-        </div>
+        <MonthCalendar
+          selectedDate={selectedDate}
+          onSelectDate={onSelectDate}
+          brandColor={brandColor}
+          minDateStr={minDateStr}
+          maxDateStr={maxDateStr}
+        />
       </div>
 
       {!selectedDate && (
         <p className="text-xs w-tx3 italic">
-          ← Select a date to see available times
+          Select a date to see available times
         </p>
       )}
 

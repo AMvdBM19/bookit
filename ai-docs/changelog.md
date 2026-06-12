@@ -3,6 +3,12 @@
 > Feature history for the AI assistant: what exists and since when. Newest
 > first. Maintained per the AI Docs Maintenance Protocol in CLAUDE.md.
 
+## 2026-06-12 — Widget month calendar for far-ahead bookings (Phase 14-B1)
+
+- The widget's 14-day date strip is replaced by a month-grid calendar with
+  month navigation, bounded by the minimum lead time and the tenant's max
+  booking window (out-of-range days disabled). Time-slot chips unchanged.
+
 ## 2026-06-12 — Self-service WhatsApp integration setup (Phase 14-A11)
 
 - Settings → Integrations is interactive: a **Configure** button opens a

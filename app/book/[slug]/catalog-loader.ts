@@ -26,6 +26,7 @@ export interface CatalogSettings {
   booking_confirm_mode: string;
   default_slot_minutes: number;
   min_lead_time_hours: number;
+  max_booking_days_ahead?: number | null;
   currency: string;
   deposit_pct: number | null;
   deposit_required_above_minutes: number | null;

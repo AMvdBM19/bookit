@@ -15,10 +15,11 @@ booking, services…) comes from the tenant's template.
 1. **Browse** — grid of active, setup-complete staff with photo, pseudonym
    and service tags. *Skipped* in pool mode (no staff choice) and
    auto-skipped when only one staff member exists.
-2. **Date & time** — date chips for the next 14 days (bounded by the
-   tenant's max booking window); tapping a date loads free slots. Slot
-   length is the default slot minutes, or the summed durations of selected
-   services when per-service duration is on.
+2. **Date & time** — a month-grid calendar with previous/next month
+   navigation, bounded by the minimum lead time (below) and the tenant's
+   max booking window (above); out-of-range days are disabled. Tapping a
+   date loads free slots. Slot length is the default slot minutes, or the
+   summed durations of selected services when per-service duration is on.
 3. **Details** — name, email, phone (optional), service selection, notes
    (label, placeholder and required-ness are template-driven), and an age
    confirmation checkbox when the age gate is active. If changing services
