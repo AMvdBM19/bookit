@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase/server';
 import { requireRole } from '@/lib/auth/session';
+import { normalizeSocialLinks } from '@/lib/social-links';
 
 export async function POST(
   request: NextRequest,
@@ -44,7 +45,7 @@ export async function POST(
 
   const supabase = createServiceClient();
 
-  const socialLinks = body.social_links ?? {};
+  const socialLinks = normalizeSocialLinks(body.social_links);
   const languages: string[] = Array.isArray(body.languages) ? body.languages : [];
 
   const { error: staffError } = await supabase

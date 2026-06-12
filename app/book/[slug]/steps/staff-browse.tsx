@@ -1,6 +1,7 @@
 'use client';
 
 import type { CatalogStaff } from '../catalog-loader';
+import { presentSocialLinks, socialHref } from '@/lib/social-links';
 
 const CURRENCY_SYMBOLS: Record<string, string> = {
   EUR: '€', USD: '$', GBP: '£',
@@ -107,14 +108,21 @@ export default function StaffBrowse({
     <div className="space-y-3">
       {staff.map(s => {
         const photo = s.photo_urls?.[0];
-        const socials = Object.entries(s.social_links ?? {}).filter(([, v]) => v);
+        const socials = presentSocialLinks(s.social_links);
         const languages = (s.languages ?? []).filter(Boolean);
         return (
-          <button
+          <div
             key={s.id}
-            type="button"
+            role="button"
+            tabIndex={0}
             onClick={() => onSelect(s.id)}
-            className="w-full text-left w-card w-pad transition-all w-hbd hover:shadow-md focus:outline-none w-focus"
+            onKeyDown={e => {
+              if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                onSelect(s.id);
+              }
+            }}
+            className="w-full text-left cursor-pointer w-card w-pad transition-all w-hbd hover:shadow-md focus:outline-none w-focus"
           >
             <div className="flex items-start gap-3">
               {photo ? (
@@ -168,23 +176,28 @@ export default function StaffBrowse({
 
                 {socials.length > 0 && (
                   <div className="flex gap-1.5 mt-2 w-tx2">
-                    {socials.map(([key]) => {
+                    {socials.map(([key, value]) => {
                       const Icon = SOCIAL_ICONS[key];
                       return (
-                        <span
+                        <a
                           key={key}
-                          className="inline-flex items-center border w-bd2 rounded px-1.5 py-0.5"
-                          aria-label={key}
+                          href={socialHref(key, value)}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          onClick={e => e.stopPropagation()}
+                          className="inline-flex items-center border w-bd2 rounded px-1.5 py-0.5 w-hbd w-focus"
+                          aria-label={`${s.pseudonym} on ${key}`}
+                          title={value}
                         >
                           {Icon ? <Icon /> : <span className="text-[10px]">{key}</span>}
-                        </span>
+                        </a>
                       );
                     })}
                   </div>
                 )}
               </div>
             </div>
-          </button>
+          </div>
         );
       })}
     </div>

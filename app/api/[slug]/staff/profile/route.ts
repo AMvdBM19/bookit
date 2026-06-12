@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase/server';
 import { requireRole } from '@/lib/auth/session';
+import { normalizeSocialLinks } from '@/lib/social-links';
 
 export async function PATCH(
   request: NextRequest,
@@ -46,14 +47,7 @@ export async function PATCH(
     updates.age = !isNaN(age) && age >= 18 ? age : null;
   }
   if (typeof body.social_links === 'object' && body.social_links !== null) {
-    const allowed = ['instagram', 'tiktok', 'facebook', 'x', 'website'];
-    const links: Record<string, string> = {};
-    for (const key of allowed) {
-      if (typeof body.social_links[key] === 'string') {
-        links[key] = body.social_links[key].trim().slice(0, 500);
-      }
-    }
-    updates.social_links = links;
+    updates.social_links = normalizeSocialLinks(body.social_links);
   }
 
   if (Object.keys(updates).length === 0) {

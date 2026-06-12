@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import { createClient } from '@/lib/supabase/client';
 import { useTenantConfig } from '@/lib/context/tenant-config';
+import { presentSocialLinks } from '@/lib/social-links';
 import ThemeToggle from '@/app/components/theme-toggle';
 import EmptyState from '@/components/ui/empty-state';
 import StaffExceptions from '@/components/staff-exceptions';
@@ -341,7 +342,7 @@ function ProfileSection({ slug, profile }: { slug: string; profile: StaffProfile
     }
   }
 
-  const socials = Object.entries(profile.socialLinks).filter(([, v]) => v);
+  const socials = presentSocialLinks(profile.socialLinks);
 
   return (
     <SectionShell

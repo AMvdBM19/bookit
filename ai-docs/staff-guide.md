@@ -76,6 +76,9 @@ Staff log in at `/{slug}/login` like the owner, but get a simpler dashboard:
   past bookings **completed** or **no-show**.
 - **Profile** — they can edit their own pseudonym, bio, details, social
   links, service tags, and weekly schedule directly from the dashboard.
+  Social links accept a bare handle, an @handle, or a full URL; the widget
+  shows a clickable icon for every filled-in network and hides the row
+  entirely when none are set.
 - **Days off** — add/remove their own exception dates.
 
 Staff never see other staff members' bookings, the client list, pricing,

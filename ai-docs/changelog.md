@@ -3,6 +3,14 @@
 > Feature history for the AI assistant: what exists and since when. Newest
 > first. Maintained per the AI Docs Maintenance Protocol in CLAUDE.md.
 
+## 2026-06-12 — Staff social links reliable on the widget (Phase 14-A4)
+
+- Widget staff cards now render a clickable icon for every filled-in
+  social link, whether staff entered a bare handle, an @handle, or a full
+  URL. The icon links to the canonical profile (instagram.com/handle etc.).
+- Empty link inputs are no longer stored; the social row is hidden when a
+  staff member has no links. Existing data was cleaned up.
+
 ## 2026-06-12 — Widget customizer saves now apply immediately (Phase 14-A3)
 
 - Saving in the Widget customizer is reflected on the live `/book/{slug}`
