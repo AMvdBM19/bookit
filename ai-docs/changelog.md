@@ -3,6 +3,12 @@
 > Feature history for the AI assistant: what exists and since when. Newest
 > first. Maintained per the AI Docs Maintenance Protocol in CLAUDE.md.
 
+## 2026-06-12 — Widget customizer saves now apply immediately (Phase 14-A3)
+
+- Saving in the Widget customizer is reflected on the live `/book/{slug}`
+  widget on the next page load. Previously a server-side data cache could
+  serve the old theme until the platform was redeployed.
+
 ## 2026-06-12 — Tenants fully own their service tags (Phase 14-A2)
 
 - New **+ Add service** button, inline rename, and delete (with

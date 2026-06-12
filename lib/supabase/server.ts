@@ -30,6 +30,15 @@ export async function createClient() {
 export function createServiceClient() {
   return createSupabaseClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!
+    process.env.SUPABASE_SERVICE_ROLE_KEY!,
+    {
+      global: {
+        // Next.js persists fetch responses in its Data Cache even on
+        // force-dynamic segments, so customizer/catalog reads served stale
+        // data until the container was rebuilt. The database is the source
+        // of truth — never cache service-role reads.
+        fetch: (url, options) => fetch(url, { ...options, cache: 'no-store' }),
+      },
+    }
   );
 }

@@ -25,11 +25,12 @@ JWT claims: tenant_id, user_role (agent/staff/client/super_admin), staff_id?, cl
   columns that didn't exist; optional chaining masked it.)
 
 ### Known gotcha: Next.js data caching + Supabase service client
-Any layout.tsx or server component that queries Supabase via `createServiceClient()` must include
-`export const dynamic = 'force-dynamic'` at the top, or the query result will be cached indefinitely
-by Next.js. The service client uses plain `fetch()` internally, which Next caches by default in
-non-dynamic route segments. A page's `dynamic` config does NOT extend to its layout's fetches.
-(Caused stale-data bugs twice: catalog in Phase 10C, widget theme in Phase 12A.)
+`createServiceClient()` (lib/supabase/server.ts) forces `cache: 'no-store'` on every underlying
+fetch since Phase 14-A3 — do not remove that option. Before that, Next's Data Cache persisted
+Supabase REST responses in `.next/cache` even on `force-dynamic` segments, so reads served stale
+data until the container was rebuilt (stale-data bugs three times: catalog in Phase 10C, widget
+theme in Phase 12A, customizer saves in Phase 14). Keep `export const dynamic = 'force-dynamic'`
+on layouts/pages that query Supabase anyway, so the route itself isn't statically cached.
 
 ## Key paths
 lib/types/tenant-config.ts — JSONB contract interfaces (Terminology, FeatureFlags, ComplianceFlags, DefaultSettings) + DEFAULT_* constants + core type aliases (VerticalId, ClientMode, BookingConfirmMode)
