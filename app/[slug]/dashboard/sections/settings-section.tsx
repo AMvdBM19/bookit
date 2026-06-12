@@ -4,6 +4,8 @@ import { useCallback, useEffect, useState } from 'react';
 import { toast } from 'sonner';
 import { useTenantConfig } from '@/lib/context/tenant-config';
 import Spinner from '@/components/ui/spinner';
+import Badge from '@/components/ui/badge';
+import Modal from '@/components/ui/modal';
 
 interface Tenant {
   name: string;
@@ -83,6 +85,7 @@ export default function SettingsSection({ slug }: { slug: string }) {
   const [draft, setDraft] = useState<Partial<Settings>>({});
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
+  const [showWaConfig, setShowWaConfig] = useState(false);
 
   const reload = useCallback(async () => {
     setLoading(true);
@@ -422,7 +425,7 @@ export default function SettingsSection({ slug }: { slug: string }) {
         </div>
       </section>
 
-      {/* Integrations (read-only) */}
+      {/* Integrations */}
       <section>
         <h3 className="text-xs font-semibold text-fg-muted uppercase tracking-wider mb-2">
           Integrations
@@ -431,24 +434,45 @@ export default function SettingsSection({ slug }: { slug: string }) {
           <Row
             label="WhatsApp"
             value={
-              wa.configured ? (
-                <span className="inline-flex items-center gap-1.5">
-                  <span className="inline-block px-2 py-0.5 text-[10px] font-medium uppercase tracking-wider rounded border bg-emerald-100 text-emerald-800 border-emerald-200 dark:bg-emerald-500/15 dark:text-emerald-400 dark:border-emerald-500/30">
-                    Configured
-                  </span>
-                  <span className="text-[11px] text-fg-muted">
-                    ({wa.provider === 'meta_whatsapp' ? 'Meta' : 'Twilio'})
-                  </span>
-                </span>
-              ) : (
-                <span className="inline-block px-2 py-0.5 text-[10px] font-medium uppercase tracking-wider rounded border bg-elevated text-fg border-border">
-                  Not configured
-                </span>
-              )
+              <span className="inline-flex items-center gap-2">
+                {wa.configured ? (
+                  <Badge variant="success">
+                    Active ({wa.provider === 'meta_whatsapp' ? 'Meta' : 'Twilio'})
+                  </Badge>
+                ) : (
+                  <Badge variant="outline">Not configured</Badge>
+                )}
+                <button
+                  type="button"
+                  onClick={() => setShowWaConfig(true)}
+                  className="text-xs px-2 py-1 bg-elevated hover:bg-sunken text-fg rounded"
+                >
+                  Configure
+                </button>
+              </span>
             }
+          />
+          <Row
+            label="AI assistant"
+            value={<Badge variant="outline">Coming soon</Badge>}
+          />
+          <Row
+            label="Email notifications"
+            value={<Badge variant="outline">Coming soon</Badge>}
           />
         </div>
       </section>
+
+      {showWaConfig && (
+        <WhatsAppConfigModal
+          slug={slug}
+          onClose={() => setShowWaConfig(false)}
+          onSaved={async () => {
+            setShowWaConfig(false);
+            await reload();
+          }}
+        />
+      )}
 
       {saveError && (
         <div className="rounded-lg border border-red-200 bg-red-50 p-3 text-xs text-red-800 dark:border-red-500/30 dark:bg-red-500/10 dark:text-red-400">
@@ -506,5 +530,210 @@ function SectionHeader({
         </button>
       )}
     </div>
+  );
+}
+
+/* --------------------------------------------------- WhatsApp config modal */
+
+interface WaState {
+  configured: boolean;
+  provider: 'twilio_whatsapp' | 'meta_whatsapp' | null;
+  is_active: boolean;
+  config: { from_number?: string | null; phone_number_id?: string | null; waba_id?: string | null };
+}
+
+function WhatsAppConfigModal({
+  slug,
+  onClose,
+  onSaved,
+}: {
+  slug: string;
+  onClose: () => void;
+  onSaved: () => Promise<void>;
+}) {
+  const [loading, setLoading] = useState(true);
+  const [current, setCurrent] = useState<WaState | null>(null);
+  const [provider, setProvider] = useState<'twilio_whatsapp' | 'meta_whatsapp'>('twilio_whatsapp');
+  const [fromNumber, setFromNumber] = useState('');
+  const [phoneNumberId, setPhoneNumberId] = useState('');
+  const [wabaId, setWabaId] = useState('');
+  const [isActive, setIsActive] = useState(true);
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    fetch(`/api/${slug}/integrations/whatsapp`)
+      .then(res => res.json())
+      .then((data: WaState) => {
+        if (cancelled) return;
+        setCurrent(data);
+        if (data.provider) setProvider(data.provider);
+        if (data.configured) setIsActive(data.is_active);
+      })
+      .catch(() => {})
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [slug]);
+
+  async function submit(e: React.FormEvent) {
+    e.preventDefault();
+    setSubmitting(true);
+    setError(null);
+    try {
+      const body: Record<string, unknown> = { provider, is_active: isActive };
+      if (provider === 'twilio_whatsapp') {
+        body.from_number = fromNumber;
+      } else {
+        body.phone_number_id = phoneNumberId;
+        if (wabaId.trim()) body.waba_id = wabaId;
+      }
+      const res = await fetch(`/api/${slug}/integrations/whatsapp`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setError(data.error ?? 'Failed to save');
+        toast.error(data.error ?? "Couldn't save integration. Please try again.");
+        return;
+      }
+      toast.success('WhatsApp integration saved.');
+      await onSaved();
+    } catch {
+      setError('Network error');
+      toast.error("Couldn't save integration. Please try again.");
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  const masked =
+    current?.configured && current.provider === provider
+      ? provider === 'twilio_whatsapp'
+        ? current.config.from_number
+        : current.config.phone_number_id
+      : null;
+
+  return (
+    <Modal title="WhatsApp integration" onClose={onClose} maxWidth="max-w-md">
+      {loading ? (
+        <div className="flex justify-center py-8 text-fg-muted">
+          <Spinner size="md" />
+        </div>
+      ) : (
+        <form onSubmit={submit} className="space-y-3">
+          <p className="text-xs text-fg-muted">
+            Booking confirmations, reminders and cancellations are sent to opted-in
+            contacts via WhatsApp. Platform API credentials (Twilio account,
+            Meta access token) are managed by Book-IT — you only provide your
+            sender identity below.
+          </p>
+
+          <div>
+            <label className="block text-xs text-fg-muted mb-1" htmlFor="wa-provider">
+              Provider
+            </label>
+            <select
+              id="wa-provider"
+              value={provider}
+              onChange={e => setProvider(e.target.value as 'twilio_whatsapp' | 'meta_whatsapp')}
+              className={inputCls}
+            >
+              <option value="twilio_whatsapp">Twilio WhatsApp</option>
+              <option value="meta_whatsapp">Meta WhatsApp (Cloud API)</option>
+            </select>
+          </div>
+
+          {provider === 'twilio_whatsapp' ? (
+            <div>
+              <label className="block text-xs text-fg-muted mb-1" htmlFor="wa-from">
+                WhatsApp sender number
+              </label>
+              <input
+                id="wa-from"
+                type="text"
+                required
+                value={fromNumber}
+                onChange={e => setFromNumber(e.target.value)}
+                className={inputCls}
+                placeholder={masked ? `Currently ${masked}` : '+31612345678'}
+              />
+              <p className="text-[11px] text-fg-muted mt-1">
+                The Twilio-registered WhatsApp number, in international format.
+              </p>
+            </div>
+          ) : (
+            <>
+              <div>
+                <label className="block text-xs text-fg-muted mb-1" htmlFor="wa-pnid">
+                  Phone number ID
+                </label>
+                <input
+                  id="wa-pnid"
+                  type="text"
+                  required
+                  value={phoneNumberId}
+                  onChange={e => setPhoneNumberId(e.target.value)}
+                  className={inputCls}
+                  placeholder={masked ? `Currently ${masked}` : '123456789012345'}
+                />
+                <p className="text-[11px] text-fg-muted mt-1">
+                  From Meta Business Manager → WhatsApp → API Setup.
+                </p>
+              </div>
+              <div>
+                <label className="block text-xs text-fg-muted mb-1" htmlFor="wa-waba">
+                  WhatsApp Business Account ID (optional)
+                </label>
+                <input
+                  id="wa-waba"
+                  type="text"
+                  value={wabaId}
+                  onChange={e => setWabaId(e.target.value)}
+                  className={inputCls}
+                  placeholder="Optional"
+                />
+              </div>
+            </>
+          )}
+
+          <label className="flex items-center gap-2 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={isActive}
+              onChange={e => setIsActive(e.target.checked)}
+            />
+            <span className="text-sm text-fg">Active</span>
+            <span className="text-[11px] text-fg-muted">— messages dispatch only while active</span>
+          </label>
+
+          {error && <p className="text-xs text-red-500">{error}</p>}
+
+          <div className="flex justify-end gap-2 pt-2">
+            <button
+              type="button"
+              onClick={onClose}
+              disabled={submitting}
+              className="text-sm px-3 py-1.5 text-fg hover:bg-elevated rounded"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              disabled={submitting}
+              className="text-sm px-4 py-1.5 bg-fg text-canvas rounded hover:opacity-90 transition-opacity disabled:opacity-50"
+            >
+              {submitting ? 'Saving…' : 'Save'}
+            </button>
+          </div>
+        </form>
+      )}
+    </Modal>
   );
 }

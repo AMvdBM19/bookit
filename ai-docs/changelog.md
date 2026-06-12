@@ -3,6 +3,14 @@
 > Feature history for the AI assistant: what exists and since when. Newest
 > first. Maintained per the AI Docs Maintenance Protocol in CLAUDE.md.
 
+## 2026-06-12 — Self-service WhatsApp integration setup (Phase 14-A11)
+
+- Settings → Integrations is interactive: a **Configure** button opens a
+  WhatsApp modal (Twilio sender number, or Meta phone number ID + optional
+  WABA ID, plus an Active toggle). Status shows as a badge: Not configured
+  / Active (Twilio) / Active (Meta). Platform tokens stay env-managed.
+- AI assistant and Email notifications render as intentional "Coming soon".
+
 ## 2026-06-12 — Per-service duration actually works + wizard toggle (Phase 14-A10)
 
 - Root cause fixed: a server-side data cache served a frozen copy of

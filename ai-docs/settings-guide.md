@@ -50,12 +50,17 @@ age gate.
 Other compliance flags (KvK field, license, GDPR photo consent, terms
 acceptance) are template-level notices, not tenant-editable.
 
-## Integrations section (read-only)
+## Integrations section
 
-Shows whether **WhatsApp** is configured and via which provider (Twilio or
-Meta). Provisioning an integration is done by platform support, not
-self-service. Without it, no WhatsApp messages are sent (templates can
-still be edited and saved).
+- **WhatsApp** — shows a status badge ("Not configured" / "Active
+  (Twilio)" / "Active (Meta)") and a **Configure** button opening a modal:
+  pick the provider, then enter the **WhatsApp sender number**
+  (international format, Twilio) or the **Phone number ID** + optional
+  WhatsApp Business Account ID (Meta), and an Active toggle. Platform API
+  credentials (Twilio account, Meta access token) are managed by Book-IT;
+  the owner never enters tokens. Without an active integration, no
+  WhatsApp messages are sent (templates can still be edited and saved).
+- **AI assistant** and **Email notifications** show as "Coming soon".
 
 ## What lives on OTHER tabs (don't look for it here)
 
@@ -78,9 +83,12 @@ template supports deposits — `deposit_pct`,
 `deposit_required_above_minutes`.
 Widget theme: all `widget_*` fields (never lockable).
 
-Intentionally **not** editable: `currency`, `base_rate_per_30min`,
-`tax_rate_pct`, `client_mode`, `age_gate_minimum`, the booking mode
-(staff_select vs pool), and the source template.
+Pricing (with confirm dialog, future bookings only): `currency`,
+`base_rate_per_30min`.
+
+Intentionally **not** editable: `tax_rate_pct`, `client_mode`,
+`age_gate_minimum`, the booking mode (staff_select vs pool), and the
+source template.
 
 ## Common owner questions
 
@@ -97,3 +105,5 @@ Intentionally **not** editable: `currency`, `base_rate_per_30min`,
 - `GET /api/{slug}/settings/summary` — tenant + settings + locked_fields +
   integrations (agent-only).
 - `PATCH /api/{slug}/settings` — editable fields above; locked fields → 403.
+- `GET/PUT /api/{slug}/integrations/whatsapp` — WhatsApp provider config
+  (agent-only; GET masks stored values).
