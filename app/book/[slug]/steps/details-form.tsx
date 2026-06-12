@@ -1,5 +1,6 @@
 'use client';
 
+import { useRef, useState } from 'react';
 import type { CatalogSettings } from '../catalog-loader';
 import type { FeatureFlags } from '@/lib/types/tenant-config';
 
@@ -17,6 +18,9 @@ interface State {
   guestWaOptIn: boolean;
   bookingNotes: string;
   ageConfirmed: boolean;
+  serviceAddress: string;
+  referenceImagePath: string | null;
+  referenceImagePreview: string | null;
 }
 
 interface Props {
@@ -55,6 +59,44 @@ export default function DetailsForm({
 }: Props) {
   const showPrice = settings?.show_price_to_client ?? false;
   const sym = CURRENCY_SYMBOLS[settings?.currency ?? 'EUR'] ?? settings?.currency ?? 'EUR';
+  const [uploadingRef, setUploadingRef] = useState(false);
+  const [refError, setRefError] = useState<string | null>(null);
+  const refFileInput = useRef<HTMLInputElement>(null);
+
+  async function handleReferenceFile(file: File) {
+    setRefError(null);
+    if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type)) {
+      setRefError('Only JPEG, PNG or WebP images are allowed.');
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      setRefError('Image must be 5 MB or smaller.');
+      return;
+    }
+    setUploadingRef(true);
+    try {
+      const form = new FormData();
+      form.append('file', file);
+      const res = await fetch(`/book/${slug}/api/reference-upload`, {
+        method: 'POST',
+        body: form,
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setRefError(data.error ?? 'Upload failed. Please try again.');
+        return;
+      }
+      onChange({
+        referenceImagePath: data.path,
+        referenceImagePreview: URL.createObjectURL(file),
+      });
+    } catch {
+      setRefError('Upload failed. Please try again.');
+    } finally {
+      setUploadingRef(false);
+      if (refFileInput.current) refFileInput.current.value = '';
+    }
+  }
 
   function toggleTag(tagId: string) {
     const next = state.selectedTagIds.includes(tagId)
@@ -162,6 +204,78 @@ export default function DetailsForm({
           maxLength={1000}
         />
       </div>
+
+      {featureFlags.booking_reference_image && (
+        <div>
+          <label className={labelCls} htmlFor="referenceImage">
+            Reference image <span className="w-tx3">(optional)</span>
+          </label>
+          {state.referenceImagePath && state.referenceImagePreview ? (
+            <div className="flex items-center gap-3">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={state.referenceImagePreview}
+                alt="Reference"
+                className="w-16 h-16 w-round object-cover border w-bd"
+              />
+              <button
+                type="button"
+                onClick={() =>
+                  onChange({ referenceImagePath: null, referenceImagePreview: null })
+                }
+                className="px-3 py-1.5 w-btn2 text-xs w-round transition-colors"
+              >
+                Remove
+              </button>
+            </div>
+          ) : (
+            <>
+              <input
+                ref={refFileInput}
+                id="referenceImage"
+                type="file"
+                accept="image/jpeg,image/png,image/webp"
+                className="hidden"
+                onChange={e => {
+                  const file = e.target.files?.[0];
+                  if (file) handleReferenceFile(file);
+                }}
+              />
+              <button
+                type="button"
+                onClick={() => refFileInput.current?.click()}
+                disabled={uploadingRef}
+                className="px-4 py-2 w-btn2 text-xs w-round transition-colors disabled:opacity-50"
+              >
+                {uploadingRef ? 'Uploading…' : 'Upload an image'}
+              </button>
+              <p className="text-[11px] w-tx3 mt-1">
+                Show us what you have in mind. JPEG, PNG or WebP, max 5 MB.
+              </p>
+            </>
+          )}
+          {refError && <p className="text-red-400 text-xs mt-1">{refError}</p>}
+        </div>
+      )}
+
+      {featureFlags.booking_address_field && (
+        <div>
+          <label className={labelCls} htmlFor="serviceAddress">
+            Service address <span className="text-red-400">*</span>
+          </label>
+          <input
+            id="serviceAddress"
+            type="text"
+            value={state.serviceAddress}
+            onChange={e => onChange({ serviceAddress: e.target.value })}
+            className={inputCls}
+            placeholder="Street, number, city"
+            autoComplete="street-address"
+            maxLength={500}
+            required
+          />
+        </div>
+      )}
 
       <div>
         <label className={labelCls} htmlFor="guestName">

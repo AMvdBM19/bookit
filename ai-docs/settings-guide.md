@@ -62,6 +62,20 @@ acceptance) are template-level notices, not tenant-editable.
   WhatsApp messages are sent (templates can still be edited and saved).
 - **AI assistant** and **Email notifications** show as "Coming soon".
 
+## Booking form section
+
+Two toggles controlling extra fields on the public booking widget (these
+live on the tenant's feature configuration, not regular settings):
+
+- **Reference image upload** — clients can attach an optional image
+  (JPEG/PNG/WebP, max 5 MB) to their booking, e.g. a design idea. On by
+  default for tattoo-template tenants. The image is private; the owner
+  views it from the booking's detail panel.
+- **Service address field** — adds a required address input to the
+  booking form, for businesses that work at the client's location. The
+  address shows in the booking detail panel, and the manual booking modal
+  gains an optional address field too.
+
 ## Getting started section
 
 - **Setup checklist** — a **Re-open checklist** button that brings the

@@ -393,7 +393,7 @@ export default function BookingsSection({ slug }: { slug: string }) {
       </div>
 
       {viewMode === 'calendar' ? (
-        <BookingsCalendar bookings={bookings} currency={currency} />
+        <BookingsCalendar bookings={bookings} currency={currency} slug={slug} />
       ) : (
       <>
       {/* Pending */}
@@ -560,7 +560,7 @@ export default function BookingsSection({ slug }: { slug: string }) {
                       {expandedId === b.id && (
                         <tr>
                           <td colSpan={8} className="p-0">
-                            <BookingDetailPanel booking={b} currency={currency} />
+                            <BookingDetailPanel booking={b} currency={currency} slug={slug} />
                           </td>
                         </tr>
                       )}
@@ -642,7 +642,7 @@ export default function BookingsSection({ slug }: { slug: string }) {
                     {expandedId === b.id && (
                       <tr>
                         <td colSpan={6} className="p-0">
-                          <BookingDetailPanel booking={b} currency={currency} />
+                          <BookingDetailPanel booking={b} currency={currency} slug={slug} />
                         </td>
                       </tr>
                     )}
@@ -696,7 +696,7 @@ export default function BookingsSection({ slug }: { slug: string }) {
                     {expandedId === b.id && (
                       <tr>
                         <td colSpan={5} className="p-0">
-                          <BookingDetailPanel booking={b} currency={currency} />
+                          <BookingDetailPanel booking={b} currency={currency} slug={slug} />
                         </td>
                       </tr>
                     )}

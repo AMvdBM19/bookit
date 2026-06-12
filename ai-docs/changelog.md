@@ -3,6 +3,15 @@
 > Feature history for the AI assistant: what exists and since when. Newest
 > first. Maintained per the AI Docs Maintenance Protocol in CLAUDE.md.
 
+## 2026-06-12 — Conditional booking fields: reference image + address (Phase 15-B5)
+
+- The booking widget can now collect a **reference image** (optional
+  upload, private storage, viewed via the booking detail panel) and/or a
+  required **service address**, controlled per tenant in Settings →
+  Booking form. Reference image is on by default for tattoo-template
+  tenants. The manual booking modal gets an optional address field when
+  the address flag is on.
+
 ## 2026-06-12 — Staff photo upload (Phase 15-B4)
 
 - Staff profile photos can now be uploaded directly (JPEG/PNG/WebP, max

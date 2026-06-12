@@ -30,6 +30,8 @@ export interface FeatureFlags {
   booking_notes_placeholder: string;
   booking_completion_by: 'admin_only' | 'staff_and_admin';
   booking_mode: 'staff_select' | 'pool';
+  booking_reference_image: boolean;
+  booking_address_field: boolean;
 }
 
 export interface ComplianceFlags {
@@ -96,7 +98,7 @@ export const FEATURE_FLAG_KEYS: (keyof FeatureFlags)[] = [
   'show_age_gate_step', 'age_gate_minimum', 'staff_require_pseudonym',
   'deposits_supported', 'show_price_to_client', 'require_booking_notes',
   'booking_notes_label', 'booking_notes_placeholder', 'booking_completion_by',
-  'booking_mode'
+  'booking_mode', 'booking_reference_image', 'booking_address_field'
 ];
 
 export const COMPLIANCE_FLAG_KEYS: (keyof ComplianceFlags)[] = [
@@ -127,6 +129,8 @@ export const DEFAULT_FEATURE_FLAGS: FeatureFlags = {
   booking_notes_placeholder: 'Any additional information...',
   booking_completion_by: 'admin_only',
   booking_mode: 'staff_select',
+  booking_reference_image: false,
+  booking_address_field: false,
 };
 
 export const DEFAULT_COMPLIANCE_FLAGS: ComplianceFlags = {

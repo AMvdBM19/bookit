@@ -45,6 +45,8 @@ export function validateFeatureFlags(value: unknown): string | null {
   if (value.booking_mode !== 'staff_select' && value.booking_mode !== 'pool') {
     return 'feature_flags.booking_mode must be "staff_select" or "pool"';
   }
+  if (typeof value.booking_reference_image !== 'boolean') return 'feature_flags.booking_reference_image must be a boolean';
+  if (typeof value.booking_address_field !== 'boolean') return 'feature_flags.booking_address_field must be a boolean';
   return null;
 }
 

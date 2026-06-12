@@ -55,9 +55,11 @@ function minutesOf(time: string): number {
 export default function BookingsCalendar({
   bookings,
   currency,
+  slug,
 }: {
   bookings: BookingDetail[];
   currency: string;
+  slug?: string;
 }) {
   const { terminology } = useTenantConfig();
   const [view, setView] = useState<'week' | 'day'>('week');
@@ -274,7 +276,7 @@ export default function BookingsCalendar({
           onClose={() => setOpenBooking(null)}
           maxWidth="max-w-2xl"
         >
-          <BookingDetailPanel booking={openBooking} currency={currency} />
+          <BookingDetailPanel booking={openBooking} currency={currency} slug={slug} />
         </Modal>
       )}
     </div>

@@ -36,7 +36,9 @@ calendar is not available yet. The list view has three sections:
 
 Every row in all three tables has a chevron ("See details") that expands an
 inline panel showing, when present: {client} contact (email, phone,
-WhatsApp opt-in), the booking notes, selected services with per-service
+WhatsApp opt-in), the booking notes, the service address and a clickable
+reference-image thumbnail (when the tenant's booking form collects those —
+see Settings → Booking form), selected services with per-service
 extras and the total price, the assigned {staff} (or "Unassigned — pool"),
 the source (Widget/Manual), and requested/confirmed/cancelled timestamps
 plus cancellation reason. Staff see a slimmer "See details" on their own
@@ -58,6 +60,8 @@ The owner can create bookings directly — useful for phone/walk-in requests:
   validation. Provide date, start and end together or not at all.
 - **Services, notes, price**: price auto-suggests from base rate × duration +
   service extras, but can be overridden.
+- **Service address**: shown only when the tenant's booking form has the
+  address field enabled (Settings → Booking form); optional here.
 - **Status**: Pending, Confirmed or Completed (for backfilling history).
 - **Notify**: optionally send the client a WhatsApp confirmation (requires a
   phone number and Confirmed status).
@@ -85,6 +89,10 @@ Staff members see, on their own dashboard:
    duration count as the default appointment length in that sum).
 3. **Details** — name, email, phone, service selection, notes (label and
    required-ness are template-driven), age confirmation when the age gate is on.
+   Two optional template/tenant-driven fields can appear here (Settings →
+   Booking form): a **reference image** upload (optional for the client;
+   JPEG/PNG/WebP, max 5 MB — e.g. a tattoo design idea) and a required
+   **service address** (for at-home services).
    If changing services changes the appointment duration, the client is asked
    to re-pick a time slot.
 4. **Confirm** — summary, optional price breakdown, optional deposit notice,
@@ -132,5 +140,7 @@ the booking window.
 - `PATCH /api/{slug}/bookings/{id}/status` — completed / no_show.
 - `POST /api/{slug}/bookings/create` — manual creation (agent).
 - `GET /api/{slug}/export/bookings` — CSV export (agent).
+- `GET /api/{slug}/bookings/{id}/reference-image` — signed URL for the
+  private reference image (agent, or the assigned staff member).
 - Public: `GET /book/{slug}/api/availability`, `/pool-availability`,
-  `POST /book/{slug}/api/book`.
+  `POST /book/{slug}/api/book`, `POST /book/{slug}/api/reference-upload`.

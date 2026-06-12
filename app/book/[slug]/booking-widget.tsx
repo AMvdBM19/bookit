@@ -22,6 +22,9 @@ interface BookingState {
   guestWaOptIn: boolean;
   bookingNotes: string;
   ageConfirmed: boolean;
+  serviceAddress: string;
+  referenceImagePath: string | null;
+  referenceImagePreview: string | null;
   submitting: boolean;
   submitError: string | null;
   validationError: string | null;
@@ -40,6 +43,9 @@ const INITIAL_STATE: BookingState = {
   guestWaOptIn: false,
   bookingNotes: '',
   ageConfirmed: false,
+  serviceAddress: '',
+  referenceImagePath: null,
+  referenceImagePreview: null,
   submitting: false,
   submitError: null,
   validationError: null,
@@ -126,6 +132,9 @@ export default function BookingWidget({ slug, catalog }: Props) {
     if (catalog.settings?.require_age_confirm && !state.ageConfirmed) {
       return `Please confirm you are at least ${catalog.settings.age_gate_minimum} years old.`;
     }
+    if (catalog.featureFlags.booking_address_field && !state.serviceAddress.trim()) {
+      return 'Service address is required.';
+    }
     return null;
   }
 
@@ -165,6 +174,8 @@ export default function BookingWidget({ slug, catalog }: Props) {
           guest_wa_opt_in: state.guestWaOptIn,
           booking_notes: state.bookingNotes || undefined,
           age_confirmed: state.ageConfirmed,
+          service_address: state.serviceAddress.trim() || undefined,
+          reference_image_path: state.referenceImagePath || undefined,
         }),
       });
 
@@ -362,6 +373,9 @@ export default function BookingWidget({ slug, catalog }: Props) {
                   guestWaOptIn: state.guestWaOptIn,
                   bookingNotes: state.bookingNotes,
                   ageConfirmed: state.ageConfirmed,
+                  serviceAddress: state.serviceAddress,
+                  referenceImagePath: state.referenceImagePath,
+                  referenceImagePreview: state.referenceImagePreview,
                 }}
                 onChange={u => update({ ...u, validationError: null })}
                 brandColor={brandColor}
