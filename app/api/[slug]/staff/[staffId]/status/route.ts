@@ -28,12 +28,21 @@ export async function PATCH(
   // Verify tenant ownership
   const { data: existing } = await supabase
     .from('staff')
-    .select('id, tenant_id')
+    .select('id, tenant_id, wizard_completed')
     .eq('id', staffId)
     .single();
 
   if (!existing || existing.tenant_id !== user.tenantId) {
     return NextResponse.json({ error: 'Not found' }, { status: 404 });
+  }
+
+  // Staff become active by completing their profile wizard — an agent can
+  // only re-activate someone who finished onboarding and was deactivated.
+  if (status === 'active' && !existing.wizard_completed) {
+    return NextResponse.json(
+      { error: 'Staff become active by completing their profile setup' },
+      { status: 409 }
+    );
   }
 
   const { error } = await supabase

@@ -44,9 +44,15 @@ weekdays, e.g. "Mon Tue Fri"), **Created**, **Actions**.
 Per-row actions:
 
 - **Days off** (calendar icon) — opens the "Days off — {name}" modal (below).
-- **Deactivate / Activate** — deactivating asks for confirmation and removes
-  the person from the booking widget and from receiving new bookings.
+- **Deactivate** (active staff) — asks for confirmation and removes the
+  person from the booking widget and from receiving new bookings.
   **Existing bookings are not affected.** Never delete — deactivate.
+- **Reactivate** (deactivated staff who had completed their profile setup)
+  — restores them to the widget.
+- Staff who haven't finished their profile wizard show an **"Awaiting
+  profile setup"** hint instead of a button: they become active
+  automatically by completing onboarding; the owner cannot activate them
+  past it.
 
 Header buttons: **Export CSV** (roster export, see data-export-guide.md) and
 **+ Add {staff}**.

@@ -3,6 +3,14 @@
 > Feature history for the AI assistant: what exists and since when. Newest
 > first. Maintained per the AI Docs Maintenance Protocol in CLAUDE.md.
 
+## 2026-06-12 — Staff roster: honest activation actions (Phase 14-A5)
+
+- The misleading **Activate** button is gone for staff who haven't
+  completed their profile wizard — the row now shows an "Awaiting profile
+  setup" hint (staff activate themselves by finishing onboarding).
+- **Reactivate** remains for previously active, deactivated staff. The
+  API also rejects activating un-onboarded staff.
+
 ## 2026-06-12 — Staff social links reliable on the widget (Phase 14-A4)
 
 - Widget staff cards now render a clickable icon for every filled-in

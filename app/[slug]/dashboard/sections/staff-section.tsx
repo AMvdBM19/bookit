@@ -244,14 +244,27 @@ export default function StaffSection({ slug }: { slug: string }) {
                               <path d="M16 2v4M8 2v4M3 10h18M10 16l4-4M10 12l4 4" />
                             </svg>
                           </button>
-                          <button
-                            type="button"
-                            onClick={() => (s.status === 'active' ? setDeactivateTarget(s) : toggleStatus(s))}
-                            disabled={busyId === s.id}
-                            className="text-xs px-2 py-1 bg-elevated hover:bg-sunken text-fg rounded disabled:opacity-50"
-                          >
-                            {s.status === 'active' ? 'Deactivate' : 'Activate'}
-                          </button>
+                          {s.status === 'active' ? (
+                            <button
+                              type="button"
+                              onClick={() => setDeactivateTarget(s)}
+                              disabled={busyId === s.id}
+                              className="text-xs px-2 py-1 bg-elevated hover:bg-sunken text-fg rounded disabled:opacity-50"
+                            >
+                              Deactivate
+                            </button>
+                          ) : s.wizard_completed ? (
+                            <button
+                              type="button"
+                              onClick={() => toggleStatus(s)}
+                              disabled={busyId === s.id}
+                              className="text-xs px-2 py-1 bg-elevated hover:bg-sunken text-fg rounded disabled:opacity-50"
+                            >
+                              Reactivate
+                            </button>
+                          ) : (
+                            <Badge variant="outline">Awaiting profile setup</Badge>
+                          )}
                         </div>
                       </td>
                     </tr>
