@@ -22,7 +22,7 @@ export default async function DashboardPage({
 
     const { data: staff } = await supabase
       .from('staff')
-      .select('id, pseudonym, bio, gender, nationality, age, languages, social_links, wizard_completed, staff_service_tags(service_tags(id, name))')
+      .select('id, pseudonym, bio, gender, nationality, age, languages, social_links, photo_urls, wizard_completed, staff_service_tags(service_tags(id, name))')
       .eq('id', user.staffId)
       .single();
 
@@ -144,6 +144,7 @@ export default async function DashboardPage({
           age: staff?.age ?? null,
           languages: staff?.languages ?? [],
           socialLinks: (staff?.social_links ?? {}) as Record<string, string>,
+          photoUrls: (staff?.photo_urls as string[] | null) ?? [],
           tags: staffTagNames,
           tagIds: staffTagIds,
           schedule: scheduleDisplay,

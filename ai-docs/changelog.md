@@ -3,6 +3,14 @@
 > Feature history for the AI assistant: what exists and since when. Newest
 > first. Maintained per the AI Docs Maintenance Protocol in CLAUDE.md.
 
+## 2026-06-12 — Staff photo upload (Phase 15-B4)
+
+- Staff profile photos can now be uploaded directly (JPEG/PNG/WebP, max
+  5 MB, up to 6 photos) instead of URL-only. The Photos block appears in
+  the staff setup wizard's Profile step and in the staff dashboard's
+  profile editor; a URL input remains as fallback. Removing a photo also
+  deletes the uploaded file. The first photo shows on the booking widget.
+
 ## 2026-06-12 — Getting-started checklist rework (Phase 15-A3)
 
 - The dashboard checklist now has three steps: add a team member,

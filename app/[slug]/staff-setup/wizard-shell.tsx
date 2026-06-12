@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useTenantConfig } from '@/lib/context/tenant-config';
 import type { Terminology, FeatureFlags } from '@/lib/types/tenant-config';
+import StaffPhotoManager from '@/components/staff-photo-manager';
 import StepProfile from './steps/step-profile';
 import StepServiceTags from './steps/step-service-tags';
 import StepSchedule from './steps/step-schedule';
@@ -84,6 +85,7 @@ interface Props {
   staffId: string;
   initialState: StaffWizardState;
   availableTags: Array<{ id: string; name: string }>;
+  initialPhotoUrls?: string[];
 }
 
 export default function StaffWizardShell({
@@ -91,6 +93,7 @@ export default function StaffWizardShell({
   staffId,
   initialState,
   availableTags,
+  initialPhotoUrls = [],
 }: Props) {
   const router = useRouter();
   const { terminology, featureFlags } = useTenantConfig();
@@ -191,7 +194,20 @@ export default function StaffWizardShell({
       <div className="w-full max-w-lg bg-zinc-900 rounded-xl border border-zinc-800 p-6 shadow-lg">
         <h2 className="text-white font-medium mb-4">{getStepLabel(step, terminology)}</h2>
 
-        {step === 1 && <StepProfile {...stepProps} />}
+        {step === 1 && (
+          <>
+            <StepProfile {...stepProps} />
+            <div className="mt-4 pt-4 border-t border-zinc-800">
+              <p className="text-xs text-zinc-400 mb-2">Photos</p>
+              <StaffPhotoManager
+                slug={slug}
+                staffId={staffId}
+                initialPhotoUrls={initialPhotoUrls}
+                variant="wizard"
+              />
+            </div>
+          </>
+        )}
         {step === 2 && (
           <StepServiceTags {...stepProps} availableTags={availableTags} />
         )}

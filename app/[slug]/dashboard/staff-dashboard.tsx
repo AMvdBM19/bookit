@@ -9,6 +9,7 @@ import { presentSocialLinks } from '@/lib/social-links';
 import ThemeToggle from '@/app/components/theme-toggle';
 import EmptyState from '@/components/ui/empty-state';
 import StaffExceptions from '@/components/staff-exceptions';
+import StaffPhotoManager from '@/components/staff-photo-manager';
 import StaffBookingCard from './staff-booking-card';
 
 function BookingsEmptyIcon() {
@@ -65,6 +66,7 @@ interface StaffProfile {
   age: number | null;
   languages: string[];
   socialLinks: Record<string, string>;
+  photoUrls: string[];
   tags: string[];
   tagIds: string[];
   schedule: Array<{ day: string; start: string; end: string }>;
@@ -141,7 +143,7 @@ export default function StaffDashboard({
         </div>
 
         {staffProfile && (
-          <ProfileSection slug={slug} profile={staffProfile} />
+          <ProfileSection slug={slug} staffId={staffId} profile={staffProfile} />
         )}
 
         {staffProfile && tenantTags.length > 0 && (
@@ -286,7 +288,15 @@ function SectionShell({
   );
 }
 
-function ProfileSection({ slug, profile }: { slug: string; profile: StaffProfile }) {
+function ProfileSection({
+  slug,
+  staffId,
+  profile,
+}: {
+  slug: string;
+  staffId?: string;
+  profile: StaffProfile;
+}) {
   const { terminology } = useTenantConfig();
   const [editing, setEditing] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -403,10 +413,35 @@ function ProfileSection({ slug, profile }: { slug: string; profile: StaffProfile
               ))}
             </div>
           </div>
+          {staffId && (
+            <div>
+              <label className="block text-xs text-fg-muted mb-1">Photos</label>
+              <StaffPhotoManager
+                slug={slug}
+                staffId={staffId}
+                initialPhotoUrls={profile.photoUrls}
+                variant="dashboard"
+                onChange={() => router.refresh()}
+              />
+            </div>
+          )}
           {error && <p className="text-red-500 text-xs">{error}</p>}
         </div>
       ) : (
         <>
+          {profile.photoUrls.length > 0 && (
+            <div className="flex flex-wrap gap-2 mb-3">
+              {profile.photoUrls.map(url => (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  key={url}
+                  src={url}
+                  alt="Profile photo"
+                  className="w-14 h-14 rounded-lg object-cover border border-border"
+                />
+              ))}
+            </div>
+          )}
           {profile.bio && <p className="text-fg-muted text-sm mb-3">{profile.bio}</p>}
           {(profile.gender || profile.nationality || profile.age) && (
             <p className="text-fg-subtle text-xs mb-2">
