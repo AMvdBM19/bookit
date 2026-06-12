@@ -3,6 +3,16 @@
 > Feature history for the AI assistant: what exists and since when. Newest
 > first. Maintained per the AI Docs Maintenance Protocol in CLAUDE.md.
 
+## 2026-06-12 — Pricing tab shows per-booking prices (Phase 15-A2)
+
+- The Pricing tab's base rate now displays and edits in the tenant's own
+  appointment length ("€40 per 60-min booking") with the stored
+  per-30-minutes equivalent as a muted helper line. Storage is unchanged —
+  the platform still keeps a per-30-min rate.
+- Sections reordered: Base Pricing, Services & Pricing (renamed from
+  Per-Service Pricing and moved up), Deposits, Tax (rate shows a Locked
+  tag), Revenue Split, No-Show Policy.
+
 ## 2026-06-12 — Zero values respected in setup wizard (Phase 15-A1)
 
 - The setup wizard's Financial step now stores 0 correctly for the base

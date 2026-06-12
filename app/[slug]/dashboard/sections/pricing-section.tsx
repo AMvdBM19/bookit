@@ -50,6 +50,11 @@ function num(v: unknown): number {
   return Number.isFinite(n) ? n : 0;
 }
 
+// NUMERIC(10,2)-safe rounding for unit conversions.
+function round2(n: number): number {
+  return Math.round(n * 100) / 100;
+}
+
 function money(amount: unknown, currency: string): string {
   const n = num(amount);
   try {
@@ -84,6 +89,10 @@ export default function PricingSection({ slug }: { slug: string }) {
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
   const [confirmBaseSave, setConfirmBaseSave] = useState(false);
+  // Per-booking price as typed by the user. Storage stays canonical
+  // (base_rate_per_30min); this is only the presentation value, so an
+  // untouched field never round-trips through the unit conversion.
+  const [baseRateInput, setBaseRateInput] = useState('');
 
   const reload = useCallback(async () => {
     setLoading(true);
@@ -110,6 +119,12 @@ export default function PricingSection({ slug }: { slug: string }) {
   function startEdit(section: string) {
     if (!summary?.settings) return;
     setDraft(summary.settings);
+    if (section === 'base') {
+      const slotMin = num(summary.settings.default_slot_minutes) || 30;
+      setBaseRateInput(
+        String(round2(num(summary.settings.base_rate_per_30min) * slotMin / 30))
+      );
+    }
     setSaveError(null);
     setEditingSection(section);
   }
@@ -167,6 +182,8 @@ export default function PricingSection({ slug }: { slug: string }) {
 
   const { settings } = summary;
   const currency = settings?.currency ?? 'EUR';
+  const slotMinutes = num(settings?.default_slot_minutes) || 30;
+  const perBookingRate = round2(num(settings?.base_rate_per_30min) * slotMinutes / 30);
   const lockedSet = new Set(summary.locked_fields ?? []);
   const currencyLocked = lockedSet.has('currency');
   const baseRateLocked = lockedSet.has('base_rate_per_30min');
@@ -240,10 +257,10 @@ export default function PricingSection({ slug }: { slug: string }) {
                   />
                 )}
               </EditRow>
-              <EditRow label="Base rate per 30 min" locked={baseRateLocked}>
+              <EditRow label={`Price per ${slotMinutes}-min booking`} locked={baseRateLocked}>
                 {baseRateLocked ? (
                   <p className="text-sm text-fg-muted">
-                    {money(settings?.base_rate_per_30min, currency)} / 30 min
+                    {money(perBookingRate, currency)} per {slotMinutes}-min booking
                   </p>
                 ) : (
                   <>
@@ -251,12 +268,19 @@ export default function PricingSection({ slug }: { slug: string }) {
                       type="number"
                       min={0}
                       step={0.5}
-                      value={draft.base_rate_per_30min ?? 0}
-                      onChange={e => patchDraft({ base_rate_per_30min: num(e.target.value) })}
+                      value={baseRateInput}
+                      onChange={e => {
+                        setBaseRateInput(e.target.value);
+                        patchDraft({
+                          base_rate_per_30min: round2(num(e.target.value) * 30 / slotMinutes),
+                        });
+                      }}
                       className={inputCls}
                     />
                     <p className="text-[11px] text-fg-muted mt-1">
-                      Applies to future bookings only — past amounts are never recalculated.
+                      = {money(draft.base_rate_per_30min ?? 0, currency)} per 30 min (stored
+                      rate). Set 0 for free bookings. Applies to future bookings only — past
+                      amounts are never recalculated.
                     </p>
                   </>
                 )}
@@ -266,8 +290,15 @@ export default function PricingSection({ slug }: { slug: string }) {
             <>
               <Row label="Pricing enabled" value={settings?.pricing_enabled ? 'Yes' : 'No'} />
               <Row
-                label="Base rate"
-                value={`${money(settings?.base_rate_per_30min, currency)} / 30 min`}
+                label="Per-booking price"
+                value={
+                  <>
+                    {money(perBookingRate, currency)} per {slotMinutes}-min booking
+                    <span className="block text-[11px] text-fg-muted">
+                      = {money(settings?.base_rate_per_30min, currency)} per 30 min
+                    </span>
+                  </>
+                }
               />
               <Row label="Currency" value={currency} />
               <Row
@@ -278,6 +309,75 @@ export default function PricingSection({ slug }: { slug: string }) {
           )}
         </div>
       </section>
+
+      {/* Services & Pricing */}
+      <PerServicePricing
+        slug={slug}
+        currency={currency}
+        perServiceDuration={settings?.per_service_duration_enabled ?? false}
+        defaultSlotMinutes={settings?.default_slot_minutes ?? 30}
+        onToggleDuration={togglePerServiceDuration}
+      />
+
+      {/* Deposits — only when the template supports them */}
+      {featureFlags.deposits_supported && (
+        <section>
+          <SectionHeader
+            title="Deposits"
+            editing={editingSection === 'deposits'}
+            onEdit={() => startEdit('deposits')}
+            onCancel={cancelEdit}
+            onSave={() => saveSection(['deposit_pct', 'deposit_required_above_minutes'])}
+            saving={saving}
+          />
+          <div className="bg-surface rounded-lg border border-border px-4">
+            {editingSection === 'deposits' ? (
+              <>
+                <EditRow label="Deposit % of total">
+                  <input
+                    type="number"
+                    min={0}
+                    max={100}
+                    step={0.1}
+                    value={draft.deposit_pct ?? 0}
+                    onChange={e => patchDraft({ deposit_pct: num(e.target.value) })}
+                    className={inputCls}
+                  />
+                </EditRow>
+                <EditRow label="Required for bookings over (minutes)">
+                  <input
+                    type="number"
+                    min={0}
+                    value={draft.deposit_required_above_minutes ?? 0}
+                    onChange={e =>
+                      patchDraft({ deposit_required_above_minutes: num(e.target.value) })
+                    }
+                    className={inputCls}
+                  />
+                  <p className="text-[11px] text-fg-muted mt-1">
+                    0 = always required when deposit % &gt; 0
+                  </p>
+                </EditRow>
+              </>
+            ) : (
+              <>
+                <Row
+                  label="Deposit %"
+                  value={settings?.deposit_pct != null ? `${settings.deposit_pct}%` : '0%'}
+                />
+                <Row
+                  label="Required above"
+                  value={
+                    settings?.deposit_required_above_minutes != null
+                      ? `${settings.deposit_required_above_minutes} min`
+                      : '—'
+                  }
+                />
+              </>
+            )}
+          </div>
+        </section>
+      )}
 
       {/* Tax Configuration */}
       <section>
@@ -319,12 +419,23 @@ export default function PricingSection({ slug }: { slug: string }) {
               </EditRow>
             </>
           ) : (
-            <Row
-              label="Tax"
-              value={`${num(settings?.tax_rate_pct)}% ${settings?.tax_label ?? ''} (${
-                settings?.tax_period ?? '—'
-              })`}
-            />
+            <>
+              <Row
+                label="Tax rate"
+                value={
+                  <>
+                    {num(settings?.tax_rate_pct)}%{' '}
+                    <span className="text-[10px] uppercase tracking-wider text-fg-subtle ml-1">
+                      Locked
+                    </span>
+                  </>
+                }
+              />
+              <Row
+                label="Label · period"
+                value={`${settings?.tax_label ?? '—'} · ${settings?.tax_period ?? '—'}`}
+              />
+            </>
           )}
         </div>
       </section>
@@ -413,66 +524,6 @@ export default function PricingSection({ slug }: { slug: string }) {
         </div>
       </section>
 
-      {/* Deposits — only when the template supports them */}
-      {featureFlags.deposits_supported && (
-        <section>
-          <SectionHeader
-            title="Deposits"
-            editing={editingSection === 'deposits'}
-            onEdit={() => startEdit('deposits')}
-            onCancel={cancelEdit}
-            onSave={() => saveSection(['deposit_pct', 'deposit_required_above_minutes'])}
-            saving={saving}
-          />
-          <div className="bg-surface rounded-lg border border-border px-4">
-            {editingSection === 'deposits' ? (
-              <>
-                <EditRow label="Deposit % of total">
-                  <input
-                    type="number"
-                    min={0}
-                    max={100}
-                    step={0.1}
-                    value={draft.deposit_pct ?? 0}
-                    onChange={e => patchDraft({ deposit_pct: num(e.target.value) })}
-                    className={inputCls}
-                  />
-                </EditRow>
-                <EditRow label="Required for bookings over (minutes)">
-                  <input
-                    type="number"
-                    min={0}
-                    value={draft.deposit_required_above_minutes ?? 0}
-                    onChange={e =>
-                      patchDraft({ deposit_required_above_minutes: num(e.target.value) })
-                    }
-                    className={inputCls}
-                  />
-                  <p className="text-[11px] text-fg-muted mt-1">
-                    0 = always required when deposit % &gt; 0
-                  </p>
-                </EditRow>
-              </>
-            ) : (
-              <>
-                <Row
-                  label="Deposit %"
-                  value={settings?.deposit_pct != null ? `${settings.deposit_pct}%` : '0%'}
-                />
-                <Row
-                  label="Required above"
-                  value={
-                    settings?.deposit_required_above_minutes != null
-                      ? `${settings.deposit_required_above_minutes} min`
-                      : '—'
-                  }
-                />
-              </>
-            )}
-          </div>
-        </section>
-      )}
-
       {/* No-Show Policy */}
       <section>
         <SectionHeader
@@ -544,14 +595,6 @@ export default function PricingSection({ slug }: { slug: string }) {
         />
       )}
 
-      {/* Per-Service Pricing */}
-      <PerServicePricing
-        slug={slug}
-        currency={currency}
-        perServiceDuration={settings?.per_service_duration_enabled ?? false}
-        defaultSlotMinutes={settings?.default_slot_minutes ?? 30}
-        onToggleDuration={togglePerServiceDuration}
-      />
     </div>
   );
 
@@ -668,7 +711,7 @@ function PerServicePricing({
     <section>
       <div className="flex items-center justify-between mb-2">
         <h3 className="text-xs font-semibold text-fg-muted uppercase tracking-wider">
-          Per-Service Pricing
+          Services &amp; Pricing
         </h3>
         <button
           type="button"
