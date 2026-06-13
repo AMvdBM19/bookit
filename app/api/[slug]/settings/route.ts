@@ -47,6 +47,7 @@ const EDITABLE_FIELDS = [
   'widget_border_color',
   'widget_show_powered_by',
   'widget_logo_url',
+  'widget_language',
 ] as const;
 
 type EditableField = (typeof EDITABLE_FIELDS)[number];
@@ -134,6 +135,16 @@ export async function PATCH(request: NextRequest) {
       );
     }
     update.base_rate_per_30min = rate;
+  }
+
+  // Widget language: constrained to the supported set (DB CHECK agrees).
+  if ('widget_language' in update) {
+    if (update.widget_language !== 'en' && update.widget_language !== 'nl') {
+      return NextResponse.json(
+        { error: "widget_language must be 'en' or 'nl'" },
+        { status: 400 }
+      );
+    }
   }
 
   // Buffer minutes: 0–60 in whole minutes.

@@ -2,6 +2,11 @@
 
 import { useEffect, useState } from 'react';
 import type { Catalog, CatalogStaff } from './catalog-loader';
+import {
+  WidgetI18nProvider,
+  getWidgetStrings,
+  type WidgetLanguage,
+} from '@/lib/widget-i18n';
 import StaffBrowse from './steps/staff-browse';
 import DateTimeSelect from './steps/datetime-select';
 import DetailsForm from './steps/details-form';
@@ -55,9 +60,19 @@ const INITIAL_STATE: BookingState = {
 interface Props {
   slug: string;
   catalog: Catalog;
+  lang?: WidgetLanguage;
 }
 
-export default function BookingWidget({ slug, catalog }: Props) {
+export default function BookingWidget({ slug, catalog, lang = 'en' }: Props) {
+  return (
+    <WidgetI18nProvider lang={lang}>
+      <BookingWidgetInner slug={slug} catalog={catalog} lang={lang} />
+    </WidgetI18nProvider>
+  );
+}
+
+function BookingWidgetInner({ slug, catalog, lang }: Required<Props>) {
+  const t = getWidgetStrings(lang);
   // All theme colors flow through CSS custom properties set by the layout —
   // inline styles reference the variable so live preview overrides apply.
   const brandColor = 'var(--w-primary)';
@@ -115,25 +130,25 @@ export default function BookingWidget({ slug, catalog }: Props) {
 
   function handleProceedToDetails() {
     if (!state.selectedSlot) {
-      update({ validationError: 'Please select a time slot.' });
+      update({ validationError: t.selectTimeSlot });
       return;
     }
     goTo('details');
   }
 
   function validateDetails(): string | null {
-    if (isAccountMode) return 'Account mode requires login.';
-    if (!state.guestName.trim()) return 'Name is required.';
-    if (!state.guestEmail.trim()) return 'Email is required.';
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(state.guestEmail)) return 'Enter a valid email.';
+    if (isAccountMode) return t.accountModeError;
+    if (!state.guestName.trim()) return t.nameRequired;
+    if (!state.guestEmail.trim()) return t.emailRequired;
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(state.guestEmail)) return t.emailInvalid;
     if (catalog.featureFlags.require_booking_notes && !state.bookingNotes.trim()) {
-      return `${catalog.featureFlags.booking_notes_label} is required.`;
+      return t.notesRequired(catalog.featureFlags.booking_notes_label);
     }
     if (catalog.settings?.require_age_confirm && !state.ageConfirmed) {
-      return `Please confirm you are at least ${catalog.settings.age_gate_minimum} years old.`;
+      return t.ageConfirmError(catalog.settings.age_gate_minimum);
     }
     if (catalog.featureFlags.booking_address_field && !state.serviceAddress.trim()) {
-      return 'Service address is required.';
+      return t.addressRequired;
     }
     return null;
   }
@@ -145,10 +160,7 @@ export default function BookingWidget({ slug, catalog }: Props) {
       return;
     }
     if (durationMismatch) {
-      update({
-        validationError:
-          'Your selected services changed the appointment duration — please pick a new time slot.',
-      });
+      update({ validationError: t.durationChangedShort });
       return;
     }
     goTo('confirm');
@@ -182,7 +194,10 @@ export default function BookingWidget({ slug, catalog }: Props) {
       const data = await res.json();
 
       if (!res.ok) {
-        update({ submitting: false, submitError: data.error ?? 'Failed to book.' });
+        // Server error strings are English; for non-English chrome show the
+        // localized generic failure instead of mixing languages.
+        const serverError = lang === 'en' ? data.error : null;
+        update({ submitting: false, submitError: serverError ?? t.bookingFailed });
         return;
       }
 
@@ -196,7 +211,7 @@ export default function BookingWidget({ slug, catalog }: Props) {
         step: 'success',
       });
     } catch {
-      update({ submitting: false, submitError: 'Network error. Please try again.' });
+      update({ submitting: false, submitError: t.networkError });
     }
   }
 
@@ -271,7 +286,7 @@ export default function BookingWidget({ slug, catalog }: Props) {
           ) : null}
           <div className="min-w-0">
             <p className="w-tx text-base font-semibold truncate">{headerName}</p>
-            <p className="w-tx3 text-xs">Book a {bookingLabel.toLowerCase()}</p>
+            <p className="w-tx3 text-xs">{t.bookA(bookingLabel.toLowerCase())}</p>
           </div>
         </header>
 
@@ -340,7 +355,7 @@ export default function BookingWidget({ slug, catalog }: Props) {
                     onClick={() => goTo('browse')}
                     className="px-4 py-2 w-btn2 text-xs w-round transition-colors"
                   >
-                    Back
+                    {t.back}
                   </button>
                 ) : (
                   <div />
@@ -351,7 +366,7 @@ export default function BookingWidget({ slug, catalog }: Props) {
                   disabled={!state.selectedSlot}
                   className="px-6 py-2 w-btn text-xs font-medium w-round transition-opacity disabled:opacity-50 focus:outline-none w-focus"
                 >
-                  Continue
+                  {t.continue_}
                 </button>
               </div>
             </>
@@ -386,15 +401,14 @@ export default function BookingWidget({ slug, catalog }: Props) {
               {durationMismatch && (
                 <div className="w-card w-pad-sm border border-amber-700/50">
                   <p className="text-xs text-amber-400">
-                    Your selected services changed the appointment duration to{' '}
-                    {effectiveDuration} minutes. Please pick a new time slot.
+                    {t.durationChangedTo(effectiveDuration)}
                   </p>
                   <button
                     type="button"
                     onClick={handleReselectTime}
                     className="mt-2 px-4 py-1.5 w-btn text-xs font-medium w-round transition-opacity"
                   >
-                    Choose a new time
+                    {t.chooseNewTime}
                   </button>
                 </div>
               )}
@@ -404,7 +418,7 @@ export default function BookingWidget({ slug, catalog }: Props) {
                   onClick={() => goTo('datetime')}
                   className="px-4 py-2 w-btn2 text-xs w-round transition-colors"
                 >
-                  Back
+                  {t.back}
                 </button>
                 {!isAccountMode && (
                   <button
@@ -412,7 +426,7 @@ export default function BookingWidget({ slug, catalog }: Props) {
                     onClick={handleProceedToConfirm}
                     className="px-6 py-2 w-btn text-xs font-medium w-round transition-opacity"
                   >
-                    Review
+                    {t.review}
                   </button>
                 )}
               </div>
@@ -446,7 +460,7 @@ export default function BookingWidget({ slug, catalog }: Props) {
                     disabled={state.submitting}
                     className="px-4 py-2 w-btn2 text-xs w-round transition-colors disabled:opacity-50"
                   >
-                    Back
+                    {t.back}
                   </button>
                 </div>
               </>
@@ -468,7 +482,7 @@ export default function BookingWidget({ slug, catalog }: Props) {
         {/* Footer */}
         {showPoweredBy && (
           <p className="text-center text-[10px] w-tx3 mt-8">
-            Powered by Book-IT
+            {t.poweredBy}
           </p>
         )}
       </div>

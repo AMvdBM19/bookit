@@ -3,6 +3,16 @@
 > Feature history for the AI assistant: what exists and since when. Newest
 > first. Maintained per the AI Docs Maintenance Protocol in CLAUDE.md.
 
+## 2026-06-13 — Widget in Dutch (Phase 16-C)
+
+- The public booking widget can run in **Dutch**: Widget tab → Language →
+  Nederlands → Save & Apply. Translates the interface (labels, buttons,
+  validation, success screen, date/number formats) while the tenant's own
+  terminology, service names and notes labels stay exactly as typed.
+  Default remains English — nothing changes for existing tenants.
+- `?lang=en|nl` on the widget URL overrides the saved language (testing /
+  embeds); the customizer's live preview follows the selector.
+
 ## 2026-06-13 — Email notification channel (Phase 16-B)
 
 - Booking confirmations, declines, cancellations and reminders can now go

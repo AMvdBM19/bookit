@@ -3,6 +3,7 @@
 import { useRef, useState } from 'react';
 import type { CatalogSettings } from '../catalog-loader';
 import type { FeatureFlags } from '@/lib/types/tenant-config';
+import { formatWidgetMoney, useWidgetStrings } from '@/lib/widget-i18n';
 
 interface Tag {
   id: string;
@@ -57,6 +58,7 @@ export default function DetailsForm({
   durationMinutes,
   basePriceLabel,
 }: Props) {
+  const t = useWidgetStrings();
   const showPrice = settings?.show_price_to_client ?? false;
   const sym = CURRENCY_SYMBOLS[settings?.currency ?? 'EUR'] ?? settings?.currency ?? 'EUR';
   const [uploadingRef, setUploadingRef] = useState(false);
@@ -66,11 +68,11 @@ export default function DetailsForm({
   async function handleReferenceFile(file: File) {
     setRefError(null);
     if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type)) {
-      setRefError('Only JPEG, PNG or WebP images are allowed.');
+      setRefError(t.referenceImageTypeError);
       return;
     }
     if (file.size > 5 * 1024 * 1024) {
-      setRefError('Image must be 5 MB or smaller.');
+      setRefError(t.referenceImageSizeError);
       return;
     }
     setUploadingRef(true);
@@ -83,7 +85,7 @@ export default function DetailsForm({
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) {
-        setRefError(data.error ?? 'Upload failed. Please try again.');
+        setRefError((t.locale === 'en-GB' ? data.error : null) ?? t.referenceImageUploadError);
         return;
       }
       onChange({
@@ -91,7 +93,7 @@ export default function DetailsForm({
         referenceImagePreview: URL.createObjectURL(file),
       });
     } catch {
-      setRefError('Upload failed. Please try again.');
+      setRefError(t.referenceImageUploadError);
     } finally {
       setUploadingRef(false);
       if (refFileInput.current) refFileInput.current.value = '';
@@ -109,18 +111,18 @@ export default function DetailsForm({
     return (
       <div className="space-y-4">
         <div className="w-card w-pad text-center">
-          <p className="w-tx text-sm font-medium mb-2">Account required</p>
+          <p className="w-tx text-sm font-medium mb-2">{t.accountRequiredTitle}</p>
           <p className="w-tx2 text-xs">
-            This business requires an account to book. Please{' '}
+            {t.accountRequiredBefore}{' '}
             <a
               href={`/${slug}/login?redirect=/book/${slug}`}
               target="_top"
               className="underline hover:opacity-80"
               style={{ color: brandColor }}
             >
-              log in
+              {t.accountRequiredLogin}
             </a>{' '}
-            or contact the business directly.
+            {t.accountRequiredAfter}
           </p>
         </div>
       </div>
@@ -134,7 +136,7 @@ export default function DetailsForm({
     <div className="space-y-4">
       {staffTags.length > 0 && (
         <div>
-          <p className={labelCls}>What would you like?</p>
+          <p className={labelCls}>{t.whatWouldYouLike}</p>
           <div className="flex flex-wrap gap-2">
             {staffTags.map(tag => {
               const selected = state.selectedTagIds.includes(tag.id);
@@ -170,21 +172,22 @@ export default function DetailsForm({
         const selectedExtras = staffTags.filter(t => state.selectedTagIds.includes(t.id));
         const extrasTotal = selectedExtras.reduce((sum, t) => sum + (t.extra_price ?? 0), 0);
         const subtotal = baseTotal + extrasTotal;
+        const currency = settings?.currency ?? 'EUR';
         return (
           <div className="w-round border w-bd w-el w-pad-sm space-y-1.5">
             <div className="flex justify-between text-xs">
               <span className="w-tx2">{basePriceLabel}</span>
-              <span className="w-tx-soft">{sym}{baseTotal.toFixed(2)}</span>
+              <span className="w-tx-soft">{formatWidgetMoney(baseTotal, currency, t)}</span>
             </div>
-            {selectedExtras.map(t => (
-              <div key={t.id} className="flex justify-between text-xs">
-                <span className="w-tx2">{t.name}</span>
-                <span className="w-tx-soft">+{sym}{t.extra_price.toFixed(2)}</span>
+            {selectedExtras.map(tag => (
+              <div key={tag.id} className="flex justify-between text-xs">
+                <span className="w-tx2">{tag.name}</span>
+                <span className="w-tx-soft">+{formatWidgetMoney(tag.extra_price, currency, t)}</span>
               </div>
             ))}
             <div className="flex justify-between text-sm pt-1.5 border-t w-bd2">
-              <span className="w-tx font-medium">Subtotal</span>
-              <span className="font-medium" style={{ color: brandColor }}>{sym}{subtotal.toFixed(2)}</span>
+              <span className="w-tx font-medium">{t.subtotal}</span>
+              <span className="font-medium" style={{ color: brandColor }}>{formatWidgetMoney(subtotal, currency, t)}</span>
             </div>
           </div>
         );
@@ -208,7 +211,7 @@ export default function DetailsForm({
       {featureFlags.booking_reference_image && (
         <div>
           <label className={labelCls} htmlFor="referenceImage">
-            Reference image <span className="w-tx3">(optional)</span>
+            {t.referenceImage} <span className="w-tx3">{t.optionalSuffix}</span>
           </label>
           {state.referenceImagePath && state.referenceImagePreview ? (
             <div className="flex items-center gap-3">
@@ -225,7 +228,7 @@ export default function DetailsForm({
                 }
                 className="px-3 py-1.5 w-btn2 text-xs w-round transition-colors"
               >
-                Remove
+                {t.referenceImageRemove}
               </button>
             </div>
           ) : (
@@ -247,10 +250,10 @@ export default function DetailsForm({
                 disabled={uploadingRef}
                 className="px-4 py-2 w-btn2 text-xs w-round transition-colors disabled:opacity-50"
               >
-                {uploadingRef ? 'Uploading…' : 'Upload an image'}
+                {uploadingRef ? t.referenceImageUploading : t.referenceImageUpload}
               </button>
               <p className="text-[11px] w-tx3 mt-1">
-                Show us what you have in mind. JPEG, PNG or WebP, max 5 MB.
+                {t.referenceImageHint}
               </p>
             </>
           )}
@@ -261,7 +264,7 @@ export default function DetailsForm({
       {featureFlags.booking_address_field && (
         <div>
           <label className={labelCls} htmlFor="serviceAddress">
-            Service address <span className="text-red-400">*</span>
+            {t.serviceAddress} <span className="text-red-400">*</span>
           </label>
           <input
             id="serviceAddress"
@@ -269,7 +272,7 @@ export default function DetailsForm({
             value={state.serviceAddress}
             onChange={e => onChange({ serviceAddress: e.target.value })}
             className={inputCls}
-            placeholder="Street, number, city"
+            placeholder={t.serviceAddressPlaceholder}
             autoComplete="street-address"
             maxLength={500}
             required
@@ -279,7 +282,7 @@ export default function DetailsForm({
 
       <div>
         <label className={labelCls} htmlFor="guestName">
-          Your name <span className="text-red-400">*</span>
+          {t.yourName} <span className="text-red-400">*</span>
         </label>
         <input
           id="guestName"
@@ -287,7 +290,7 @@ export default function DetailsForm({
           value={state.guestName}
           onChange={e => onChange({ guestName: e.target.value })}
           className={inputCls}
-          placeholder="Full name"
+          placeholder={t.fullNamePlaceholder}
           autoComplete="name"
           required
         />
@@ -295,7 +298,7 @@ export default function DetailsForm({
 
       <div>
         <label className={labelCls} htmlFor="guestEmail">
-          Email <span className="text-red-400">*</span>
+          {t.email} <span className="text-red-400">*</span>
         </label>
         <input
           id="guestEmail"
@@ -303,7 +306,7 @@ export default function DetailsForm({
           value={state.guestEmail}
           onChange={e => onChange({ guestEmail: e.target.value })}
           className={inputCls}
-          placeholder="you@example.com"
+          placeholder={t.emailPlaceholder}
           autoComplete="email"
           required
         />
@@ -311,7 +314,7 @@ export default function DetailsForm({
 
       <div>
         <label className={labelCls} htmlFor="guestPhone">
-          Phone <span className="w-tx3">(optional)</span>
+          {t.phone} <span className="w-tx3">{t.optionalSuffix}</span>
         </label>
         <input
           id="guestPhone"
@@ -319,7 +322,7 @@ export default function DetailsForm({
           value={state.guestPhone}
           onChange={e => onChange({ guestPhone: e.target.value })}
           className={inputCls}
-          placeholder="+31..."
+          placeholder={t.phonePlaceholder}
           autoComplete="tel"
         />
       </div>
@@ -333,7 +336,7 @@ export default function DetailsForm({
             className="mt-0.5"
           />
           <span className="text-xs w-tx2">
-            I&apos;d like to receive WhatsApp updates about my booking.
+            {t.waOptIn}
           </span>
         </label>
       )}
@@ -347,7 +350,7 @@ export default function DetailsForm({
             className="mt-0.5"
           />
           <span className="text-xs w-tx2">
-            I confirm I am at least {ageMin} years old.
+            {t.ageConfirm(ageMin)}
           </span>
         </label>
       )}

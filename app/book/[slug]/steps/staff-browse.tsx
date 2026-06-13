@@ -2,6 +2,7 @@
 
 import type { CatalogStaff } from '../catalog-loader';
 import { presentSocialLinks, socialHref } from '@/lib/social-links';
+import { useWidgetStrings } from '@/lib/widget-i18n';
 
 const CURRENCY_SYMBOLS: Record<string, string> = {
   EUR: '€', USD: '$', GBP: '£',
@@ -93,12 +94,13 @@ export default function StaffBrowse({
   showPrice,
   currency,
 }: Props) {
+  const t = useWidgetStrings();
   const sym = CURRENCY_SYMBOLS[currency] ?? currency;
   if (staff.length === 0) {
     return (
       <div className="w-card w-pad-lg text-center">
         <p className="w-tx2 text-sm">
-          No {staffPluralLower} are currently available. Please check back later.
+          {t.noStaffAvailable(staffPluralLower)}
         </p>
       </div>
     );
@@ -170,7 +172,7 @@ export default function StaffBrowse({
 
                 {languages.length > 0 && (
                   <p className="text-[10px] w-tx3 mt-2">
-                    Speaks: {languages.join(', ')}
+                    {t.speaks}{languages.join(', ')}
                   </p>
                 )}
 

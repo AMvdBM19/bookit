@@ -89,6 +89,7 @@ export default function WidgetSection({ slug }: { slug: string }) {
   const [saveMsg, setSaveMsg] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [device, setDevice] = useState<'desktop' | 'mobile'>('desktop');
+  const [language, setLanguage] = useState<'en' | 'nl'>('en');
   const [embedTab, setEmbedTab] = useState<EmbedTab>('wordpress');
   const [copied, setCopied] = useState(false);
   const iframeRef = useRef<HTMLIFrameElement>(null);
@@ -108,6 +109,7 @@ export default function WidgetSection({ slug }: { slug: string }) {
         const row = (data.settings ?? null) as WidgetSettingsRow | null;
         setTheme(settingsToTheme(row));
         setLogoUrl((data.settings?.widget_logo_url as string | null) ?? '');
+        setLanguage(data.settings?.widget_language === 'nl' ? 'nl' : 'en');
       } catch {
         if (!cancelled) setError('Network error');
       } finally {
@@ -168,6 +170,7 @@ export default function WidgetSection({ slug }: { slug: string }) {
         body: JSON.stringify({
           ...themeToSettings(theme),
           widget_logo_url: logoUrl.trim() || null,
+          widget_language: language,
         }),
       });
       const data = await res.json().catch(() => ({}));
@@ -243,6 +246,30 @@ export default function WidgetSection({ slug }: { slug: string }) {
               </button>
             ))}
           </div>
+        </section>
+
+        {/* Language */}
+        <section className={sectionCls}>
+          <h3 className={sectionTitleCls}>Language</h3>
+          <div className="flex items-center gap-2">
+            <span className="text-xs text-fg-muted w-24 shrink-0">Interface</span>
+            <Segmented
+              options={[
+                { value: 'en', label: 'English' },
+                { value: 'nl', label: 'Nederlands' },
+              ]}
+              value={language}
+              onChange={v => {
+                setSaveMsg(null);
+                setLanguage(v);
+              }}
+            />
+          </div>
+          <p className="text-[11px] text-fg-muted mt-2">
+            Translates the widget interface only — your own terms (services,
+            staff naming, notes label) appear exactly as you typed them. Set
+            your terminology in Dutch if your widget is Dutch.
+          </p>
         </section>
 
         {/* Colors */}
@@ -459,7 +486,7 @@ export default function WidgetSection({ slug }: { slug: string }) {
         >
           <iframe
             ref={iframeRef}
-            src={`/book/${slug}?preview=1`}
+            src={`/book/${slug}?preview=1&lang=${language}`}
             onLoad={() => pushTheme(theme)}
             title="Widget preview"
             className="w-full h-[640px] border-0"
