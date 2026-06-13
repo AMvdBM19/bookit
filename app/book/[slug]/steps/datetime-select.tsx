@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import Spinner from '@/components/ui/spinner';
+import { useWidgetStrings } from '@/lib/widget-i18n';
 
 interface Slot {
   start: string;
@@ -39,8 +40,6 @@ function toDateStr(d: Date): string {
   return `${year}-${month}-${day}`;
 }
 
-const WEEKDAYS = ['Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa', 'Su'];
-
 /**
  * Compact month-grid date picker. Bounded below by the minimum lead time and
  * above by max_booking_days_ahead; out-of-range days are disabled. Per-day
@@ -60,12 +59,13 @@ function MonthCalendar({
   minDateStr: string;
   maxDateStr: string;
 }) {
+  const t = useWidgetStrings();
   const initial = selectedDate ?? minDateStr;
   const [viewYear, setViewYear] = useState(() => Number(initial.slice(0, 4)));
   const [viewMonth, setViewMonth] = useState(() => Number(initial.slice(5, 7)) - 1); // 0-based
 
   const firstOfMonth = new Date(viewYear, viewMonth, 1);
-  const monthLabel = firstOfMonth.toLocaleDateString('en-GB', { month: 'long', year: 'numeric' });
+  const monthLabel = firstOfMonth.toLocaleDateString(t.locale, { month: 'long', year: 'numeric' });
 
   // Monday-first column offset for the 1st of the month.
   const leadingBlanks = (firstOfMonth.getDay() + 6) % 7;
@@ -96,7 +96,7 @@ function MonthCalendar({
           type="button"
           onClick={() => shiftMonth(-1)}
           disabled={!canPrev}
-          aria-label="Previous month"
+          aria-label={t.prevMonth}
           className="w-round border w-bd w-sf w-hbd px-2 py-1 text-sm w-tx-soft disabled:opacity-30 disabled:cursor-not-allowed focus:outline-none w-focus"
         >
           ‹
@@ -106,7 +106,7 @@ function MonthCalendar({
           type="button"
           onClick={() => shiftMonth(1)}
           disabled={!canNext}
-          aria-label="Next month"
+          aria-label={t.nextMonth}
           className="w-round border w-bd w-sf w-hbd px-2 py-1 text-sm w-tx-soft disabled:opacity-30 disabled:cursor-not-allowed focus:outline-none w-focus"
         >
           ›
@@ -114,7 +114,7 @@ function MonthCalendar({
       </div>
 
       <div className="grid grid-cols-7 gap-1 mb-1">
-        {WEEKDAYS.map(d => (
+        {t.weekdaysShort.map(d => (
           <p key={d} className="text-center text-[10px] w-tx3 uppercase tracking-wider">
             {d}
           </p>
@@ -166,6 +166,7 @@ export default function DateTimeSelect({
   minLeadTimeHours = 0,
   maxBookingDaysAhead = 30,
 }: Props) {
+  const t = useWidgetStrings();
   const [slots, setSlots] = useState<Slot[]>([]);
   const [loading, setLoading] = useState(false);
   const [reason, setReason] = useState<string | null>(null);
@@ -201,7 +202,7 @@ export default function DateTimeSelect({
       })
       .catch(() => {
         if (cancelled) return;
-        setError('Failed to load availability. Please try again.');
+        setError(t.availabilityError);
       })
       .finally(() => {
         if (!cancelled) setLoading(false);
@@ -221,7 +222,7 @@ export default function DateTimeSelect({
   return (
     <div className="space-y-4">
       <div>
-        <p className="text-xs w-tx2 mb-2">Choose a date</p>
+        <p className="text-xs w-tx2 mb-2">{t.chooseDate}</p>
         <MonthCalendar
           selectedDate={selectedDate}
           onSelectDate={onSelectDate}
@@ -233,13 +234,13 @@ export default function DateTimeSelect({
 
       {!selectedDate && (
         <p className="text-xs w-tx3 italic">
-          Select a date to see available times
+          {t.selectDateHint}
         </p>
       )}
 
       {selectedDate && (
         <div>
-          <p className="text-xs w-tx2 mb-2">Choose a time</p>
+          <p className="text-xs w-tx2 mb-2">{t.chooseTime}</p>
 
           {loading && (
             <div className="flex justify-center py-6 w-tx3">
@@ -253,7 +254,8 @@ export default function DateTimeSelect({
 
           {!loading && !error && slots.length === 0 && (
             <p className="text-xs w-tx3 italic">
-              {reason ?? 'No availability on this date. Try another day.'}
+              {/* Server reasons are English — only surface them on English chrome. */}
+              {(t.locale === 'en-GB' ? reason : null) ?? t.noAvailability}
             </p>
           )}
 

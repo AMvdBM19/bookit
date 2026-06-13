@@ -5,7 +5,7 @@ import { checkPoolAvailability } from '@/lib/availability/pool';
 import { calculatePricing } from '@/lib/pricing/calculate';
 import type { FeatureFlags } from '@/lib/types/tenant-config';
 import { DEFAULT_FEATURE_FLAGS } from '@/lib/types/tenant-config';
-import { notifyBookingRequest, sendWhatsApp, createNotification } from '@/lib/notifications/dispatch';
+import { notifyBookingRequest, sendWhatsApp, sendBookingEmail, createNotification } from '@/lib/notifications/dispatch';
 import { checkRateLimit } from '@/lib/rate-limit/book';
 
 function stripHtml(input: string): string {
@@ -411,22 +411,32 @@ export async function POST(
     }
   }
 
-  if (status === 'confirmed' && staff && clientPhone && waOptIn) {
+  if (status === 'confirmed') {
     const agencyName = settings?.agency_display_name ?? tenant.name;
-    await sendWhatsApp({
+    const variables = {
+      client_name: clientDisplayName,
+      staff_name: staff?.pseudonym ?? '',
+      date: body.slot_date,
+      time: body.slot_start,
+      duration: String(durationMinutes),
+      agency_name: agencyName,
+    };
+    if (staff && clientPhone && waOptIn) {
+      await sendWhatsApp({
+        tenantId: tenant.id,
+        recipientPhone: clientPhone,
+        eventType: 'booking_confirmed',
+        variables,
+        recipientType: tenant.client_mode === 'guest' ? 'guest_client' : 'client',
+        bookingId: booking.id,
+      });
+    }
+    await sendBookingEmail({
       tenantId: tenant.id,
-      recipientPhone: clientPhone,
-      eventType: 'booking_confirmed',
-      variables: {
-        client_name: clientDisplayName,
-        staff_name: staff.pseudonym,
-        date: body.slot_date,
-        time: body.slot_start,
-        duration: String(durationMinutes),
-        agency_name: agencyName,
-      },
-      recipientType: tenant.client_mode === 'guest' ? 'guest_client' : 'client',
       bookingId: booking.id,
+      eventType: 'booking_confirmed',
+      variables,
+      attachIcs: true,
     });
   }
 

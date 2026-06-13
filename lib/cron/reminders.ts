@@ -1,6 +1,6 @@
 import cron from 'node-cron';
 import { createServiceClient } from '@/lib/supabase/server';
-import { sendWhatsApp } from '@/lib/notifications/dispatch';
+import { sendWhatsApp, sendBookingEmail } from '@/lib/notifications/dispatch';
 
 let started = false;
 
@@ -93,23 +93,34 @@ async function processReminders() {
     const clientName = client?.display_name ?? guest?.name ?? 'Client';
     const recipientType = client ? 'client' : 'guest_client';
 
+    const reminderVariables = {
+      client_name: clientName,
+      staff_name: staff?.pseudonym ?? '',
+      date: booking.slot_date,
+      time: booking.slot_start.slice(0, 5),
+    };
+
     if (recipientPhone && waOptIn) {
       await sendWhatsApp({
         tenantId: booking.tenant_id,
         recipientPhone,
         eventType: 'booking_reminder',
-        variables: {
-          client_name: clientName,
-          staff_name: staff?.pseudonym ?? '',
-          date: booking.slot_date,
-          time: booking.slot_start.slice(0, 5),
-        },
+        variables: reminderVariables,
         recipientType: recipientType as 'client' | 'guest_client',
         bookingId: booking.id,
       });
     }
 
-    // Mark reminder as sent regardless of WA success (avoid retrying)
+    // Email reminder in the same pass — one reminder_sent flag for both
+    // channels, set once below (no per-channel retries).
+    await sendBookingEmail({
+      tenantId: booking.tenant_id,
+      bookingId: booking.id,
+      eventType: 'booking_reminder',
+      variables: reminderVariables,
+    });
+
+    // Mark reminder as sent regardless of channel success (avoid retrying)
     await supabase
       .from('bookings')
       .update({ reminder_sent: true, reminder_sent_at: now.toISOString() })

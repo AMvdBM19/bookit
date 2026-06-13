@@ -30,7 +30,7 @@ function defaultTemplates() {
       event_type: 'booking_confirmed',
       channel: 'email',
       subject: 'Booking confirmed — [agency_name]',
-      body: 'Hi [client_name],\n\nYour booking with [staff_name] on [date] at [time] ([duration] min) is confirmed.\n\nThanks,\n[agency_name]',
+      body: 'Hi [client_name],\n\nYour booking with [staff_name] on [date] at [time] ([duration] min) is confirmed.\nServices: [services]\n\nA calendar invite is attached.\n\nThanks,\n[agency_name]',
     },
     {
       event_type: 'booking_declined',

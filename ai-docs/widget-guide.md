@@ -31,6 +31,20 @@ booking, services…) comes from the tenant's template.
 
 Booking submissions are rate-limited per IP to deter abuse.
 
+## Widget language (English / Dutch)
+
+The widget interface can run in **English** (default) or **Dutch**: Widget
+tab → **Language** → English / Nederlands → Save & Apply. This translates
+the widget *chrome only* — step labels, buttons, form fields, validation
+messages, the success screen, dates ("donderdag 18 juni") and number
+formats. **The tenant's own terms appear exactly as typed**: service
+names, staff naming, the notes label/placeholder and other terminology are
+never machine-translated. Advise owners: *set your terminology in Dutch if
+your widget is Dutch* (Templates tab terminology applies platform-wide).
+For testing or embeds, `?lang=en|nl` on the widget URL overrides the saved
+setting. Notification templates are also written per tenant in whatever
+language the owner chooses — they are not auto-translated either.
+
 ## The Widget tab (owner dashboard)
 
 Left column = controls, right = a **live preview** iframe of the real
@@ -41,6 +55,12 @@ widget. Changes apply to the preview instantly; nothing is public until
 
 Eight one-click themes (grid of swatch buttons). Picking one overwrites all
 color/shape values; you can then fine-tune.
+
+### Language
+
+**Interface**: English / Nederlands segmented control (see "Widget
+language" above). The live preview reloads in the chosen language
+immediately; the public widget switches on Save & Apply.
 
 ### Colors
 

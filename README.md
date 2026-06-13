@@ -82,6 +82,15 @@ resize listener once at init to avoid duplicate handlers on SPA navigation.
 - Twilio: `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`
 - Meta: `META_WA_ACCESS_TOKEN`, `META_WA_PHONE_NUMBER_ID`
 
+**Optional — Email notifications (Resend; per-tenant activation via
+Settings → Integrations):**
+
+- `RESEND_API_KEY` — Resend API key
+- `EMAIL_FROM_ADDRESS` — sending address on a Resend-verified domain
+  (e.g. `bookings@mail.bookit.monoliet.cloud`). The sending domain needs
+  Resend's SPF + DKIM DNS records verified before real delivery works;
+  until then sends fail and are logged, never blocking WhatsApp or APIs.
+
 **Cron jobs** — the reminder cron boots from `instrumentation.ts` only when
 `NODE_ENV === 'production'` OR `ENABLE_CRON=true`. Set `ENABLE_CRON=true` in
 your production env file to ensure reminders fire even if `NODE_ENV` is

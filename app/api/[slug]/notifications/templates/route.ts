@@ -12,8 +12,10 @@ const ALLOWED_EVENT_TYPES = [
 
 const ALLOWED_CHANNELS = ['whatsapp', 'email'] as const;
 
+// [services] is filled on the email channel only (the dispatch loads the
+// booking's service tags itself); on WhatsApp it stays as typed.
 const TEMPLATE_VARIABLES: Record<string, string[]> = {
-  booking_confirmed: ['client_name', 'staff_name', 'date', 'time', 'duration', 'agency_name'],
+  booking_confirmed: ['client_name', 'staff_name', 'date', 'time', 'duration', 'services', 'agency_name'],
   booking_declined: ['client_name', 'staff_name', 'date', 'time', 'agency_name'],
   booking_reminder: ['client_name', 'staff_name', 'date', 'time'],
   booking_cancelled: ['client_name', 'staff_name', 'date', 'agency_name'],

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase/server';
 import { requireRole } from '@/lib/auth/session';
-import { sendWhatsApp, createNotification } from '@/lib/notifications/dispatch';
+import { sendWhatsApp, sendBookingEmail, createNotification } from '@/lib/notifications/dispatch';
 
 export async function POST(
   _request: NextRequest,
@@ -130,23 +130,31 @@ export async function POST(
     .single();
   const agencyName = settings?.agency_display_name ?? '';
 
+  const confirmVariables = {
+    client_name: clientName,
+    staff_name: staffName,
+    date: booking.slot_date,
+    time: booking.slot_start.slice(0, 5),
+    duration: String(booking.duration_minutes),
+    agency_name: agencyName,
+  };
   if (clientPhone && waOptIn) {
     await sendWhatsApp({
       tenantId,
       recipientPhone: clientPhone,
       eventType: 'booking_confirmed',
-      variables: {
-        client_name: clientName,
-        staff_name: staffName,
-        date: booking.slot_date,
-        time: booking.slot_start.slice(0, 5),
-        duration: String(booking.duration_minutes),
-        agency_name: agencyName,
-      },
+      variables: confirmVariables,
       recipientType,
       bookingId,
     });
   }
+  await sendBookingEmail({
+    tenantId,
+    bookingId,
+    eventType: 'booking_confirmed',
+    variables: confirmVariables,
+    attachIcs: true,
+  });
 
   await createNotification({
     tenantId,

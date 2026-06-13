@@ -43,8 +43,6 @@ interface ServiceTag {
 const inputCls =
   'w-full text-sm bg-elevated text-fg border border-border rounded px-3 py-1.5 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus:border-border-strong';
 
-const TAX_PERIODS = ['monthly', 'quarterly', 'yearly'] as const;
-
 function num(v: unknown): number {
   const n = Number(v ?? 0);
   return Number.isFinite(n) ? n : 0;
@@ -379,64 +377,23 @@ export default function PricingSection({ slug }: { slug: string }) {
         </section>
       )}
 
-      {/* Tax Configuration */}
+      {/* Tax — fully read-only: tax_rate_pct and tax_label are wizard-locked
+          for every tenant (Tier 4 set-once model), so the card offers no
+          editing at all (Phase 16-A; previously Save always 403d). */}
       <section>
-        <SectionHeader
-          title="Tax"
-          editing={editingSection === 'tax'}
-          onEdit={() => startEdit('tax')}
-          onCancel={cancelEdit}
-          onSave={() => saveSection(['tax_label', 'tax_period'])}
-          saving={saving}
-        />
+        <div className="flex items-center justify-between mb-2">
+          <h3 className="text-xs font-semibold text-fg-muted uppercase tracking-wider">Tax</h3>
+          <span className="text-[10px] uppercase tracking-wider text-fg-subtle">Locked</span>
+        </div>
         <div className="bg-surface rounded-lg border border-border px-4">
-          {editingSection === 'tax' ? (
-            <>
-              <EditRow label="Tax rate" locked>
-                <p className="text-sm text-fg-muted">{num(settings?.tax_rate_pct)}%</p>
-              </EditRow>
-              <EditRow label="Tax label">
-                <input
-                  type="text"
-                  value={draft.tax_label ?? ''}
-                  onChange={e => patchDraft({ tax_label: e.target.value })}
-                  className={inputCls}
-                  placeholder="BTW"
-                />
-              </EditRow>
-              <EditRow label="Tax period">
-                <select
-                  value={draft.tax_period ?? 'quarterly'}
-                  onChange={e => patchDraft({ tax_period: e.target.value })}
-                  className={inputCls}
-                >
-                  {TAX_PERIODS.map(p => (
-                    <option key={p} value={p}>
-                      {p}
-                    </option>
-                  ))}
-                </select>
-              </EditRow>
-            </>
-          ) : (
-            <>
-              <Row
-                label="Tax rate"
-                value={
-                  <>
-                    {num(settings?.tax_rate_pct)}%{' '}
-                    <span className="text-[10px] uppercase tracking-wider text-fg-subtle ml-1">
-                      Locked
-                    </span>
-                  </>
-                }
-              />
-              <Row
-                label="Label · period"
-                value={`${settings?.tax_label ?? '—'} · ${settings?.tax_period ?? '—'}`}
-              />
-            </>
-          )}
+          <Row label="Tax rate" value={`${num(settings?.tax_rate_pct)}%`} />
+          <Row label="Tax label" value={settings?.tax_label ?? '—'} />
+          <Row label="Tax period" value={settings?.tax_period ?? '—'} />
+          <div className="py-2">
+            <p className="text-[11px] text-fg-muted">
+              Tax settings were fixed during onboarding. Contact support to change them.
+            </p>
+          </div>
         </div>
       </section>
 

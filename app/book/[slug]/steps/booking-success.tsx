@@ -1,5 +1,7 @@
 'use client';
 
+import { useWidgetStrings } from '@/lib/widget-i18n';
+
 interface Props {
   status: string;
   message: string;
@@ -19,13 +21,16 @@ export default function BookingSuccess({
   onBookAnother,
   brandColor,
 }: Props) {
+  const t = useWidgetStrings();
   const confirmed = status === 'confirmed';
   const headline = confirmed
-    ? `Your ${bookingLabel.toLowerCase()} is confirmed!`
-    : 'Request submitted';
+    ? t.successConfirmedHeadline(bookingLabel.toLowerCase())
+    : t.successPendingHeadline;
+  // The server message is English; keep it for English chrome (byte-identical
+  // default), use the dictionary otherwise.
   const subline = confirmed
-    ? message
-    : `${staffName} will review and confirm shortly.`;
+    ? (t.locale === 'en-GB' ? message : t.successConfirmedSub)
+    : t.successPendingSub(staffName);
 
   return (
     <div className="space-y-4">
@@ -41,7 +46,7 @@ export default function BookingSuccess({
         <p className="w-tx text-base font-semibold mb-1">{headline}</p>
         <p className="w-tx2 text-xs">{subline}</p>
         <p className="w-tx3 text-[10px] font-mono mt-3">
-          Ref: {bookingId.slice(0, 8)}
+          {t.ref} {bookingId.slice(0, 8)}
         </p>
       </div>
 
@@ -50,7 +55,7 @@ export default function BookingSuccess({
         onClick={onBookAnother}
         className="w-full w-btn2 w-round py-2 text-sm transition-colors"
       >
-        Book another
+        {t.bookAnother}
       </button>
     </div>
   );

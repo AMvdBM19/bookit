@@ -36,10 +36,10 @@ require platform support to change.
 
 ### Tax
 
-- **Tax rate** — *locked* (e.g. 21%).
-- **Tax label** — editable, e.g. "BTW" for NL.
-- **Tax period** — monthly / quarterly / yearly (reporting cadence, no
-  behavioral effect yet).
+Fully read-only — the whole card carries a **Locked** tag. Tax rate, tax
+label (e.g. "BTW") and tax period were set once during onboarding;
+changing any of them requires platform support. There is no Edit button
+on this card by design.
 
 ### Revenue Split
 
@@ -97,10 +97,9 @@ A table of the tenant's service tags with inline editing:
 
 | Locked after onboarding | Editable anytime |
 |---|---|
-| Tax rate % | Currency, base rate per 30 min (confirm dialog: future bookings only) |
+| Tax rate %, tax label, tax period (whole Tax card) | Currency, base rate (confirm dialog: future bookings only) |
 | Revenue split percentages (slider shows the split but is disabled) | Pricing enabled, show price to client |
-| (sometimes) minimum age | Tax period |
-| | Deposit % and threshold (if supported) |
+| (sometimes) minimum age | Deposit % and threshold (if supported) |
 | | No-show policy, per-service prices/durations, service add/rename/delete |
 
 ## Common owner questions

@@ -16,16 +16,16 @@ const EDITABLE_FIELDS = [
   'require_age_confirm',
   'deposit_pct',
   'deposit_required_above_minutes',
-  // Pricing & finances (Phase 10B-1). tax_rate_pct and the revenue split
-  // lock state stay wizard-locked; currency + base_rate_per_30min became
-  // tenant-editable in Phase 14-A9 (changes affect future bookings only).
+  // Pricing & finances (Phase 10B-1). Tax fields (rate, label, period) are
+  // wizard-locked and fully read-only since Phase 16-A — not listed here so
+  // the allowlist and lock enforcement agree. The revenue split stays listed
+  // because its lock is per-tenant row-driven and the UI hides editing when
+  // locked; currency + base_rate_per_30min are tenant-editable (14-A9).
   'currency',
   'base_rate_per_30min',
   'pricing_enabled',
   'staff_payout_pct',
   'agency_share_pct',
-  'tax_label',
-  'tax_period',
   'no_show_revenue_policy',
   'no_show_partial_pct',
   // Per-service duration + buffer time (Tier 1 polish sprint).
@@ -47,6 +47,7 @@ const EDITABLE_FIELDS = [
   'widget_border_color',
   'widget_show_powered_by',
   'widget_logo_url',
+  'widget_language',
 ] as const;
 
 type EditableField = (typeof EDITABLE_FIELDS)[number];
@@ -134,6 +135,16 @@ export async function PATCH(request: NextRequest) {
       );
     }
     update.base_rate_per_30min = rate;
+  }
+
+  // Widget language: constrained to the supported set (DB CHECK agrees).
+  if ('widget_language' in update) {
+    if (update.widget_language !== 'en' && update.widget_language !== 'nl') {
+      return NextResponse.json(
+        { error: "widget_language must be 'en' or 'nl'" },
+        { status: 400 }
+      );
+    }
   }
 
   // Buffer minutes: 0–60 in whole minutes.

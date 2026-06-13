@@ -60,7 +60,13 @@ acceptance) are template-level notices, not tenant-editable.
   credentials (Twilio account, Meta access token) are managed by Book-IT;
   the owner never enters tokens. Without an active integration, no
   WhatsApp messages are sent (templates can still be edited and saved).
-- **AI assistant** and **Email notifications** show as "Coming soon".
+- **Email notifications** — status badge ("Not configured" / "Active")
+  and a **Configure** button opening a modal: **sender display name**
+  (clients' inboxes show "{name} via Book-IT"), optional **reply-to**
+  address, and an Active toggle. Sending infrastructure (Resend) is
+  platform-managed — the owner never enters API keys. While not
+  configured, no emails are sent and everything else works normally.
+- **AI assistant** shows as "Coming soon".
 
 ## Booking form section
 

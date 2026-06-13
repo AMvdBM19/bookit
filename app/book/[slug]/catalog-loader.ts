@@ -46,6 +46,8 @@ export interface CatalogSettings {
   widget_logo_url: string | null;
   /** Optional until the per-service-duration migration is applied. */
   per_service_duration_enabled?: boolean | null;
+  /** Widget chrome language — 'en' (default) or 'nl'. */
+  widget_language?: string | null;
 }
 
 export interface Catalog {
