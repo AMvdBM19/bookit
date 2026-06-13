@@ -55,6 +55,8 @@ will require explicit per-action user confirmation in the chat UI.
 | `edit_booking` | PATCH /api/{slug}/bookings/{id}/edit | Edit services/notes/price on pending, confirmed, or recently completed bookings (audit-trailed) |
 | `add_staff_day_off` | POST …/staff/{id}/exceptions | Days off |
 | `update_notification_template` | POST …/notifications/templates | Template upsert |
+| `configure_email_integration` | PUT /api/{slug}/integrations/email | Enable/adjust the email channel |
+| `send_test_email` | (planned endpoint) | Send a test template email to the owner's address |
 | `export_csv` | GET /api/{slug}/export/* | Generate a download link |
 
 ### Explicitly out of scope (never planned)

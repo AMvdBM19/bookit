@@ -48,7 +48,7 @@ const DEFAULT_BODIES: Record<string, Record<Channel, string>> = {
     whatsapp:
       'Hi [client_name], your booking with [staff_name] on [date] at [time] ([duration] min) is confirmed. See you soon! — [agency_name]',
     email:
-      'Hi [client_name],\n\nYour booking with [staff_name] on [date] at [time] ([duration] min) is confirmed.\n\nSee you soon!\n[agency_name]',
+      'Hi [client_name],\n\nYour booking with [staff_name] on [date] at [time] ([duration] min) is confirmed.\nServices: [services]\n\nA calendar invite is attached.\n\nSee you soon!\n[agency_name]',
   },
   booking_declined: {
     whatsapp:
@@ -91,6 +91,7 @@ const SAMPLE_VALUES: Record<string, string> = {
   date: 'Fri 20 Jun 2026',
   time: '14:00',
   duration: '60',
+  services: 'Haircut, Coloring',
   agency_name: 'Your Business',
 };
 

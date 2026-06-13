@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase/server';
 import { requireRole } from '@/lib/auth/session';
 import { calculatePricing } from '@/lib/pricing/calculate';
-import { sendWhatsApp } from '@/lib/notifications/dispatch';
+import { sendWhatsApp, sendBookingEmail } from '@/lib/notifications/dispatch';
 
 function stripHtml(input: string): string {
   return input.replace(/<[^>]*>/g, '').trim();
@@ -278,23 +278,33 @@ export async function POST(
     );
   }
 
-  // g) Notifications — confirmed bookings only, when the client opted in.
-  if (body.notify_client && body.status === 'confirmed' && clientPhone && waOptIn && recipientType) {
+  // g) Notifications — confirmed bookings only, when the agent asked for it.
+  if (body.notify_client && body.status === 'confirmed') {
     const agencyName = settings?.agency_display_name ?? '';
-    await sendWhatsApp({
+    const variables = {
+      client_name: clientName,
+      staff_name: staffName,
+      date: slotDate,
+      time: slotStart,
+      duration: String(durationMinutes),
+      agency_name: agencyName,
+    };
+    if (clientPhone && waOptIn && recipientType) {
+      await sendWhatsApp({
+        tenantId,
+        recipientPhone: clientPhone,
+        eventType: 'booking_confirmed',
+        variables,
+        recipientType,
+        bookingId: booking.id,
+      });
+    }
+    await sendBookingEmail({
       tenantId,
-      recipientPhone: clientPhone,
-      eventType: 'booking_confirmed',
-      variables: {
-        client_name: clientName,
-        staff_name: staffName,
-        date: slotDate,
-        time: slotStart,
-        duration: String(durationMinutes),
-        agency_name: agencyName,
-      },
-      recipientType,
       bookingId: booking.id,
+      eventType: 'booking_confirmed',
+      variables,
+      attachIcs: true,
     });
   }
 
