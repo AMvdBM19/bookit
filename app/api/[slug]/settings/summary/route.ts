@@ -41,6 +41,14 @@ export async function GET() {
     .eq('is_active', true)
     .maybeSingle();
 
+  const { data: emailIntegration } = await supabase
+    .from('tenant_integrations')
+    .select('is_active')
+    .eq('tenant_id', user.tenantId)
+    .eq('integration_type', 'email_resend')
+    .eq('is_active', true)
+    .maybeSingle();
+
   return NextResponse.json({
     tenant: tenant ?? null,
     settings: settings ?? null,
@@ -49,6 +57,7 @@ export async function GET() {
       whatsapp: waIntegration
         ? { configured: true, provider: waIntegration.integration_type }
         : { configured: false, provider: null },
+      email: { configured: !!emailIntegration },
     },
   });
 }

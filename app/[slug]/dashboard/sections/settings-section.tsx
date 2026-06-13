@@ -40,6 +40,7 @@ interface Summary {
   locked_fields: string[];
   integrations: {
     whatsapp: { configured: boolean; provider: string | null };
+    email?: { configured: boolean };
   };
 }
 
@@ -87,6 +88,7 @@ export default function SettingsSection({ slug }: { slug: string }) {
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
   const [showWaConfig, setShowWaConfig] = useState(false);
+  const [showEmailConfig, setShowEmailConfig] = useState(false);
 
   const reload = useCallback(async () => {
     setLoading(true);
@@ -457,11 +459,26 @@ export default function SettingsSection({ slug }: { slug: string }) {
             }
           />
           <Row
-            label="AI assistant"
-            value={<Badge variant="outline">Coming soon</Badge>}
+            label="Email notifications"
+            value={
+              <span className="inline-flex items-center gap-2">
+                {integrations.email?.configured ? (
+                  <Badge variant="success">Active</Badge>
+                ) : (
+                  <Badge variant="outline">Not configured</Badge>
+                )}
+                <button
+                  type="button"
+                  onClick={() => setShowEmailConfig(true)}
+                  className="text-xs px-2 py-1 bg-elevated hover:bg-sunken text-fg rounded"
+                >
+                  Configure
+                </button>
+              </span>
+            }
           />
           <Row
-            label="Email notifications"
+            label="AI assistant"
             value={<Badge variant="outline">Coming soon</Badge>}
           />
         </div>
@@ -497,6 +514,17 @@ export default function SettingsSection({ slug }: { slug: string }) {
           onClose={() => setShowWaConfig(false)}
           onSaved={async () => {
             setShowWaConfig(false);
+            await reload();
+          }}
+        />
+      )}
+
+      {showEmailConfig && (
+        <EmailConfigModal
+          slug={slug}
+          onClose={() => setShowEmailConfig(false)}
+          onSaved={async () => {
+            setShowEmailConfig(false);
             await reload();
           }}
         />
@@ -851,6 +879,171 @@ function WhatsAppConfigModal({
             />
             <span className="text-sm text-fg">Active</span>
             <span className="text-[11px] text-fg-muted">— messages dispatch only while active</span>
+          </label>
+
+          {error && <p className="text-xs text-red-500">{error}</p>}
+
+          <div className="flex justify-end gap-2 pt-2">
+            <button
+              type="button"
+              onClick={onClose}
+              disabled={submitting}
+              className="text-sm px-3 py-1.5 text-fg hover:bg-elevated rounded"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              disabled={submitting}
+              className="text-sm px-4 py-1.5 bg-fg text-canvas rounded hover:opacity-90 transition-opacity disabled:opacity-50"
+            >
+              {submitting ? 'Saving…' : 'Save'}
+            </button>
+          </div>
+        </form>
+      )}
+    </Modal>
+  );
+}
+
+/* ------------------------------------------------------ Email config modal */
+
+interface EmailState {
+  configured: boolean;
+  is_active: boolean;
+  config: { reply_to?: string | null };
+  sender_name: string | null;
+  sender_name_fallback: string | null;
+}
+
+function EmailConfigModal({
+  slug,
+  onClose,
+  onSaved,
+}: {
+  slug: string;
+  onClose: () => void;
+  onSaved: () => Promise<void>;
+}) {
+  const [loading, setLoading] = useState(true);
+  const [current, setCurrent] = useState<EmailState | null>(null);
+  const [senderName, setSenderName] = useState('');
+  const [replyTo, setReplyTo] = useState('');
+  const [isActive, setIsActive] = useState(true);
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    fetch(`/api/${slug}/integrations/email`)
+      .then(res => res.json())
+      .then((data: EmailState) => {
+        if (cancelled) return;
+        setCurrent(data);
+        setSenderName(data.sender_name ?? '');
+        if (data.configured) setIsActive(data.is_active);
+      })
+      .catch(() => {})
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [slug]);
+
+  async function submit(e: React.FormEvent) {
+    e.preventDefault();
+    setSubmitting(true);
+    setError(null);
+    try {
+      const res = await fetch(`/api/${slug}/integrations/email`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          is_active: isActive,
+          sender_name: senderName,
+          ...(replyTo.trim() ? { reply_to: replyTo.trim() } : {}),
+        }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setError(data.error ?? 'Failed to save');
+        toast.error(data.error ?? "Couldn't save integration. Please try again.");
+        return;
+      }
+      toast.success('Email integration saved.');
+      await onSaved();
+    } catch {
+      setError('Network error');
+      toast.error("Couldn't save integration. Please try again.");
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  return (
+    <Modal title="Email notifications" onClose={onClose} maxWidth="max-w-md">
+      {loading ? (
+        <div className="flex justify-center py-8 text-fg-muted">
+          <Spinner size="md" />
+        </div>
+      ) : (
+        <form onSubmit={submit} className="space-y-3">
+          <p className="text-xs text-fg-muted">
+            Booking confirmations, reminders and cancellations are emailed to
+            your clients using the templates from the Templates tab. Sending
+            infrastructure is managed by Book-IT — emails go out as
+            &quot;{senderName.trim() || current?.sender_name_fallback || 'Your business'} via
+            Book-IT&quot;.
+          </p>
+
+          <div>
+            <label className="block text-xs text-fg-muted mb-1" htmlFor="email-sender">
+              Sender display name
+            </label>
+            <input
+              id="email-sender"
+              type="text"
+              value={senderName}
+              onChange={e => setSenderName(e.target.value)}
+              className={inputCls}
+              maxLength={80}
+              placeholder={current?.sender_name_fallback ?? 'Your business name'}
+            />
+            <p className="text-[11px] text-fg-muted mt-1">
+              Shown in your clients&apos; inbox. Leave blank to use your display
+              name.
+            </p>
+          </div>
+
+          <div>
+            <label className="block text-xs text-fg-muted mb-1" htmlFor="email-replyto">
+              Reply-to address (optional)
+            </label>
+            <input
+              id="email-replyto"
+              type="email"
+              value={replyTo}
+              onChange={e => setReplyTo(e.target.value)}
+              className={inputCls}
+              placeholder={
+                current?.config.reply_to ? `Currently ${current.config.reply_to}` : 'you@yourbusiness.nl'
+              }
+            />
+            <p className="text-[11px] text-fg-muted mt-1">
+              Client replies go here. Leave blank to keep emails no-reply.
+            </p>
+          </div>
+
+          <label className="flex items-center gap-2 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={isActive}
+              onChange={e => setIsActive(e.target.checked)}
+            />
+            <span className="text-sm text-fg">Active</span>
+            <span className="text-[11px] text-fg-muted">— emails dispatch only while active</span>
           </label>
 
           {error && <p className="text-xs text-red-500">{error}</p>}
