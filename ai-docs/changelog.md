@@ -3,6 +3,13 @@
 > Feature history for the AI assistant: what exists and since when. Newest
 > first. Maintained per the AI Docs Maintenance Protocol in CLAUDE.md.
 
+## 2026-06-13 — Tax card is read-only (Phase 16-A)
+
+- The Pricing tab's Tax card no longer offers editing: tax rate, tax
+  label and tax period are locked (set during onboarding, changed via
+  support only). Previously the card showed editable fields whose Save
+  always failed with "Field is locked".
+
 ## 2026-06-12 — Booking editing (Phase 15-B7)
 
 - Bookings can now be edited (services, notes, price) from the detail
