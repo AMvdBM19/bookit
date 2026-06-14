@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase/server';
 import { requireRole } from '@/lib/auth/session';
 import { DEFAULT_FEATURE_FLAGS } from '@/lib/types/tenant-config';
+import { notifyBookingCancelled } from '@/lib/notifications/dispatch';
 
 const TARGET_STATUSES = ['completed', 'no_show', 'cancelled'] as const;
 type TargetStatus = (typeof TARGET_STATUSES)[number];
@@ -32,7 +33,7 @@ export async function PATCH(
 
   const { data: booking } = await supabase
     .from('bookings')
-    .select('id, tenant_id, staff_id, slot_date, slot_end, status')
+    .select('id, tenant_id, staff_id, client_id, guest_client_id, slot_date, slot_start, slot_end, status')
     .eq('id', bookingId)
     .single();
 
@@ -118,6 +119,66 @@ export async function PATCH(
     console.error('[bookings:status] cancel error:', error);
     return NextResponse.json({ error: 'Failed to cancel booking' }, { status: 500 });
   }
+
+  // Notify the client of the cancellation (WhatsApp if opted in, email if the
+  // tenant has it active). Separate per-recipient queries — embedded joins
+  // silently drop rows (gotcha #2). Mirrors the decline route's resolution.
+  let clientName = 'Client';
+  let clientPhone: string | null = null;
+  let waOptIn = false;
+  let recipientType: 'client' | 'guest_client' = 'client';
+
+  if (booking.client_id) {
+    const { data: client } = await supabase
+      .from('clients')
+      .select('display_name, phone, wa_opt_in')
+      .eq('id', booking.client_id)
+      .single();
+    if (client) {
+      clientName = client.display_name;
+      clientPhone = client.phone;
+      waOptIn = client.wa_opt_in;
+    }
+  } else if (booking.guest_client_id) {
+    const { data: guest } = await supabase
+      .from('guest_clients')
+      .select('name, phone, wa_opt_in')
+      .eq('id', booking.guest_client_id)
+      .single();
+    if (guest) {
+      clientName = guest.name;
+      clientPhone = guest.phone;
+      waOptIn = guest.wa_opt_in;
+      recipientType = 'guest_client';
+    }
+  }
+
+  const { data: staffRecord } = booking.staff_id
+    ? await supabase.from('staff').select('pseudonym').eq('id', booking.staff_id).single()
+    : { data: null };
+  const staffName = staffRecord?.pseudonym ?? 'Staff';
+
+  const { data: settings } = await supabase
+    .from('tenant_settings')
+    .select('agency_display_name')
+    .eq('tenant_id', tenantId)
+    .single();
+  const agencyName = settings?.agency_display_name ?? '';
+
+  await notifyBookingCancelled(
+    tenantId,
+    bookingId,
+    clientPhone,
+    waOptIn,
+    {
+      client_name: clientName,
+      staff_name: staffName,
+      date: booking.slot_date,
+      time: booking.slot_start.slice(0, 5),
+      agency_name: agencyName,
+    },
+    recipientType
+  );
 
   return NextResponse.json({ ok: true, status });
 }
