@@ -2,12 +2,13 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase/server';
 import { requireRole } from '@/lib/auth/session';
 import { sendWhatsApp, sendBookingEmail, createNotification } from '@/lib/notifications/dispatch';
+import { createDepositCheckout } from '@/lib/payments/checkout';
 
 export async function POST(
   _request: NextRequest,
   { params }: { params: Promise<{ slug: string; bookingId: string }> }
 ) {
-  const { bookingId } = await params;
+  const { slug, bookingId } = await params;
 
   let user;
   try {
@@ -130,6 +131,8 @@ export async function POST(
     .single();
   const agencyName = settings?.agency_display_name ?? '';
 
+  const deposit = await createDepositCheckout(supabase, tenantId, slug, bookingId);
+
   const confirmVariables = {
     client_name: clientName,
     staff_name: staffName,
@@ -137,6 +140,8 @@ export async function POST(
     time: booking.slot_start.slice(0, 5),
     duration: String(booking.duration_minutes),
     agency_name: agencyName,
+    deposit_amount: deposit?.depositFormatted ?? '',
+    payment_link: deposit?.checkoutUrl ?? '',
   };
   if (clientPhone && waOptIn) {
     await sendWhatsApp({
@@ -165,5 +170,5 @@ export async function POST(
     linkedId: bookingId,
   });
 
-  return NextResponse.json({ ok: true, bookingId });
+  return NextResponse.json({ ok: true, bookingId, checkout_url: deposit?.checkoutUrl ?? null });
 }

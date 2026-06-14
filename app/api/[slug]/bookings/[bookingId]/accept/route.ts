@@ -3,12 +3,13 @@ import { createServiceClient } from '@/lib/supabase/server';
 import { requireRole } from '@/lib/auth/session';
 import { notifyBookingConfirmed, createNotification } from '@/lib/notifications/dispatch';
 import { buildGoogleCalendarUrl } from '@/lib/calendar/buildUrl';
+import { createDepositCheckout } from '@/lib/payments/checkout';
 
 export async function POST(
   _request: NextRequest,
   { params }: { params: Promise<{ slug: string; bookingId: string }> }
 ) {
-  const { bookingId } = await params;
+  const { slug, bookingId } = await params;
 
   let user;
   try {
@@ -97,6 +98,10 @@ export async function POST(
     .single();
   const agencyName = settings?.agency_display_name ?? '';
 
+  // Deposit checkout (no-op unless deposit_required + Mollie active). Created
+  // before the confirmation message so the [payment_link] is in the email/WA.
+  const deposit = await createDepositCheckout(supabase, tenantId, slug, bookingId);
+
   await notifyBookingConfirmed(
     tenantId,
     bookingId,
@@ -109,6 +114,8 @@ export async function POST(
       time: booking.slot_start.slice(0, 5),
       duration: String(booking.duration_minutes),
       agency_name: agencyName,
+      deposit_amount: deposit?.depositFormatted ?? '',
+      payment_link: deposit?.checkoutUrl ?? '',
     },
     recipientType
   );
@@ -130,5 +137,10 @@ export async function POST(
     description: booking.booking_notes || undefined,
   });
 
-  return NextResponse.json({ ok: true, calendarUrl });
+  return NextResponse.json({
+    ok: true,
+    calendarUrl,
+    checkout_url: deposit?.checkoutUrl ?? null,
+    deposit_amount: deposit?.depositAmount ?? null,
+  });
 }

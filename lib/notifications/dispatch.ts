@@ -41,12 +41,24 @@ interface WhatsAppOptions {
   bookingId?: string;
 }
 
+// Appends a deposit/payment call-to-action when a checkout link is present and
+// the tenant's template didn't already place the [payment_link] itself. Keeps
+// the default templates clean (no broken "deposit of  is required" line when a
+// booking has no deposit) while guaranteeing the client still gets the link.
+function withPaymentCta(body: string, variables: Record<string, string>): string {
+  const link = variables.payment_link;
+  if (!link || body.includes(link)) return body;
+  const amount = variables.deposit_amount || 'a deposit';
+  return `${body}\n\nDeposit required: ${amount}\nPay here: ${link}`;
+}
+
 export async function sendWhatsApp(opts: WhatsAppOptions): Promise<boolean> {
   const template = await resolveTemplate(opts.tenantId, opts.eventType, 'whatsapp', opts.variables);
   if (!template) return false;
 
+  const body = withPaymentCta(template.body, opts.variables);
   const provider = await getWhatsAppProvider(opts.tenantId);
-  const sent = provider ? await provider.sendMessage(opts.recipientPhone, template.body) : false;
+  const sent = provider ? await provider.sendMessage(opts.recipientPhone, body) : false;
 
   const supabase = createServiceClient();
   await supabase.from('notification_log').insert({
@@ -123,10 +135,19 @@ export async function sendBookingEmail(opts: BookingEmailOptions): Promise<boole
       .select('tag_name')
       .eq('booking_id', opts.bookingId);
     const serviceNames = (tagRows ?? []).map(t => t.tag_name).join(', ');
-    const variables = { ...opts.variables, services: serviceNames || '—' };
+    // Auto-fill date/time/services from the booking so events that don't pass
+    // them (e.g. payment_received from the webhook) still render. Caller-
+    // supplied values win (booking_confirmed passes its own formatted date).
+    const variables = {
+      date: booking.slot_date,
+      time: booking.slot_start ? booking.slot_start.slice(0, 5) : '',
+      ...opts.variables,
+      services: serviceNames || '—',
+    };
 
     const template = await resolveTemplate(opts.tenantId, opts.eventType, 'email', variables);
     if (!template) return false;
+    const body = withPaymentCta(template.body, variables);
 
     let attachments: EmailAttachment[] | undefined;
     // Manual bookings can be off-grid (no slot) — skip the invite then.
@@ -151,8 +172,8 @@ export async function sendBookingEmail(opts: BookingEmailOptions): Promise<boole
     const result = await ctx.provider.sendEmail({
       to: recipientEmail,
       subject: template.subject ?? `Booking update — ${ctx.branding.tenantName}`,
-      html: renderEmailHtml({ bodyText: template.body, ...ctx.branding }),
-      text: template.body,
+      html: renderEmailHtml({ bodyText: body, ...ctx.branding }),
+      text: body,
       attachments,
       replyTo: ctx.replyTo,
       fromName: ctx.fromName,

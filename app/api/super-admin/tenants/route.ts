@@ -80,6 +80,12 @@ function defaultTemplates() {
       subject: 'Account approved — [agency_name]',
       body: 'Dear [client_name],\n\nYour account has been approved. You can now browse and make bookings.\n\nWelcome!\n[agency_name]',
     },
+    {
+      event_type: 'payment_received',
+      channel: 'email',
+      subject: 'Payment received — [agency_name]',
+      body: "Hi [client_name],\n\nWe've received your deposit of [deposit_amount] for your appointment on [date] at [time]. See you soon!\n\n[agency_name]",
+    },
   ];
 }
 

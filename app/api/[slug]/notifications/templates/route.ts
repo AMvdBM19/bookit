@@ -8,18 +8,23 @@ const ALLOWED_EVENT_TYPES = [
   'booking_reminder',
   'booking_cancelled',
   'client_approved',
+  'payment_received',
 ] as const;
 
 const ALLOWED_CHANNELS = ['whatsapp', 'email'] as const;
 
 // [services] is filled on the email channel only (the dispatch loads the
 // booking's service tags itself); on WhatsApp it stays as typed.
+// [deposit_amount]/[payment_link] are filled only when a Mollie deposit
+// checkout was raised for the booking; otherwise empty (and the platform
+// auto-appends a payment CTA when a link exists and the template omits it).
 const TEMPLATE_VARIABLES: Record<string, string[]> = {
-  booking_confirmed: ['client_name', 'staff_name', 'date', 'time', 'duration', 'services', 'agency_name'],
+  booking_confirmed: ['client_name', 'staff_name', 'date', 'time', 'duration', 'services', 'deposit_amount', 'payment_link', 'agency_name'],
   booking_declined: ['client_name', 'staff_name', 'date', 'time', 'agency_name'],
   booking_reminder: ['client_name', 'staff_name', 'date', 'time'],
   booking_cancelled: ['client_name', 'staff_name', 'date', 'agency_name'],
   client_approved: ['client_name', 'agency_name'],
+  payment_received: ['client_name', 'deposit_amount', 'date', 'time', 'agency_name'],
 };
 
 export async function GET() {

@@ -6,6 +6,7 @@ import { calculatePricing } from '@/lib/pricing/calculate';
 import type { FeatureFlags } from '@/lib/types/tenant-config';
 import { DEFAULT_FEATURE_FLAGS } from '@/lib/types/tenant-config';
 import { notifyBookingRequest, sendWhatsApp, sendBookingEmail, createNotification } from '@/lib/notifications/dispatch';
+import { createDepositCheckout } from '@/lib/payments/checkout';
 import { checkRateLimit } from '@/lib/rate-limit/book';
 
 function stripHtml(input: string): string {
@@ -336,6 +337,18 @@ export async function POST(
     tagExtras,
   });
 
+  // Deposit computation (same rule the widget shows on the confirm step):
+  // deposits supported by the template, a positive %, and the booking longer
+  // than the threshold. Persisted at creation so the confirm paths can raise
+  // a Mollie checkout (Phase 17-B). Informational before this — never stored.
+  const depositPct = Number(settings?.deposit_pct ?? 0);
+  const depositThreshold = Number(settings?.deposit_required_above_minutes ?? 0);
+  const depositRequired =
+    featureFlags.deposits_supported && depositPct > 0 && durationMinutes > depositThreshold;
+  const depositAmount = depositRequired
+    ? Math.round(pricing.totalPrice * (depositPct / 100) * 100) / 100
+    : 0;
+
   // Pool bookings always require explicit staff acceptance, regardless of
   // booking_confirm_mode.
   const status = isPoolBooking
@@ -365,6 +378,8 @@ export async function POST(
       total_price: pricing.totalPrice,
       staff_payout: pricing.staffPayout,
       agency_share: pricing.agencyShare,
+      deposit_required: depositRequired,
+      deposit_amount: depositAmount,
       status,
       confirmed_at: confirmedAt,
     })
@@ -411,7 +426,15 @@ export async function POST(
     }
   }
 
+  // Auto-confirmed bookings raise the deposit checkout now (pending_staff ones
+  // do so on accept). No-op unless deposit_required + Mollie active.
+  let checkoutUrl: string | null = null;
+  let depositDue: number | null = null;
   if (status === 'confirmed') {
+    const deposit = await createDepositCheckout(supabase, tenant.id, slug, booking.id);
+    checkoutUrl = deposit?.checkoutUrl ?? null;
+    depositDue = deposit?.depositAmount ?? null;
+
     const agencyName = settings?.agency_display_name ?? tenant.name;
     const variables = {
       client_name: clientDisplayName,
@@ -420,6 +443,8 @@ export async function POST(
       time: body.slot_start,
       duration: String(durationMinutes),
       agency_name: agencyName,
+      deposit_amount: deposit?.depositFormatted ?? '',
+      payment_link: deposit?.checkoutUrl ?? '',
     };
     if (staff && clientPhone && waOptIn) {
       await sendWhatsApp({
@@ -444,6 +469,8 @@ export async function POST(
     ok: true,
     bookingId: booking.id,
     status,
+    checkout_url: checkoutUrl,
+    deposit_amount: depositDue,
     message:
       status === 'confirmed'
         ? 'Booking confirmed!'

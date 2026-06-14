@@ -31,6 +31,7 @@ const EVENT_LABELS: Record<string, string> = {
   booking_reminder: 'Booking reminder',
   booking_cancelled: 'Booking cancelled',
   client_approved: 'Client approved',
+  payment_received: 'Payment received',
 };
 
 const EVENT_DESCRIPTIONS: Record<string, string> = {
@@ -39,6 +40,7 @@ const EVENT_DESCRIPTIONS: Record<string, string> = {
   booking_reminder: 'Sent ahead of a confirmed booking by the reminder cron.',
   booking_cancelled: 'Sent when a confirmed booking is cancelled.',
   client_approved: 'Sent when a client account is approved (account mode).',
+  payment_received: 'Sent by email when a deposit payment is received (email only — no WhatsApp).',
 };
 
 // Starting points for "Reset to default" — neutral wording that works for
@@ -74,6 +76,14 @@ const DEFAULT_BODIES: Record<string, Record<Channel, string>> = {
     email:
       'Hi [client_name],\n\nYour account with [agency_name] has been approved. You can now book online!\n\n[agency_name]',
   },
+  payment_received: {
+    // Email only — the platform never dispatches WhatsApp for payments. This
+    // WhatsApp default exists solely so the editor/reset stays consistent.
+    whatsapp:
+      'Hi [client_name], we\'ve received your deposit of [deposit_amount]. See you on [date] at [time]! — [agency_name]',
+    email:
+      "Hi [client_name],\n\nWe've received your deposit of [deposit_amount] for your appointment on [date] at [time]. See you soon!\n\n[agency_name]",
+  },
 };
 
 const DEFAULT_SUBJECTS: Record<string, string> = {
@@ -82,6 +92,7 @@ const DEFAULT_SUBJECTS: Record<string, string> = {
   booking_reminder: 'Reminder: upcoming booking',
   booking_cancelled: 'Your booking was cancelled',
   client_approved: 'Your account is approved',
+  payment_received: 'Payment received',
 };
 
 // Sample values for the live preview pane.
@@ -92,6 +103,8 @@ const SAMPLE_VALUES: Record<string, string> = {
   time: '14:00',
   duration: '60',
   services: 'Haircut, Coloring',
+  deposit_amount: '€20.00',
+  payment_link: 'https://pay.example/abc',
   agency_name: 'Your Business',
 };
 

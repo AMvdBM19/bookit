@@ -91,6 +91,15 @@ Settings → Integrations):**
   Resend's SPF + DKIM DNS records verified before real delivery works;
   until then sends fail and are logged, never blocking WhatsApp or APIs.
 
+**Optional — Payments (Mollie; per-tenant activation via Settings →
+Integrations → Mollie):**
+
+- `MOLLIE_API_KEY` — platform-wide fallback key (`test_…` or `live_…`).
+  Tenants can set their own key per tenant; this env value is used only
+  when a tenant has activated Mollie without supplying its own key. When
+  no key resolves, deposit checkout links are simply not generated and the
+  booking still confirms normally.
+
 **Cron jobs** — the reminder cron boots from `instrumentation.ts` only when
 `NODE_ENV === 'production'` OR `ENABLE_CRON=true`. Set `ENABLE_CRON=true` in
 your production env file to ensure reminders fire even if `NODE_ENV` is
