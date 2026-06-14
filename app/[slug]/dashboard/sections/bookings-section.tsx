@@ -9,10 +9,12 @@ import EmptyState from '@/components/ui/empty-state';
 import ConfirmDialog from '@/components/ui/confirm-dialog';
 import AddToCalendar from '@/components/add-to-calendar';
 import type { CalendarEvent } from '@/lib/calendar/buildUrl';
+import Modal from '@/components/ui/modal';
 import CreateBookingModal from './create-booking-modal';
 import EditBookingModal from '@/components/edit-booking-modal';
 import BookingDetailPanel, { PaymentStatusBadge, type BookingDetail } from './booking-detail-panel';
 import BookingsCalendar from './bookings-calendar';
+import BookingsKanban from './bookings-kanban';
 
 interface JoinObj {
   pseudonym?: string;
@@ -92,6 +94,67 @@ const STATUS_VARIANTS: Record<string, BadgeVariant> = {
   no_show: 'danger',
 };
 
+type DateRangeKey = 'all' | 'today' | 'tomorrow' | 'this_week' | 'next_week' | 'this_month' | 'custom';
+
+const DATE_RANGE_LABELS: Record<DateRangeKey, string> = {
+  all: 'All dates',
+  today: 'Today',
+  tomorrow: 'Tomorrow',
+  this_week: 'This week',
+  next_week: 'Next week',
+  this_month: 'This month',
+  custom: 'Custom…',
+};
+
+function ymd(d: Date): string {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
+}
+
+// Inclusive [from, to] slot_date bounds for a range key, or null = no bounds.
+function computeDateBounds(
+  key: DateRangeKey,
+  customFrom: string,
+  customTo: string
+): { from: string; to: string } | null {
+  const now = new Date();
+  now.setHours(0, 0, 0, 0);
+  const mondayOffset = (now.getDay() + 6) % 7; // 0 = Monday
+  switch (key) {
+    case 'today':
+      return { from: ymd(now), to: ymd(now) };
+    case 'tomorrow': {
+      const t = new Date(now.getTime() + 86400000);
+      return { from: ymd(t), to: ymd(t) };
+    }
+    case 'this_week': {
+      const start = new Date(now.getTime() - mondayOffset * 86400000);
+      const end = new Date(start.getTime() + 6 * 86400000);
+      return { from: ymd(start), to: ymd(end) };
+    }
+    case 'next_week': {
+      const start = new Date(now.getTime() + (7 - mondayOffset) * 86400000);
+      const end = new Date(start.getTime() + 6 * 86400000);
+      return { from: ymd(start), to: ymd(end) };
+    }
+    case 'this_month': {
+      const start = new Date(now.getFullYear(), now.getMonth(), 1);
+      const end = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+      return { from: ymd(start), to: ymd(end) };
+    }
+    case 'custom':
+      if (customFrom && customTo) return { from: customFrom, to: customTo };
+      if (customFrom) return { from: customFrom, to: '9999-12-31' };
+      if (customTo) return { from: '0000-01-01', to: customTo };
+      return null;
+    case 'all':
+    default:
+      return null;
+  }
+}
+
 const tableWrap = 'border border-border rounded-lg overflow-hidden bg-surface';
 const theadCls = 'bg-elevated border-b border-border';
 const thCls = 'text-left text-[11px] font-medium uppercase tracking-wider text-fg-muted';
@@ -158,10 +221,22 @@ export default function BookingsSection({ slug }: { slug: string }) {
   const [staffOptions, setStaffOptions] = useState<Array<{ id: string; pseudonym: string }>>([]);
   const [showCreate, setShowCreate] = useState(false);
   const [editBookingId, setEditBookingId] = useState<string | null>(null);
+  const [detailBooking, setDetailBooking] = useState<Booking | null>(null);
   const [confirmNoShowId, setConfirmNoShowId] = useState<string | null>(null);
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [currency, setCurrency] = useState('EUR');
-  const [viewMode, setViewMode] = useState<'list' | 'calendar'>('list');
+  const [viewMode, setViewMode] = useState<'list' | 'calendar' | 'board'>('list');
+  const [search, setSearch] = useState('');
+  const [debouncedSearch, setDebouncedSearch] = useState('');
+  const [dateRange, setDateRange] = useState<DateRangeKey>('all');
+  const [customFrom, setCustomFrom] = useState('');
+  const [customTo, setCustomTo] = useState('');
+
+  // Debounce the keyword search (300ms).
+  useEffect(() => {
+    const id = window.setTimeout(() => setDebouncedSearch(search.trim().toLowerCase()), 300);
+    return () => window.clearTimeout(id);
+  }, [search]);
 
   // Currency for the detail panel's price breakdown.
   useEffect(() => {
@@ -310,14 +385,70 @@ export default function BookingsSection({ slug }: { slug: string }) {
     }
   }
 
+  // Cancel from the board/calendar quick actions (status route, with reason).
+  async function handleCancel(id: string, reason?: string) {
+    setActionState(prev => ({ ...prev, [id]: 'busy' }));
+    try {
+      const res = await fetch(`/api/${slug}/bookings/${id}/status`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: 'cancelled', reason: reason || undefined }),
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        toast.error(data.error ?? "Couldn't cancel. Please try again.");
+        return false;
+      }
+      toast.success(`${terminology.booking} cancelled.`);
+      await reload();
+      return true;
+    } finally {
+      setActionState(prev => ({ ...prev, [id]: 'idle' }));
+    }
+  }
+
+  // Status transition from a Kanban drag (validated in the board component).
+  async function handleBoardStatus(id: string, target: string, reason?: string): Promise<boolean> {
+    if (target === 'confirmed') {
+      await handleAccept(id);
+      return true;
+    }
+    if (target === 'completed' || target === 'no_show') {
+      await handleStatus(id, target);
+      return true;
+    }
+    if (target === 'cancelled') {
+      return handleCancel(id, reason);
+    }
+    return false;
+  }
+
   const todayStr = new Date().toISOString().split('T')[0];
   const horizon = new Date(Date.now() + 14 * 86400000).toISOString().split('T')[0];
 
-  const pending = bookings.filter(b => b.status === 'pending_staff');
-  const upcoming = bookings.filter(
+  // Shared filters (keyword + date range) applied to every view.
+  const bounds = computeDateBounds(dateRange, customFrom, customTo);
+  const filtered = bookings.filter(b => {
+    if (bounds && (b.slot_date < bounds.from || b.slot_date > bounds.to)) return false;
+    if (debouncedSearch) {
+      const haystack = [
+        clientNameOf(b),
+        staffNameOf(b),
+        b.booking_notes ?? '',
+        b.id,
+      ]
+        .join(' ')
+        .toLowerCase();
+      if (!haystack.includes(debouncedSearch)) return false;
+    }
+    return true;
+  });
+
+  const pending = filtered.filter(b => b.status === 'pending_staff');
+  const upcoming = filtered.filter(
     b => b.status === 'confirmed' && b.slot_date >= todayStr && b.slot_date <= horizon
   );
-  const past = bookings
+  const past = filtered
     .filter(b => b.slot_date < todayStr || ['cancelled', 'completed', 'no_show'].includes(b.status))
     .slice(0, 30);
 
@@ -359,11 +490,11 @@ export default function BookingsSection({ slug }: { slug: string }) {
 
   return (
     <div className="space-y-8">
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between gap-3 flex-wrap">
         <h2 className="text-sm font-semibold text-fg">{terminology.booking_plural}</h2>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
           <div className="flex items-center rounded border border-border overflow-hidden">
-            {(['list', 'calendar'] as const).map(v => (
+            {(['list', 'calendar', 'board'] as const).map(v => (
               <button
                 key={v}
                 type="button"
@@ -394,8 +525,64 @@ export default function BookingsSection({ slug }: { slug: string }) {
         </div>
       </div>
 
+      {/* Search (left) + date range (right), shared across all views */}
+      <div className="flex items-center justify-between gap-3 flex-wrap -mt-4">
+        <input
+          type="text"
+          value={search}
+          onChange={e => setSearch(e.target.value)}
+          placeholder={`Search ${terminology.booking_plural.toLowerCase()}…`}
+          className="text-sm bg-elevated text-fg border border-border rounded px-3 py-1.5 w-56 max-w-full focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+        />
+        <div className="flex items-center gap-2">
+          <select
+            value={dateRange}
+            onChange={e => setDateRange(e.target.value as DateRangeKey)}
+            className="text-xs bg-elevated text-fg border border-border rounded px-2 py-1.5 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          >
+            {(Object.keys(DATE_RANGE_LABELS) as DateRangeKey[]).map(k => (
+              <option key={k} value={k}>
+                {DATE_RANGE_LABELS[k]}
+              </option>
+            ))}
+          </select>
+          {dateRange === 'custom' && (
+            <>
+              <input
+                type="date"
+                value={customFrom}
+                onChange={e => setCustomFrom(e.target.value)}
+                className="text-xs bg-elevated text-fg border border-border rounded px-2 py-1.5"
+                aria-label="From date"
+              />
+              <span className="text-fg-subtle text-xs">–</span>
+              <input
+                type="date"
+                value={customTo}
+                onChange={e => setCustomTo(e.target.value)}
+                className="text-xs bg-elevated text-fg border border-border rounded px-2 py-1.5"
+                aria-label="To date"
+              />
+            </>
+          )}
+        </div>
+      </div>
+
       {viewMode === 'calendar' ? (
-        <BookingsCalendar bookings={bookings} currency={currency} slug={slug} onEdit={setEditBookingId} />
+        <BookingsCalendar bookings={filtered} currency={currency} slug={slug} onEdit={setEditBookingId} />
+      ) : viewMode === 'board' ? (
+        <BookingsKanban
+          bookings={filtered}
+          currency={currency}
+          staffOptions={staffOptions}
+          onAssign={async (id, staffId) => {
+            setAssignChoice(prev => ({ ...prev, [id]: staffId }));
+            await handleAssign(id);
+          }}
+          onStatus={handleBoardStatus}
+          onEdit={setEditBookingId}
+          onViewDetails={b => setDetailBooking(b as Booking)}
+        />
       ) : (
       <>
       {/* Pending */}
@@ -743,6 +930,16 @@ export default function BookingsSection({ slug }: { slug: string }) {
             reload();
           }}
         />
+      )}
+
+      {detailBooking && (
+        <Modal
+          title={`${terminology.booking} details`}
+          onClose={() => setDetailBooking(null)}
+          maxWidth="max-w-2xl"
+        >
+          <BookingDetailPanel booking={detailBooking} currency={currency} slug={slug} onEdit={setEditBookingId} />
+        </Modal>
       )}
 
       {confirmNoShowId && (
