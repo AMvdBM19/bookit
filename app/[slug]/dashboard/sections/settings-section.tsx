@@ -41,6 +41,7 @@ interface Summary {
   integrations: {
     whatsapp: { configured: boolean; provider: string | null };
     email?: { configured: boolean };
+    mollie?: { configured: boolean; mode: 'test' | 'live' | null };
   };
 }
 
@@ -89,6 +90,7 @@ export default function SettingsSection({ slug }: { slug: string }) {
   const [saveError, setSaveError] = useState<string | null>(null);
   const [showWaConfig, setShowWaConfig] = useState(false);
   const [showEmailConfig, setShowEmailConfig] = useState(false);
+  const [showMollieConfig, setShowMollieConfig] = useState(false);
 
   const reload = useCallback(async () => {
     setLoading(true);
@@ -478,6 +480,29 @@ export default function SettingsSection({ slug }: { slug: string }) {
             }
           />
           <Row
+            label="Payments (Mollie)"
+            value={
+              <span className="inline-flex items-center gap-2">
+                {integrations.mollie?.configured ? (
+                  integrations.mollie.mode === 'test' ? (
+                    <Badge variant="warning">Test mode</Badge>
+                  ) : (
+                    <Badge variant="success">Active (Mollie)</Badge>
+                  )
+                ) : (
+                  <Badge variant="outline">Not configured</Badge>
+                )}
+                <button
+                  type="button"
+                  onClick={() => setShowMollieConfig(true)}
+                  className="text-xs px-2 py-1 bg-elevated hover:bg-sunken text-fg rounded"
+                >
+                  Configure
+                </button>
+              </span>
+            }
+          />
+          <Row
             label="AI assistant"
             value={<Badge variant="outline">Coming soon</Badge>}
           />
@@ -525,6 +550,17 @@ export default function SettingsSection({ slug }: { slug: string }) {
           onClose={() => setShowEmailConfig(false)}
           onSaved={async () => {
             setShowEmailConfig(false);
+            await reload();
+          }}
+        />
+      )}
+
+      {showMollieConfig && (
+        <MollieConfigModal
+          slug={slug}
+          onClose={() => setShowMollieConfig(false)}
+          onSaved={async () => {
+            setShowMollieConfig(false);
             await reload();
           }}
         />
@@ -1044,6 +1080,160 @@ function EmailConfigModal({
             />
             <span className="text-sm text-fg">Active</span>
             <span className="text-[11px] text-fg-muted">— emails dispatch only while active</span>
+          </label>
+
+          {error && <p className="text-xs text-red-500">{error}</p>}
+
+          <div className="flex justify-end gap-2 pt-2">
+            <button
+              type="button"
+              onClick={onClose}
+              disabled={submitting}
+              className="text-sm px-3 py-1.5 text-fg hover:bg-elevated rounded"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              disabled={submitting}
+              className="text-sm px-4 py-1.5 bg-fg text-canvas rounded hover:opacity-90 transition-opacity disabled:opacity-50"
+            >
+              {submitting ? 'Saving…' : 'Save'}
+            </button>
+          </div>
+        </form>
+      )}
+    </Modal>
+  );
+}
+
+/* -------------------------------------------------------- Mollie config modal */
+
+interface MollieState {
+  configured: boolean;
+  is_active: boolean;
+  masked_key: string | null;
+  mode: 'test' | 'live' | null;
+  platform_fallback: boolean;
+}
+
+function MollieConfigModal({
+  slug,
+  onClose,
+  onSaved,
+}: {
+  slug: string;
+  onClose: () => void;
+  onSaved: () => Promise<void>;
+}) {
+  const [loading, setLoading] = useState(true);
+  const [current, setCurrent] = useState<MollieState | null>(null);
+  const [apiKey, setApiKey] = useState('');
+  const [isActive, setIsActive] = useState(true);
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    fetch(`/api/${slug}/integrations/mollie`)
+      .then(res => res.json())
+      .then((data: MollieState) => {
+        if (cancelled) return;
+        setCurrent(data);
+        if (data.configured) setIsActive(data.is_active);
+      })
+      .catch(() => {})
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [slug]);
+
+  async function submit(e: React.FormEvent) {
+    e.preventDefault();
+    setSubmitting(true);
+    setError(null);
+    try {
+      const res = await fetch(`/api/${slug}/integrations/mollie`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          is_active: isActive,
+          ...(apiKey.trim() ? { api_key: apiKey.trim() } : {}),
+        }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setError(data.error ?? 'Failed to save');
+        toast.error(data.error ?? "Couldn't save integration. Please try again.");
+        return;
+      }
+      toast.success('Mollie integration saved.');
+      await onSaved();
+    } catch {
+      setError('Network error');
+      toast.error("Couldn't save integration. Please try again.");
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  return (
+    <Modal title="Payments (Mollie)" onClose={onClose} maxWidth="max-w-md">
+      {loading ? (
+        <div className="flex justify-center py-8 text-fg-muted">
+          <Spinner size="md" />
+        </div>
+      ) : (
+        <form onSubmit={submit} className="space-y-3">
+          <p className="text-xs text-fg-muted">
+            Collect deposits online when a booking is confirmed. Enter your
+            Mollie API key — get one at{' '}
+            <a
+              href="https://mollie.com/dashboard"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="underline hover:text-fg"
+            >
+              mollie.com/dashboard
+            </a>
+            . A <code>test_</code> key runs in test mode; <code>live_</code>{' '}
+            takes real payments.
+            {current?.platform_fallback && !current?.masked_key && (
+              <> If you leave this blank, the platform&apos;s shared Mollie account is used.</>
+            )}
+          </p>
+
+          <div>
+            <label className="block text-xs text-fg-muted mb-1" htmlFor="mollie-key">
+              API key
+            </label>
+            <input
+              id="mollie-key"
+              type="text"
+              value={apiKey}
+              onChange={e => setApiKey(e.target.value)}
+              className={inputCls}
+              placeholder={current?.masked_key ?? 'test_… or live_…'}
+              autoComplete="off"
+            />
+            {current?.masked_key && (
+              <p className="text-[11px] text-fg-muted mt-1">
+                Leave blank to keep the saved key ({current.masked_key}).
+              </p>
+            )}
+          </div>
+
+          <label className="flex items-center gap-2 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={isActive}
+              onChange={e => setIsActive(e.target.checked)}
+            />
+            <span className="text-sm text-fg">Active</span>
+            <span className="text-[11px] text-fg-muted">— deposits are charged only while active</span>
           </label>
 
           {error && <p className="text-xs text-red-500">{error}</p>}

@@ -11,7 +11,7 @@ import AddToCalendar from '@/components/add-to-calendar';
 import type { CalendarEvent } from '@/lib/calendar/buildUrl';
 import CreateBookingModal from './create-booking-modal';
 import EditBookingModal from '@/components/edit-booking-modal';
-import BookingDetailPanel, { type BookingDetail } from './booking-detail-panel';
+import BookingDetailPanel, { PaymentStatusBadge, type BookingDetail } from './booking-detail-panel';
 import BookingsCalendar from './bookings-calendar';
 
 interface JoinObj {
@@ -442,7 +442,10 @@ export default function BookingsSection({ slug }: { slug: string }) {
                         </td>
                         <td className="px-3 py-3 text-fg">{staffNameOf(b)}</td>
                         <td className="px-3 py-3 text-fg">
-                          {clientNameOf(b)}
+                          <span className="inline-flex items-center gap-1.5">
+                            {clientNameOf(b)}
+                            <PaymentStatusBadge status={b.payment_status} />
+                          </span>
                           {b.source === 'manual' && (
                             <span className="text-[10px] text-fg-subtle ml-1">Manual</span>
                           )}
@@ -606,7 +609,10 @@ export default function BookingsSection({ slug }: { slug: string }) {
                       </td>
                       <td className="px-3 py-3 text-fg">{staffNameOf(b)}</td>
                       <td className="px-3 py-3 text-fg">
-                        {clientNameOf(b)}
+                        <span className="inline-flex items-center gap-1.5">
+                          {clientNameOf(b)}
+                          <PaymentStatusBadge status={b.payment_status} />
+                        </span>
                         {b.source === 'manual' && (
                           <span className="text-[10px] text-fg-subtle ml-1">Manual</span>
                         )}
@@ -692,7 +698,10 @@ export default function BookingsSection({ slug }: { slug: string }) {
                       </td>
                       <td className="px-3 py-3 text-fg-muted whitespace-nowrap">{formatDate(b.slot_date)}</td>
                       <td className="px-3 py-3">
-                        <StatusBadge status={b.status} />
+                        <div className="flex items-center gap-1.5">
+                          <StatusBadge status={b.status} />
+                          <PaymentStatusBadge status={b.payment_status} />
+                        </div>
                       </td>
                     </tr>
                     {expandedId === b.id && (

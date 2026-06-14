@@ -14,8 +14,9 @@ export async function GET(request: NextRequest) {
 
   const sp = request.nextUrl.searchParams;
   const status = sp.get('status') ?? 'all';
-  const from = sp.get('from');
-  const to = sp.get('to');
+  // Accept both from/to (original) and date_from/date_to (Phase 17 filter).
+  const from = sp.get('from') ?? sp.get('date_from');
+  const to = sp.get('to') ?? sp.get('date_to');
 
   if (!VALID_STATUSES.includes(status as (typeof VALID_STATUSES)[number])) {
     return NextResponse.json({ error: 'Invalid status' }, { status: 400 });
@@ -28,7 +29,7 @@ export async function GET(request: NextRequest) {
     .select(`
       id, slot_date, slot_start, slot_end, duration_minutes, booking_notes, status, source,
       service_address, reference_image_url, edited_at,
-      total_price, tag_extras_total, base_rate_per_30,
+      total_price, tag_extras_total, base_rate_per_30, payment_status, deposit_amount,
       created_at: requested_at, confirmed_at, cancelled_at, cancellation_reason,
       staff:staff_id(id, pseudonym),
       clients:client_id(id, display_name, email, phone, wa_opt_in),
@@ -56,5 +57,36 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: 'Failed to load bookings' }, { status: 500 });
   }
 
-  return NextResponse.json({ bookings: data ?? [], total: data?.length ?? 0 });
+  const bookings = data ?? [];
+
+  // Attach the latest deposit payment per booking (separate query + merge —
+  // embedded joins drop rows). Only for bookings with a payment state set.
+  const payableIds = bookings
+    .filter(b => b.payment_status && b.payment_status !== 'unpaid')
+    .map(b => b.id);
+
+  let paymentByBooking: Record<string, { method: string | null; paid_at: string | null; checkout_url: string | null }> = {};
+  if (payableIds.length > 0) {
+    const { data: payments } = await supabase
+      .from('payments')
+      .select('booking_id, method, paid_at, checkout_url, created_at')
+      .eq('tenant_id', user.tenantId)
+      .eq('payment_type', 'deposit')
+      .in('booking_id', payableIds)
+      .order('created_at', { ascending: false });
+    for (const p of payments ?? []) {
+      // First seen wins = most recent (ordered desc).
+      if (!paymentByBooking[p.booking_id]) {
+        paymentByBooking[p.booking_id] = {
+          method: p.method ?? null,
+          paid_at: p.paid_at ?? null,
+          checkout_url: p.checkout_url ?? null,
+        };
+      }
+    }
+  }
+
+  const merged = bookings.map(b => ({ ...b, payment: paymentByBooking[b.id] ?? null }));
+
+  return NextResponse.json({ bookings: merged, total: merged.length });
 }

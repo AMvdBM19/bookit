@@ -105,6 +105,8 @@ export interface WidgetStrings {
   successConfirmedSub: string;
   successPendingSub: (staffName: string) => string;
   ref: string;
+  depositPayButton: (amount: string) => string;
+  depositPayDescription: string;
 }
 
 const en: WidgetStrings = {
@@ -191,6 +193,8 @@ const en: WidgetStrings = {
   successConfirmedSub: 'Booking confirmed!',
   successPendingSub: s => `${s} will review and confirm shortly.`,
   ref: 'Ref:',
+  depositPayButton: amount => `Pay deposit (${amount})`,
+  depositPayDescription: 'A deposit is required to secure your booking.',
 };
 
 // Natural informal-professional Dutch ("je/jouw" register).
@@ -278,6 +282,8 @@ const nl: WidgetStrings = {
   successConfirmedSub: 'Boeking bevestigd!',
   successPendingSub: s => `${s} bekijkt je aanvraag en bevestigt deze binnenkort.`,
   ref: 'Ref:',
+  depositPayButton: amount => `Aanbetaling doen (${amount})`,
+  depositPayDescription: 'Een aanbetaling is nodig om je boeking vast te leggen.',
 };
 
 const DICTIONARIES: Record<WidgetLanguage, WidgetStrings> = { en, nl };

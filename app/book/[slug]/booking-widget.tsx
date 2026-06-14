@@ -33,7 +33,13 @@ interface BookingState {
   submitting: boolean;
   submitError: string | null;
   validationError: string | null;
-  bookingResult: { bookingId: string; status: string; message: string } | null;
+  bookingResult: {
+    bookingId: string;
+    status: string;
+    message: string;
+    checkoutUrl?: string | null;
+    depositAmount?: number | null;
+  } | null;
 }
 
 const INITIAL_STATE: BookingState = {
@@ -207,6 +213,8 @@ function BookingWidgetInner({ slug, catalog, lang }: Required<Props>) {
           bookingId: data.bookingId,
           status: data.status,
           message: data.message,
+          checkoutUrl: data.checkout_url ?? null,
+          depositAmount: data.deposit_amount ?? null,
         },
         step: 'success',
       });
@@ -475,6 +483,9 @@ function BookingWidgetInner({ slug, catalog, lang }: Required<Props>) {
               staffName={selectedStaff?.pseudonym ?? 'Our team'}
               onBookAnother={handleReset}
               brandColor={brandColor}
+              checkoutUrl={state.bookingResult.checkoutUrl ?? null}
+              depositAmount={state.bookingResult.depositAmount ?? null}
+              currency={catalog.settings?.currency ?? 'EUR'}
             />
           )}
         </div>

@@ -49,6 +49,21 @@ export async function GET() {
     .eq('is_active', true)
     .maybeSingle();
 
+  const { data: mollieIntegration } = await supabase
+    .from('tenant_integrations')
+    .select('is_active, config')
+    .eq('tenant_id', user.tenantId)
+    .eq('integration_type', 'mollie')
+    .eq('is_active', true)
+    .maybeSingle();
+
+  const mollieKey = ((mollieIntegration?.config ?? {}) as { api_key?: string }).api_key;
+  const mollieMode = mollieKey?.startsWith('test_')
+    ? 'test'
+    : mollieKey?.startsWith('live_')
+      ? 'live'
+      : null;
+
   return NextResponse.json({
     tenant: tenant ?? null,
     settings: settings ?? null,
@@ -58,6 +73,7 @@ export async function GET() {
         ? { configured: true, provider: waIntegration.integration_type }
         : { configured: false, provider: null },
       email: { configured: !!emailIntegration },
+      mollie: { configured: !!mollieIntegration, mode: mollieMode },
     },
   });
 }

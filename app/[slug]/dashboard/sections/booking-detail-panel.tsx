@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { toast } from 'sonner';
 import { useTenantConfig } from '@/lib/context/tenant-config';
 import Badge from '@/components/ui/badge';
 
@@ -28,6 +29,9 @@ export interface BookingDetail {
   total_price?: number | string | null;
   tag_extras_total?: number | string | null;
   base_rate_per_30?: number | string | null;
+  payment_status?: string | null;
+  deposit_amount?: number | string | null;
+  payment?: { method: string | null; paid_at: string | null; checkout_url: string | null } | null;
   created_at?: string | null;
   confirmed_at?: string | null;
   cancelled_at?: string | null;
@@ -41,6 +45,46 @@ export interface BookingDetail {
 function pickOne<T>(v: T | T[] | null | undefined): T | null {
   if (!v) return null;
   return Array.isArray(v) ? v[0] ?? null : v;
+}
+
+// Shared payment-status presentation, reused by the booking tables and Kanban.
+const PAYMENT_STATUS_META: Record<
+  string,
+  { label: string; variant: 'default' | 'success' | 'warning' | 'danger' | 'info' }
+> = {
+  deposit_pending: { label: 'Deposit pending', variant: 'warning' },
+  deposit_paid: { label: 'Deposit paid', variant: 'success' },
+  paid: { label: 'Paid', variant: 'success' },
+  refunded: { label: 'Refunded', variant: 'info' },
+};
+
+export function PaymentStatusBadge({ status }: { status?: string | null }) {
+  if (!status || status === 'unpaid') return null;
+  const meta = PAYMENT_STATUS_META[status];
+  if (!meta) return null;
+  return <Badge variant={meta.variant}>{meta.label}</Badge>;
+}
+
+function CopyLinkButton({ url }: { url: string }) {
+  const [copied, setCopied] = useState(false);
+  return (
+    <button
+      type="button"
+      onClick={async () => {
+        try {
+          await navigator.clipboard.writeText(url);
+          setCopied(true);
+          toast.success('Payment link copied.');
+          window.setTimeout(() => setCopied(false), 1500);
+        } catch {
+          toast.error('Could not copy. Link: ' + url);
+        }
+      }}
+      className="mt-1.5 text-xs px-2 py-1 bg-elevated hover:bg-sunken text-fg rounded"
+    >
+      {copied ? 'Copied' : 'Copy payment link'}
+    </button>
+  );
 }
 
 function fmtMoney(amount: number | string | null | undefined, currency: string): string | null {
@@ -145,6 +189,13 @@ export default function BookingDetailPanel({
   const cancelled = fmtTimestamp(booking.cancelled_at);
   const notesLabel = featureFlags.booking_notes_label || 'Notes';
 
+  const paymentStatus = booking.payment_status ?? 'unpaid';
+  const depositAmount = fmtMoney(booking.deposit_amount, currency);
+  const paymentMethod = booking.payment?.method ?? null;
+  const paidAt = fmtTimestamp(booking.payment?.paid_at);
+  const checkoutUrl = booking.payment?.checkout_url ?? null;
+  const showPayment = paymentStatus !== 'unpaid' || !!depositAmount;
+
   return (
     <div className="bg-elevated/60 border-t border-border px-4 py-3">
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-6 gap-y-3">
@@ -196,6 +247,23 @@ export default function BookingDetailPanel({
             </p>
           )}
         </DetailItem>
+
+        {showPayment && (
+          <DetailItem label="Payment">
+            <div className="flex items-center gap-2 mb-1">
+              <PaymentStatusBadge status={paymentStatus} />
+              {paymentStatus === 'unpaid' && <span className="text-fg-muted">Unpaid</span>}
+            </div>
+            {depositAmount && (
+              <p className="text-fg-muted">Deposit: {depositAmount}</p>
+            )}
+            {paymentMethod && <p className="text-fg-muted">Method: {paymentMethod}</p>}
+            {paidAt && <p className="text-fg-muted">Paid {paidAt}</p>}
+            {paymentStatus === 'deposit_pending' && checkoutUrl && (
+              <CopyLinkButton url={checkoutUrl} />
+            )}
+          </DetailItem>
+        )}
 
         {booking.booking_notes && (
           <DetailItem label={notesLabel}>

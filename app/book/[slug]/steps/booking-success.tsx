@@ -1,6 +1,6 @@
 'use client';
 
-import { useWidgetStrings } from '@/lib/widget-i18n';
+import { formatWidgetMoney, useWidgetStrings } from '@/lib/widget-i18n';
 
 interface Props {
   status: string;
@@ -10,6 +10,9 @@ interface Props {
   staffName: string;
   onBookAnother: () => void;
   brandColor: string;
+  checkoutUrl?: string | null;
+  depositAmount?: number | null;
+  currency?: string;
 }
 
 export default function BookingSuccess({
@@ -20,6 +23,9 @@ export default function BookingSuccess({
   staffName,
   onBookAnother,
   brandColor,
+  checkoutUrl,
+  depositAmount,
+  currency = 'EUR',
 }: Props) {
   const t = useWidgetStrings();
   const confirmed = status === 'confirmed';
@@ -49,6 +55,22 @@ export default function BookingSuccess({
           {t.ref} {bookingId.slice(0, 8)}
         </p>
       </div>
+
+      {checkoutUrl && (
+        <div className="w-card w-pad text-center space-y-2">
+          <p className="w-tx2 text-xs">{t.depositPayDescription}</p>
+          <a
+            href={checkoutUrl}
+            target="_top"
+            className="block w-full w-round py-2.5 text-sm font-medium transition-opacity hover:opacity-90"
+            style={{ backgroundColor: brandColor, color: '#fff' }}
+          >
+            {t.depositPayButton(
+              depositAmount != null ? formatWidgetMoney(depositAmount, currency, t) : ''
+            )}
+          </a>
+        </div>
+      )}
 
       <button
         type="button"
