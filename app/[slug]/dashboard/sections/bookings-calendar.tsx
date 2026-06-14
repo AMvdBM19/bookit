@@ -1,8 +1,10 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { toast } from 'sonner';
 import { useTenantConfig } from '@/lib/context/tenant-config';
 import Modal from '@/components/ui/modal';
+import ConfirmDialog from '@/components/ui/confirm-dialog';
 import BookingDetailPanel, { type BookingDetail } from './booking-detail-panel';
 
 /**
@@ -57,11 +59,17 @@ export default function BookingsCalendar({
   currency,
   slug,
   onEdit,
+  staffOptions = [],
+  onAssign,
+  onStatus,
 }: {
   bookings: BookingDetail[];
   currency: string;
   slug?: string;
   onEdit?: (bookingId: string) => void;
+  staffOptions?: Array<{ id: string; pseudonym: string }>;
+  onAssign?: (id: string, staffId: string) => Promise<void>;
+  onStatus?: (id: string, target: string, reason?: string) => Promise<boolean>;
 }) {
   const { terminology } = useTenantConfig();
   const [view, setView] = useState<'week' | 'day'>('week');
@@ -71,6 +79,33 @@ export default function BookingsCalendar({
     return t;
   });
   const [openBooking, setOpenBooking] = useState<BookingDetail | null>(null);
+  const [menu, setMenu] = useState<{ x: number; y: number; booking: BookingDetail } | null>(null);
+  const [cancelBooking, setCancelBooking] = useState<BookingDetail | null>(null);
+  const [cancelReason, setCancelReason] = useState('');
+  const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const quickActionsEnabled = !!onStatus;
+
+  function openMenu(e: React.MouseEvent, b: BookingDetail) {
+    if (!quickActionsEnabled) return;
+    e.preventDefault();
+    setMenu({ x: e.clientX, y: e.clientY, booking: b });
+  }
+
+  // Dismiss the context menu on any outside click / Escape.
+  useEffect(() => {
+    if (!menu) return;
+    const close = () => setMenu(null);
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setMenu(null);
+    };
+    window.addEventListener('click', close);
+    window.addEventListener('keydown', onKey);
+    return () => {
+      window.removeEventListener('click', close);
+      window.removeEventListener('keydown', onKey);
+    };
+  }, [menu]);
 
   const days: Date[] =
     view === 'week'
@@ -231,6 +266,23 @@ export default function BookingsCalendar({
                         key={b.id}
                         type="button"
                         onClick={() => setOpenBooking(b)}
+                        onContextMenu={e => openMenu(e, b)}
+                        onTouchStart={e => {
+                          if (!quickActionsEnabled) return;
+                          const touch = e.touches[0];
+                          const x = touch.clientX;
+                          const y = touch.clientY;
+                          longPressTimer.current = setTimeout(
+                            () => setMenu({ x, y, booking: b }),
+                            500
+                          );
+                        }}
+                        onTouchEnd={() => {
+                          if (longPressTimer.current) clearTimeout(longPressTimer.current);
+                        }}
+                        onTouchMove={() => {
+                          if (longPressTimer.current) clearTimeout(longPressTimer.current);
+                        }}
                         title={`${b.slot_start.slice(0, 5)}–${b.slot_end.slice(0, 5)} ${client}`}
                         className={`absolute inset-x-0.5 rounded border px-1.5 py-0.5 text-left text-[10px] leading-tight overflow-hidden transition-opacity hover:opacity-80 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring ${colors} ${
                           isPool ? 'border-dashed' : ''
@@ -292,6 +344,129 @@ export default function BookingsCalendar({
             }
           />
         </Modal>
+      )}
+
+      {menu && (() => {
+        const b = menu.booking;
+        const staff = pickOne(b.staff);
+        const isPool = !staff && b.status === 'pending_staff';
+        const ended = new Date(`${b.slot_date}T${b.slot_end}`) < new Date();
+        const editable = ['pending_staff', 'confirmed', 'completed'].includes(b.status);
+        const item = 'block w-full text-left px-3 py-1.5 text-xs text-fg hover:bg-elevated';
+        return (
+          <div
+            className="fixed z-50 min-w-[160px] rounded-lg border border-border bg-surface shadow-lg py-1"
+            style={{ top: Math.min(menu.y, window.innerHeight - 240), left: Math.min(menu.x, window.innerWidth - 180) }}
+            onClick={e => e.stopPropagation()}
+          >
+            {isPool && staffOptions.length > 0 && onAssign && (
+              <div className="px-3 py-1.5 border-b border-border">
+                <select
+                  defaultValue=""
+                  onChange={async e => {
+                    if (e.target.value) {
+                      await onAssign(b.id, e.target.value);
+                      setMenu(null);
+                    }
+                  }}
+                  className="w-full text-xs bg-elevated text-fg border border-border rounded px-1 py-1"
+                  aria-label="Assign staff"
+                >
+                  <option value="">Assign…</option>
+                  {staffOptions.map(s => (
+                    <option key={s.id} value={s.id}>{s.pseudonym}</option>
+                  ))}
+                </select>
+              </div>
+            )}
+            {b.status === 'confirmed' && (
+              <>
+                <button
+                  type="button"
+                  className={item}
+                  onClick={async () => {
+                    setMenu(null);
+                    if (!ended) { toast.error("Booking hasn't ended yet."); return; }
+                    await onStatus?.(b.id, 'completed');
+                  }}
+                >
+                  Mark completed
+                </button>
+                <button
+                  type="button"
+                  className={item}
+                  onClick={async () => {
+                    setMenu(null);
+                    if (!ended) { toast.error("Booking hasn't ended yet."); return; }
+                    await onStatus?.(b.id, 'no_show');
+                  }}
+                >
+                  Mark no-show
+                </button>
+              </>
+            )}
+            {(b.status === 'pending_staff' || b.status === 'confirmed') && (
+              <button
+                type="button"
+                className={item}
+                onClick={() => {
+                  setMenu(null);
+                  setCancelReason('');
+                  setCancelBooking(b);
+                }}
+              >
+                Cancel
+              </button>
+            )}
+            {editable && onEdit && (
+              <button
+                type="button"
+                className={item}
+                onClick={() => {
+                  setMenu(null);
+                  onEdit(b.id);
+                }}
+              >
+                Edit
+              </button>
+            )}
+            <button
+              type="button"
+              className={item}
+              onClick={() => {
+                setMenu(null);
+                setOpenBooking(b);
+              }}
+            >
+              View details
+            </button>
+          </div>
+        );
+      })()}
+
+      {cancelBooking && (
+        <ConfirmDialog
+          title={`Cancel this ${terminology.booking.toLowerCase()}?`}
+          description={
+            <div className="space-y-2">
+              <p>The {terminology.client.toLowerCase()} will be notified of the cancellation.</p>
+              <input
+                type="text"
+                value={cancelReason}
+                onChange={e => setCancelReason(e.target.value)}
+                placeholder="Reason (optional)"
+                className="w-full text-sm bg-elevated text-fg border border-border rounded px-3 py-1.5 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              />
+            </div>
+          }
+          confirmLabel="Cancel booking"
+          onConfirm={async () => {
+            const b = cancelBooking;
+            setCancelBooking(null);
+            if (b) await onStatus?.(b.id, 'cancelled', cancelReason || undefined);
+          }}
+          onClose={() => setCancelBooking(null)}
+        />
       )}
     </div>
   );

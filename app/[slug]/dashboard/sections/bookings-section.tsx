@@ -569,7 +569,18 @@ export default function BookingsSection({ slug }: { slug: string }) {
       </div>
 
       {viewMode === 'calendar' ? (
-        <BookingsCalendar bookings={filtered} currency={currency} slug={slug} onEdit={setEditBookingId} />
+        <BookingsCalendar
+          bookings={filtered}
+          currency={currency}
+          slug={slug}
+          onEdit={setEditBookingId}
+          staffOptions={staffOptions}
+          onAssign={async (id, staffId) => {
+            setAssignChoice(prev => ({ ...prev, [id]: staffId }));
+            await handleAssign(id);
+          }}
+          onStatus={handleBoardStatus}
+        />
       ) : viewMode === 'board' ? (
         <BookingsKanban
           bookings={filtered}
