@@ -4,6 +4,7 @@ import path from 'path';
 /** Agent dashboard tabs, as used in agent-dashboard.tsx. */
 export type DashboardTab =
   | 'bookings'
+  | 'analytics'
   | 'staff'
   | 'clients'
   | 'pricing'
@@ -16,6 +17,7 @@ const ALWAYS_LOADED = ['platform-overview.md', 'tools-reference.md'];
 /** Which ai-docs guides are relevant on each dashboard tab. */
 export const PAGE_DOC_MAP: Record<DashboardTab, string[]> = {
   bookings: ['booking-guide.md', 'data-export-guide.md'],
+  analytics: ['analytics-guide.md'],
   staff: ['staff-guide.md', 'data-export-guide.md'],
   clients: ['client-guide.md', 'data-export-guide.md'],
   pricing: ['pricing-guide.md'],

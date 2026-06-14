@@ -65,7 +65,7 @@ export async function GET(request: NextRequest) {
     .filter(b => b.payment_status && b.payment_status !== 'unpaid')
     .map(b => b.id);
 
-  let paymentByBooking: Record<string, { method: string | null; paid_at: string | null; checkout_url: string | null }> = {};
+  const paymentByBooking: Record<string, { method: string | null; paid_at: string | null; checkout_url: string | null }> = {};
   if (payableIds.length > 0) {
     const { data: payments } = await supabase
       .from('payments')

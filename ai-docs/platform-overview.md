@@ -90,7 +90,8 @@ client has picked services, the sum of the selected services' durations.
 
 | Tab | Purpose | Guide |
 |---|---|---|
-| Bookings | Pending/upcoming/past bookings, accept/decline/assign, manual creation, CSV export | booking-guide.md |
+| Bookings | Pending/upcoming/past bookings, list/calendar/board views, search + date filter, accept/decline/assign, manual creation, CSV export | booking-guide.md |
+| Analytics | KPIs + charts (bookings, revenue, completion/no-show, source/status mix) per period | analytics-guide.md |
 | Staff | Team roster, invite staff, activate/deactivate, days off, CSV export | staff-guide.md |
 | Clients | Guest list or client accounts, block/approve/suspend, CSV export | client-guide.md |
 | Pricing | Base pricing, tax, revenue split, deposits, no-show policy, per-service price + duration | pricing-guide.md |

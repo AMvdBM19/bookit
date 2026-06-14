@@ -17,6 +17,17 @@ export const TOOL_REGISTRY: ToolRegistry = {
   //   from base rate + tag extras unless overridden). Same status window
   //   as the UI: pending_staff, confirmed, completed within 24h. Every
   //   edit lands in the booking_edits audit trail.
+  //
+  // PLANNED (Phase 17-D, read tool):
+  // get_analytics — GET /api/{slug}/analytics?period=7d|30d|90d
+  //   Returns KPIs (bookings, revenue, completion/no-show rates, avg per
+  //   staff) and chart series for advice. Read-only, agent-scoped.
+  //
+  // PLANNED (Phase 17-B, confirmation-gated write tool):
+  // create_payment_link — POST on the payments routes
+  //   Generates/refreshes a Mollie deposit checkout link for a booking
+  //   (only when the tenant has an active Mollie integration and the
+  //   booking requires a deposit).
 };
 
 /** Wire specs for every registered tool, for the adapter request. */

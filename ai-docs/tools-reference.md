@@ -43,6 +43,7 @@ will require explicit per-action user confirmation in the chat UI.
 | `list_clients` | GET /api/{slug}/clients · /guests | Client/guest list |
 | `list_services` | GET /api/{slug}/tags | Services with price/duration |
 | `get_booking_stats` | (derived) | Counts/revenue summaries for advice |
+| `get_analytics` | GET /api/{slug}/analytics | KPIs + chart series for a period (7d/30d/90d) |
 
 ### Write tools (planned wave 2, confirmation-gated)
 
@@ -57,6 +58,7 @@ will require explicit per-action user confirmation in the chat UI.
 | `update_notification_template` | POST …/notifications/templates | Template upsert |
 | `configure_email_integration` | PUT /api/{slug}/integrations/email | Enable/adjust the email channel |
 | `send_test_email` | (planned endpoint) | Send a test template email to the owner's address |
+| `create_payment_link` | (planned, on POST …/payments) | Generate/refresh a deposit checkout link for a booking |
 | `export_csv` | GET /api/{slug}/export/* | Generate a download link |
 
 ### Explicitly out of scope (never planned)

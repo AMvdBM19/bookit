@@ -66,6 +66,16 @@ acceptance) are template-level notices, not tenant-editable.
   address, and an Active toggle. Sending infrastructure (Resend) is
   platform-managed — the owner never enters API keys. While not
   configured, no emails are sent and everything else works normally.
+- **Payments (Mollie)** — status badge ("Not configured" / "Test mode" /
+  "Active (Mollie)") and a **Configure** button opening a modal: the
+  tenant's **Mollie API key** (a `test_…` key runs in test mode, `live_…`
+  takes real payments; masked after save) and an Active toggle. When no
+  tenant key is set, the platform's shared Mollie account is used if one
+  is configured. With Mollie active, confirming a booking that requires a
+  deposit raises an online checkout and a payment link for the client;
+  see notifications-guide.md and pricing-guide.md (deposits). Without an
+  active integration, no online payment is created and bookings confirm
+  as normal.
 - **AI assistant** shows as "Coming soon".
 
 ## Booking form section

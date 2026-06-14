@@ -6,6 +6,7 @@ import { useTenantConfig } from '@/lib/context/tenant-config';
 import ThemeToggle from '@/app/components/theme-toggle';
 import OnboardingChecklist from '@/components/onboarding-checklist';
 import BookingsSection from './sections/bookings-section';
+import AnalyticsSection from './sections/analytics-section';
 import StaffSection from './sections/staff-section';
 import ClientsSection from './sections/clients-section';
 import PricingSection from './sections/pricing-section';
@@ -13,7 +14,7 @@ import SettingsSection from './sections/settings-section';
 import TemplatesSection from './sections/templates-section';
 import WidgetSection from './sections/widget-section';
 
-type Tab = 'bookings' | 'staff' | 'clients' | 'pricing' | 'widget' | 'templates' | 'settings';
+type Tab = 'bookings' | 'analytics' | 'staff' | 'clients' | 'pricing' | 'widget' | 'templates' | 'settings';
 
 interface Props {
   slug: string;
@@ -23,7 +24,7 @@ interface Props {
   wizardCompleted?: boolean;
 }
 
-const TAB_IDS: Tab[] = ['bookings', 'staff', 'clients', 'pricing', 'widget', 'templates', 'settings'];
+const TAB_IDS: Tab[] = ['bookings', 'analytics', 'staff', 'clients', 'pricing', 'widget', 'templates', 'settings'];
 
 function TabIcon({ id }: { id: Tab }) {
   const p = {
@@ -43,6 +44,14 @@ function TabIcon({ id }: { id: Tab }) {
         <svg {...p}>
           <rect x="3" y="4" width="18" height="18" rx="2" />
           <path d="M16 2v4M8 2v4M3 10h18" />
+        </svg>
+      );
+    case 'analytics':
+      return (
+        <svg {...p}>
+          <line x1="18" y1="20" x2="18" y2="10" />
+          <line x1="12" y1="20" x2="12" y2="4" />
+          <line x1="6" y1="20" x2="6" y2="14" />
         </svg>
       );
     case 'staff':
@@ -106,6 +115,8 @@ export default function AgentDashboard({
     switch (id) {
       case 'bookings':
         return terminology.booking_plural;
+      case 'analytics':
+        return 'Analytics';
       case 'staff':
         return terminology.staff_plural;
       case 'clients':
@@ -227,6 +238,7 @@ export default function AgentDashboard({
             <OnboardingChecklist slug={slug} onNavigate={id => selectTab(id)} />
           )}
           {tab === 'bookings' && <BookingsSection slug={slug} />}
+          {tab === 'analytics' && <AnalyticsSection slug={slug} />}
           {tab === 'staff' && <StaffSection slug={slug} />}
           {tab === 'clients' && <ClientsSection slug={slug} clientMode={clientMode} />}
           {tab === 'pricing' && <PricingSection slug={slug} />}

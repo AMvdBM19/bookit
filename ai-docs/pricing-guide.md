@@ -58,8 +58,14 @@ Appears only when the tenant's `deposits_supported` feature flag is true.
 
 The widget shows a **deposit notice** on the confirm step when all three
 hold: flag on, deposit % > 0, and booking duration > the minutes threshold.
-**No payment is processed** — this is informational scaffolding only; the
-owner collects the deposit themselves.
+
+**Online collection (Phase 17):** if the tenant has connected **Mollie**
+(Settings → Integrations → Payments), confirming such a booking generates
+a real deposit checkout — the client gets a "Pay deposit" button on the
+success screen and a payment link in the confirmation email/WhatsApp, and
+the dashboard tracks payment status. Without Mollie connected, the deposit
+notice is informational only and the owner collects it themselves. The
+deposit amount is computed and stored at booking creation.
 
 ### No-Show Policy
 

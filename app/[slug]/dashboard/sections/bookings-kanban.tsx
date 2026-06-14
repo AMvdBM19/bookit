@@ -232,7 +232,6 @@ function KanbanCard({
   onEdit: (id: string) => void;
   onViewDetails: (b: KanbanBooking) => void;
 }) {
-  const { terminology } = useTenantConfig();
   const staffName = staffNameOf(b);
   const isPool = !staffName && b.status === 'pending_staff';
   const ended = hasEnded(b);

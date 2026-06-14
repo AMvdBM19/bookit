@@ -3,6 +3,42 @@
 > Feature history for the AI assistant: what exists and since when. Newest
 > first. Maintained per the AI Docs Maintenance Protocol in CLAUDE.md.
 
+## 2026-06-14 — Analytics tab (Phase 17-D)
+
+- New **Analytics** dashboard tab: period selector (7/30/90 days), five
+  KPI cards (total bookings, revenue, completion rate, no-show rate, avg
+  per staff) and four charts (bookings by day, revenue by week, source
+  split, status distribution). Read-only, derived from bookings; empty
+  tenants show an empty state. "Projections coming soon" — no forecasting
+  yet.
+
+## 2026-06-14 — Booking board, search & date filter (Phase 17-C)
+
+- The Bookings tab gains a **Board** (Kanban) view alongside List and
+  Calendar: status columns with counts, drag-and-drop status changes
+  (validated against the booking lifecycle and time-gated), and per-card
+  quick actions (assign, complete, no-show, cancel, edit, details).
+- A **keyword search** and a **date-range filter** (today / tomorrow /
+  this & next week / this month / custom) apply across all three views.
+- The Calendar view gains a right-click / long-press **context menu** with
+  the same quick actions.
+
+## 2026-06-14 — Online deposit payments via Mollie (Phase 17-B)
+
+- Tenants can connect **Mollie** (Settings → Integrations → Payments) to
+  collect deposits online. When a booking that requires a deposit is
+  confirmed, the client gets a payment link (in the confirmation
+  email/WhatsApp and on the success screen) and a Mollie checkout.
+- A webhook marks the deposit paid and emails a **payment received**
+  confirmation; the dashboard shows payment status on bookings (detail
+  panel + table badges) with a copy-payment-link action.
+- No key configured ⇒ nothing changes; bookings confirm exactly as before.
+
+## 2026-06-14 — Cancellation notifications (Phase 17-A)
+
+- Cancelling a booking now notifies the client (WhatsApp if opted in,
+  email if active) — previously cancellations were silent.
+
 ## 2026-06-13 — Widget in Dutch (Phase 16-C)
 
 - The public booking widget can run in **Dutch**: Widget tab → Language →

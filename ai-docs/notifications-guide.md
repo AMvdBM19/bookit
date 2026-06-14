@@ -55,11 +55,18 @@ not sent.
 
 | Event | Fires when | Variables |
 |---|---|---|
-| `booking_confirmed` | Booking accepted / auto-confirmed / manual booking with notify ticked | `[client_name] [staff_name] [date] [time] [duration] [services] [agency_name]` |
+| `booking_confirmed` | Booking accepted / auto-confirmed / manual booking with notify ticked | `[client_name] [staff_name] [date] [time] [duration] [services] [deposit_amount] [payment_link] [agency_name]` |
 | `booking_declined` | Staff/owner declines a pending booking | `[client_name] [staff_name] [date] [time] [agency_name]` |
 | `booking_reminder` | Reminder lead time before a confirmed slot | `[client_name] [staff_name] [date] [time]` |
-| `booking_cancelled` | Confirmed booking cancelled | `[client_name] [staff_name] [date] [agency_name]` |
+| `booking_cancelled` | Confirmed/pending booking cancelled (now wired — Phase 17-A) | `[client_name] [staff_name] [date] [agency_name]` |
 | `client_approved` | Owner approves a client account (account mode) | `[client_name] [agency_name]` |
+| `payment_received` | A deposit payment is received (**email only** — no WhatsApp) | `[client_name] [deposit_amount] [date] [time] [agency_name]` |
+
+`[deposit_amount]`/`[payment_link]` are filled only when a Mollie deposit
+checkout was raised for the booking; otherwise empty. When a payment link
+exists and your template doesn't include `[payment_link]`, the platform
+appends a short "Deposit required / Pay here" line automatically so the
+client always gets the link.
 
 ## Reminders
 
