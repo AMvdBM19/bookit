@@ -3,6 +3,25 @@
 > Feature history for the AI assistant: what exists and since when. Newest
 > first. Maintained per the AI Docs Maintenance Protocol in CLAUDE.md.
 
+## 2026-06-15 — Embed guides & WordPress plugin (Phase 18-C/D)
+
+- New **Book-IT Booking Widget** WordPress plugin: `[bookit slug lang height]`
+  shortcode, a Gutenberg block, and a settings page for a default slug.
+  Downloadable from the Widget tab (`/downloads/bookit-booking-widget.zip`).
+- Per-platform embed guides in `public/docs/embed-guides/` (WordPress, Shopify,
+  Wix, Squarespace, Webflow, Jimdo, Google Business Profile,
+  Facebook/Instagram) + `ai-docs/embed-guide.md`.
+
+## 2026-06-15 — POS terminal settlement & receipts (Phase 18-A/B)
+
+- **Charge to terminal**: register Mollie PIN terminals under Settings →
+  Payments, then charge a booking's outstanding balance (total minus paid
+  deposit) or full total to the reader from the booking detail panel. Mollie's
+  webhook settles the booking to **Paid**.
+- **Receipts**: a `payment_receipt` email is sent when a booking becomes fully
+  paid, and a **Download receipt** button opens a styled HTML receipt (with a
+  BTW breakdown when a tax rate is set). A receipt is not a tax invoice.
+
 ## 2026-06-14 — Analytics tab (Phase 17-D)
 
 - New **Analytics** dashboard tab: period selector (7/30/90 days), five

@@ -160,8 +160,30 @@ the booking window.
 - A reminder is dispatched `reminder_lead_time_minutes` before confirmed
   bookings via the platform cron.
 
+## Charging at a terminal & receipts (Phase 18)
+
+In a booking's expanded detail panel, when a balance is outstanding and the
+tenant has at least one active Mollie PIN terminal registered (settings-guide.md):
+
+- **Charge to terminal** — starts a card payment on the reader for the
+  remaining balance (total minus any deposit already paid), or the full total
+  if nothing was prepaid. With more than one terminal, a selector appears
+  first. The owner completes the payment on the physical reader; Mollie's
+  webhook then flips the booking to **Paid**.
+- **Download receipt** — appears once a booking is fully **Paid**. Opens a
+  styled HTML receipt in a new tab (with a Print / Save-as-PDF button) showing
+  services, totals, the amount paid and method, and — when a tax rate is set —
+  a BTW breakdown (subtotal excl., BTW, total incl.). A receipt is explicitly
+  *not* a tax invoice.
+
+When a booking becomes fully paid, the **Receipt** email template
+(`payment_receipt`) is sent automatically if email is active.
+
 ## Related APIs (for tool integration)
 
+- `POST /api/{slug}/bookings/{id}/charge-terminal` — charge the balance to a
+  PIN terminal (agent/staff). Body `{ terminal_id? }`.
+- `GET /api/{slug}/bookings/{id}/receipt` — styled HTML receipt (agent/staff).
 - `GET /api/{slug}/bookings?status=&from=&to=` — list (agent).
 - `POST /api/{slug}/bookings/{id}/accept|decline|assign|claim` — transitions.
 - `PATCH /api/{slug}/bookings/{id}/status` — completed / no_show.

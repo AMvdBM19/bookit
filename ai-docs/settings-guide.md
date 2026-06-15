@@ -128,6 +128,19 @@ Intentionally **not** editable: `tax_rate_pct`, `client_mode`,
 `age_gate_minimum`, the booking mode (staff_select vs pool), and the
 source template.
 
+## Payments (Mollie) and terminals
+
+Settings → Integrations → **Payments (Mollie)**. Enter a Mollie API key
+(`test_…` or `live_…`) and toggle Active to collect online deposits. When
+Mollie is active, a **Terminal devices** section appears below the key:
+
+- Register physical Mollie PIN terminals by **Name** + **Terminal ID**
+  (`term_…`, found in the Mollie dashboard under Point of sale). The stored
+  terminal ID is masked on display.
+- Remove a terminal with the Remove button (confirm dialog).
+- Registered terminals power the **Charge to terminal** button on bookings
+  (see booking-guide.md).
+
 ## Common owner questions
 
 - *"Clients book and never show; can I vet them first?"* — set Confirm mode
@@ -145,3 +158,7 @@ source template.
 - `PATCH /api/{slug}/settings` — editable fields above; locked fields → 403.
 - `GET/PUT /api/{slug}/integrations/whatsapp` — WhatsApp provider config
   (agent-only; GET masks stored values).
+- `GET/PUT /api/{slug}/integrations/mollie` — Mollie key + active toggle
+  (agent-only; GET masks the key).
+- `GET/POST/DELETE /api/{slug}/integrations/mollie/terminals` — PIN terminal
+  registration (agent-only; GET masks the terminal ID).

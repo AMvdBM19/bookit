@@ -93,9 +93,14 @@ Three tabs with a **Copy to Clipboard** button:
 
 | Tab | Snippet | Notes |
 |---|---|---|
-| **WordPress** | `[bookit slug="{slug}"]` | Requires the Book-IT WordPress plugin; optional `height="800"` |
+| **WordPress** | `[bookit slug="{slug}"]` | Free plugin (download button + steps shown); optional `lang="nl"`, `height="800"` |
 | **HTML** | `<iframe src="…/book/{slug}" …>` | Works on any site |
 | **Script** | `<div data-bookit-slug="{slug}"></div>` + `embed.js` | Auto-injects the iframe |
+
+The WordPress tab also offers a **Download WordPress plugin (.zip)** button
+and install steps. See embed-guide.md for per-platform instructions
+(WordPress, Shopify, Wix, Squarespace, Webflow, Jimdo, Google Business,
+Facebook/Instagram).
 
 Linking directly to the widget URL (e.g. from an Instagram bio) is equally
 valid — no embed needed.

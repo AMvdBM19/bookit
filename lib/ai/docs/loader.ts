@@ -21,7 +21,7 @@ export const PAGE_DOC_MAP: Record<DashboardTab, string[]> = {
   staff: ['staff-guide.md', 'data-export-guide.md'],
   clients: ['client-guide.md', 'data-export-guide.md'],
   pricing: ['pricing-guide.md'],
-  widget: ['widget-guide.md', 'booking-guide.md'],
+  widget: ['widget-guide.md', 'embed-guide.md', 'booking-guide.md'],
   templates: ['notifications-guide.md'],
   settings: ['settings-guide.md', 'notifications-guide.md'],
 };
