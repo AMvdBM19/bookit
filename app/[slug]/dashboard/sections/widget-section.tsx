@@ -443,9 +443,25 @@ export default function WidgetSection({ slug }: { slug: string }) {
             {copied ? 'Copied!' : 'Copy to Clipboard'}
           </button>
           {embedTab === 'wordpress' && (
-            <p className="text-[11px] text-fg-muted mt-2">
-              Requires the Book-IT WordPress plugin. Optional: <code className="font-mono">height=&quot;800&quot;</code>.
-            </p>
+            <div className="mt-2 space-y-2">
+              <p className="text-[11px] text-fg-muted">
+                Requires the Book-IT WordPress plugin. Optional attributes:{' '}
+                <code className="font-mono">lang=&quot;nl&quot;</code>,{' '}
+                <code className="font-mono">height=&quot;800&quot;</code>.
+              </p>
+              <a
+                href="/downloads/bookit-booking-widget.zip"
+                download
+                className="inline-flex items-center gap-1.5 text-xs px-3 py-1.5 bg-fg text-canvas rounded hover:opacity-90 transition-opacity"
+              >
+                ⬇ Download WordPress plugin (.zip)
+              </a>
+              <ol className="text-[11px] text-fg-muted list-decimal ml-4 space-y-0.5">
+                <li>In WordPress: Plugins → Add New → Upload Plugin, choose the .zip, Install &amp; Activate.</li>
+                <li>(Optional) Settings → Book-IT Widget to set a default slug.</li>
+                <li>Paste the shortcode above into any page or post, or add the &quot;Book-IT Booking Widget&quot; block.</li>
+              </ol>
+            </div>
           )}
         </section>
       </div>
