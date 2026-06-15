@@ -20,6 +20,17 @@ export interface CreatePaymentInput {
   metadata?: Record<string, string>;
 }
 
+export interface CreateTerminalPaymentInput {
+  amount: number;
+  currency: string;
+  description: string;
+  /** Mollie point-of-sale terminal id (term_xxx). */
+  terminalId: string;
+  webhookUrl: string;
+  /** Echoed back by the provider and used to cross-check webhooks. */
+  metadata?: Record<string, string>;
+}
+
 export interface CreatedPayment {
   id: string;
   checkoutUrl: string | null;
@@ -39,5 +50,12 @@ export interface FetchedPayment {
 
 export interface PaymentProvider {
   createPayment(input: CreatePaymentInput): Promise<CreatedPayment | null>;
+  /**
+   * Charge to a physical PIN terminal (point-of-sale). The client pays on the
+   * reader, not via a hosted checkout, so the result is delivered by webhook
+   * and there is no checkoutUrl. Returns null when the provider doesn't
+   * support terminals or the call fails.
+   */
+  createTerminalPayment(input: CreateTerminalPaymentInput): Promise<CreatedPayment | null>;
   getPayment(id: string): Promise<FetchedPayment | null>;
 }

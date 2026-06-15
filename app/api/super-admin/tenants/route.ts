@@ -86,6 +86,12 @@ function defaultTemplates() {
       subject: 'Payment received — [agency_name]',
       body: "Hi [client_name],\n\nWe've received your deposit of [deposit_amount] for your appointment on [date] at [time]. See you soon!\n\n[agency_name]",
     },
+    {
+      event_type: 'payment_receipt',
+      channel: 'email',
+      subject: 'Receipt — [agency_name]',
+      body: 'Hi [client_name],\n\nThank you — your payment has been received.\n\nDate: [date] [time]\nWith: [staff_name]\nServices: [services]\n\nTotal: [total]\nPaid: [paid_amount] ([payment_method])\n[deposit_line]\n\nThis is a booking receipt, not a tax invoice.\n\n[agency_name]',
+    },
   ];
 }
 

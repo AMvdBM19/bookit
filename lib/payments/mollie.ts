@@ -1,6 +1,7 @@
 import type {
   PaymentProvider,
   CreatePaymentInput,
+  CreateTerminalPaymentInput,
   CreatedPayment,
   FetchedPayment,
   PaymentStatus,
@@ -82,6 +83,38 @@ export function createMollieProvider(apiKey: string): PaymentProvider {
         };
       } catch (err) {
         console.error('[mollie] createPayment network error:', err);
+        return null;
+      }
+    },
+
+    async createTerminalPayment(input: CreateTerminalPaymentInput): Promise<CreatedPayment | null> {
+      try {
+        const res = await fetch(`${MOLLIE_API}/payments`, {
+          method: 'POST',
+          headers,
+          body: JSON.stringify({
+            amount: { currency: input.currency || 'EUR', value: input.amount.toFixed(2) },
+            description: input.description,
+            method: 'pointofsale',
+            terminalId: input.terminalId,
+            webhookUrl: input.webhookUrl,
+            ...(input.metadata ? { metadata: input.metadata } : {}),
+          }),
+        });
+        const data = (await res.json().catch(() => ({}))) as MolliePayment & { detail?: string };
+        if (!res.ok) {
+          console.error('[mollie] createTerminalPayment failed:', res.status, data.detail ?? data);
+          return null;
+        }
+        // Point-of-sale payments have no hosted checkout — the client pays on
+        // the reader and we learn the result via webhook.
+        return {
+          id: data.id,
+          checkoutUrl: null,
+          status: normalizeStatus(data.status),
+        };
+      } catch (err) {
+        console.error('[mollie] createTerminalPayment network error:', err);
         return null;
       }
     },

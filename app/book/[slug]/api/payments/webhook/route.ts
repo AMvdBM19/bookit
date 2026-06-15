@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase/server';
 import { getPaymentProvider } from '@/lib/payments';
 import { sendBookingEmail } from '@/lib/notifications/dispatch';
+import { buildReceiptData, receiptTemplateVariables } from '@/lib/payments/receipt';
 
 function formatMoney(amount: number, currency: string): string {
   try {
@@ -132,6 +133,24 @@ export async function POST(
         deposit_amount: formatMoney(Number(payment.amount), payment.currency ?? 'EUR'),
       },
     });
+  } else if (fetched.status === 'paid') {
+    // Terminal / full payment settled — the booking is now fully paid (Phase 18-A2/A3).
+    await supabase
+      .from('bookings')
+      .update({ payment_status: 'paid' })
+      .eq('id', payment.booking_id)
+      .eq('tenant_id', payment.tenant_id);
+
+    // Send the receipt email (Phase 18-B1). No-op if email isn't active.
+    const receipt = await buildReceiptData(supabase, payment.tenant_id, payment.booking_id);
+    if (receipt) {
+      await sendBookingEmail({
+        tenantId: payment.tenant_id,
+        bookingId: payment.booking_id,
+        eventType: 'payment_receipt',
+        variables: receiptTemplateVariables(receipt),
+      });
+    }
   } else if (fetched.status === 'failed' || fetched.status === 'expired' || fetched.status === 'cancelled') {
     // Allow a retry — client will see the failure on the redirect page.
     await supabase

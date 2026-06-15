@@ -9,6 +9,7 @@ const ALLOWED_EVENT_TYPES = [
   'booking_cancelled',
   'client_approved',
   'payment_received',
+  'payment_receipt',
 ] as const;
 
 const ALLOWED_CHANNELS = ['whatsapp', 'email'] as const;
@@ -25,6 +26,7 @@ const TEMPLATE_VARIABLES: Record<string, string[]> = {
   booking_cancelled: ['client_name', 'staff_name', 'date', 'agency_name'],
   client_approved: ['client_name', 'agency_name'],
   payment_received: ['client_name', 'deposit_amount', 'date', 'time', 'agency_name'],
+  payment_receipt: ['client_name', 'date', 'time', 'staff_name', 'services', 'total', 'paid_amount', 'payment_method', 'deposit_line', 'agency_name'],
 };
 
 export async function GET() {

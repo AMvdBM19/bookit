@@ -32,6 +32,7 @@ const EVENT_LABELS: Record<string, string> = {
   booking_cancelled: 'Booking cancelled',
   client_approved: 'Client approved',
   payment_received: 'Payment received',
+  payment_receipt: 'Receipt',
 };
 
 const EVENT_DESCRIPTIONS: Record<string, string> = {
@@ -41,6 +42,7 @@ const EVENT_DESCRIPTIONS: Record<string, string> = {
   booking_cancelled: 'Sent when a confirmed booking is cancelled.',
   client_approved: 'Sent when a client account is approved (account mode).',
   payment_received: 'Sent by email when a deposit payment is received (email only — no WhatsApp).',
+  payment_receipt: 'Sent by email when a booking is fully paid, e.g. at the terminal (email only — no WhatsApp).',
 };
 
 // Starting points for "Reset to default" — neutral wording that works for
@@ -84,6 +86,13 @@ const DEFAULT_BODIES: Record<string, Record<Channel, string>> = {
     email:
       "Hi [client_name],\n\nWe've received your deposit of [deposit_amount] for your appointment on [date] at [time]. See you soon!\n\n[agency_name]",
   },
+  payment_receipt: {
+    // Email only — same as payment_received. Sent when fully paid.
+    whatsapp:
+      'Hi [client_name], thanks — your payment of [paid_amount] has been received. — [agency_name]',
+    email:
+      'Hi [client_name],\n\nThank you — your payment has been received.\n\nDate: [date] [time]\nWith: [staff_name]\nServices: [services]\n\nTotal: [total]\nPaid: [paid_amount] ([payment_method])\n[deposit_line]\n\nThis is a booking receipt, not a tax invoice.\n\n[agency_name]',
+  },
 };
 
 const DEFAULT_SUBJECTS: Record<string, string> = {
@@ -93,6 +102,7 @@ const DEFAULT_SUBJECTS: Record<string, string> = {
   booking_cancelled: 'Your booking was cancelled',
   client_approved: 'Your account is approved',
   payment_received: 'Payment received',
+  payment_receipt: 'Receipt',
 };
 
 // Sample values for the live preview pane.
@@ -105,6 +115,10 @@ const SAMPLE_VALUES: Record<string, string> = {
   services: 'Haircut, Coloring',
   deposit_amount: '€20.00',
   payment_link: 'https://pay.example/abc',
+  total: '€80.00',
+  paid_amount: '€60.00',
+  payment_method: 'pointofsale',
+  deposit_line: 'Deposit already paid: €20.00',
   agency_name: 'Your Business',
 };
 
