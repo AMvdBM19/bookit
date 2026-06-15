@@ -65,6 +65,127 @@ export function PaymentStatusBadge({ status }: { status?: string | null }) {
   return <Badge variant={meta.variant}>{meta.label}</Badge>;
 }
 
+interface TerminalOption {
+  id: string;
+  device_name: string;
+  masked_terminal_id: string | null;
+}
+
+/**
+ * Payment actions for the detail panel (Phase 18). "Charge to terminal" when a
+ * balance is outstanding and the tenant has registered ≥1 active terminal;
+ * "Download receipt" once the booking is fully paid. Terminals are loaded
+ * lazily so panels for unpaid/non-payment bookings stay cheap.
+ */
+function PaymentActions({
+  slug,
+  booking,
+  onChanged,
+}: {
+  slug: string;
+  booking: BookingDetail;
+  onChanged?: () => void;
+}) {
+  const [terminals, setTerminals] = useState<TerminalOption[] | null>(null);
+  const [selected, setSelected] = useState('');
+  const [charging, setCharging] = useState(false);
+
+  const paymentStatus = booking.payment_status ?? 'unpaid';
+  const isPaid = paymentStatus === 'paid';
+  const total = Number(booking.total_price ?? 0);
+  const chargeable =
+    !isPaid && total > 0 && !['cancelled'].includes(booking.status);
+
+  useEffect(() => {
+    if (!chargeable) return;
+    let cancelled = false;
+    fetch(`/api/${slug}/integrations/mollie/terminals`)
+      .then(res => res.json())
+      .then(data => {
+        if (cancelled) return;
+        setTerminals(data.terminals ?? []);
+      })
+      .catch(() => {
+        if (!cancelled) setTerminals([]);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [slug, chargeable]);
+
+  async function charge() {
+    setCharging(true);
+    try {
+      const body =
+        terminals && terminals.length > 1 && selected ? { terminal_id: selected } : {};
+      const res = await fetch(`/api/${slug}/bookings/${booking.id}/charge-terminal`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        toast.error(data.error ?? "Couldn't start the terminal payment.");
+        return;
+      }
+      toast.success(
+        `Charging ${data.terminal ?? 'terminal'} — complete the payment on the reader.`
+      );
+      onChanged?.();
+    } catch {
+      toast.error('Network error. Please try again.');
+    } finally {
+      setCharging(false);
+    }
+  }
+
+  if (!chargeable && !isPaid) return null;
+
+  const hasTerminals = (terminals?.length ?? 0) > 0;
+  const needsSelect = (terminals?.length ?? 0) > 1;
+
+  return (
+    <div className="flex flex-wrap items-center gap-2 mt-3 pt-3 border-t border-border">
+      {chargeable && hasTerminals && (
+        <>
+          {needsSelect && (
+            <select
+              value={selected}
+              onChange={e => setSelected(e.target.value)}
+              className="text-xs bg-elevated border border-border rounded px-2 py-1 text-fg focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            >
+              <option value="">Choose terminal…</option>
+              {terminals!.map(t => (
+                <option key={t.id} value={t.id}>
+                  {t.device_name}
+                </option>
+              ))}
+            </select>
+          )}
+          <button
+            type="button"
+            onClick={charge}
+            disabled={charging || (needsSelect && !selected)}
+            className="text-xs px-3 py-1 bg-emerald-600 hover:bg-emerald-500 text-white rounded disabled:opacity-50"
+          >
+            {charging ? 'Charging…' : 'Charge to terminal'}
+          </button>
+        </>
+      )}
+      {isPaid && (
+        <a
+          href={`/api/${slug}/bookings/${booking.id}/receipt`}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-xs px-3 py-1 bg-elevated hover:bg-sunken text-fg rounded"
+        >
+          Download receipt
+        </a>
+      )}
+    </div>
+  );
+}
+
 function CopyLinkButton({ url }: { url: string }) {
   const [copied, setCopied] = useState(false);
   return (
@@ -169,12 +290,15 @@ export default function BookingDetailPanel({
   currency = 'EUR',
   slug,
   onEdit,
+  onChanged,
 }: {
   booking: BookingDetail;
   currency?: string;
   slug?: string;
   /** When provided, shows an Edit button for editable statuses (B7). */
   onEdit?: (bookingId: string) => void;
+  /** Called after a payment action (e.g. charge to terminal) so lists reload. */
+  onChanged?: () => void;
 }) {
   const { terminology, featureFlags } = useTenantConfig();
 
@@ -303,6 +427,8 @@ export default function BookingDetailPanel({
           )}
         </DetailItem>
       </div>
+
+      {slug && <PaymentActions slug={slug} booking={booking} onChanged={onChanged} />}
 
       {onEdit && ['pending_staff', 'confirmed', 'completed'].includes(booking.status) && (
         <div className="flex justify-end mt-3">

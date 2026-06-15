@@ -763,7 +763,7 @@ export default function BookingsSection({ slug }: { slug: string }) {
                       {expandedId === b.id && (
                         <tr>
                           <td colSpan={8} className="p-0">
-                            <BookingDetailPanel booking={b} currency={currency} slug={slug} onEdit={setEditBookingId} />
+                            <BookingDetailPanel booking={b} currency={currency} slug={slug} onEdit={setEditBookingId} onChanged={reload} />
                           </td>
                         </tr>
                       )}
@@ -848,7 +848,7 @@ export default function BookingsSection({ slug }: { slug: string }) {
                     {expandedId === b.id && (
                       <tr>
                         <td colSpan={6} className="p-0">
-                          <BookingDetailPanel booking={b} currency={currency} slug={slug} onEdit={setEditBookingId} />
+                          <BookingDetailPanel booking={b} currency={currency} slug={slug} onEdit={setEditBookingId} onChanged={reload} />
                         </td>
                       </tr>
                     )}
@@ -905,7 +905,7 @@ export default function BookingsSection({ slug }: { slug: string }) {
                     {expandedId === b.id && (
                       <tr>
                         <td colSpan={5} className="p-0">
-                          <BookingDetailPanel booking={b} currency={currency} slug={slug} onEdit={setEditBookingId} />
+                          <BookingDetailPanel booking={b} currency={currency} slug={slug} onEdit={setEditBookingId} onChanged={reload} />
                         </td>
                       </tr>
                     )}
@@ -949,7 +949,7 @@ export default function BookingsSection({ slug }: { slug: string }) {
           onClose={() => setDetailBooking(null)}
           maxWidth="max-w-2xl"
         >
-          <BookingDetailPanel booking={detailBooking} currency={currency} slug={slug} onEdit={setEditBookingId} />
+          <BookingDetailPanel booking={detailBooking} currency={currency} slug={slug} onEdit={setEditBookingId} onChanged={reload} />
         </Modal>
       )}
 

@@ -6,6 +6,7 @@ import { useTenantConfig } from '@/lib/context/tenant-config';
 import Spinner from '@/components/ui/spinner';
 import Badge from '@/components/ui/badge';
 import Modal from '@/components/ui/modal';
+import ConfirmDialog from '@/components/ui/confirm-dialog';
 import { ONBOARDING_REOPEN_EVENT } from '@/components/onboarding-checklist';
 
 interface Tenant {
@@ -1107,6 +1108,164 @@ function EmailConfigModal({
   );
 }
 
+/* --------------------------------------------------- Terminal devices (Phase 18) */
+
+interface TerminalDevice {
+  id: string;
+  device_name: string;
+  masked_terminal_id: string | null;
+  is_active: boolean;
+}
+
+function TerminalDevices({ slug }: { slug: string }) {
+  const [terminals, setTerminals] = useState<TerminalDevice[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [name, setName] = useState('');
+  const [terminalId, setTerminalId] = useState('');
+  const [adding, setAdding] = useState(false);
+  const [confirmRemoveId, setConfirmRemoveId] = useState<string | null>(null);
+
+  const load = useCallback(async () => {
+    try {
+      const res = await fetch(`/api/${slug}/integrations/mollie/terminals`);
+      const data = await res.json().catch(() => ({}));
+      setTerminals(data.terminals ?? []);
+    } catch {
+      setTerminals([]);
+    } finally {
+      setLoading(false);
+    }
+  }, [slug]);
+
+  useEffect(() => {
+    load();
+  }, [load]);
+
+  async function add(e: React.FormEvent) {
+    e.preventDefault();
+    if (!terminalId.trim()) return;
+    setAdding(true);
+    try {
+      const res = await fetch(`/api/${slug}/integrations/mollie/terminals`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ device_name: name.trim() || undefined, terminal_id: terminalId.trim() }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        toast.error(data.error ?? "Couldn't add the terminal.");
+        return;
+      }
+      toast.success('Terminal added.');
+      setName('');
+      setTerminalId('');
+      await load();
+    } finally {
+      setAdding(false);
+    }
+  }
+
+  async function remove(id: string) {
+    const res = await fetch(`/api/${slug}/integrations/mollie/terminals?id=${encodeURIComponent(id)}`, {
+      method: 'DELETE',
+    });
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      toast.error(data.error ?? "Couldn't remove the terminal.");
+      return;
+    }
+    toast.success('Terminal removed.');
+    await load();
+  }
+
+  return (
+    <div className="border-t border-border pt-4 mt-4 space-y-3">
+      <div>
+        <h4 className="text-sm font-medium text-fg">Terminal devices</h4>
+        <p className="text-[11px] text-fg-muted mt-0.5">
+          Register your Mollie PIN terminals to charge bookings at the counter. Find the
+          terminal ID (<code>term_…</code>) in your Mollie dashboard under Point of sale.
+        </p>
+      </div>
+
+      {loading ? (
+        <div className="flex justify-center py-4 text-fg-muted"><Spinner size="sm" /></div>
+      ) : terminals.length === 0 ? (
+        <p className="text-xs text-fg-muted">No terminals registered yet.</p>
+      ) : (
+        <ul className="space-y-1.5">
+          {terminals.map(t => (
+            <li
+              key={t.id}
+              className="flex items-center justify-between gap-2 text-xs bg-elevated border border-border rounded px-2.5 py-1.5"
+            >
+              <span className="text-fg">
+                {t.device_name}
+                <span className="text-fg-muted ml-2 font-mono">{t.masked_terminal_id}</span>
+              </span>
+              <button
+                type="button"
+                onClick={() => setConfirmRemoveId(t.id)}
+                className="text-fg-muted hover:text-red-500"
+                aria-label={`Remove ${t.device_name}`}
+              >
+                Remove
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+
+      <form onSubmit={add} className="flex flex-wrap items-end gap-2">
+        <div className="flex-1 min-w-[120px]">
+          <label className="block text-[11px] text-fg-muted mb-1" htmlFor="term-name">Name</label>
+          <input
+            id="term-name"
+            type="text"
+            value={name}
+            onChange={e => setName(e.target.value)}
+            placeholder="Front desk"
+            className={inputCls}
+            autoComplete="off"
+          />
+        </div>
+        <div className="flex-1 min-w-[140px]">
+          <label className="block text-[11px] text-fg-muted mb-1" htmlFor="term-id">Terminal ID</label>
+          <input
+            id="term-id"
+            type="text"
+            value={terminalId}
+            onChange={e => setTerminalId(e.target.value)}
+            placeholder="term_…"
+            className={inputCls}
+            autoComplete="off"
+          />
+        </div>
+        <button
+          type="submit"
+          disabled={adding || !terminalId.trim()}
+          className="text-sm px-3 py-1.5 bg-fg text-canvas rounded hover:opacity-90 transition-opacity disabled:opacity-50"
+        >
+          {adding ? 'Adding…' : 'Add'}
+        </button>
+      </form>
+
+      {confirmRemoveId && (
+        <ConfirmDialog
+          title="Remove terminal?"
+          description="Bookings can no longer be charged to this terminal."
+          confirmLabel="Remove"
+          onConfirm={async () => {
+            await remove(confirmRemoveId);
+            setConfirmRemoveId(null);
+          }}
+          onClose={() => setConfirmRemoveId(null)}
+        />
+      )}
+    </div>
+  );
+}
+
 /* -------------------------------------------------------- Mollie config modal */
 
 interface MollieState {
@@ -1187,6 +1346,7 @@ function MollieConfigModal({
           <Spinner size="md" />
         </div>
       ) : (
+        <>
         <form onSubmit={submit} className="space-y-3">
           <p className="text-xs text-fg-muted">
             Collect deposits online when a booking is confirmed. Enter your
@@ -1256,6 +1416,8 @@ function MollieConfigModal({
             </button>
           </div>
         </form>
+        {current?.configured && current.is_active && <TerminalDevices slug={slug} />}
+        </>
       )}
     </Modal>
   );
