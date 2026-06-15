@@ -2,7 +2,7 @@
 
 import type { CatalogStaff } from '../catalog-loader';
 import { presentSocialLinks, socialHref } from '@/lib/social-links';
-import { useWidgetStrings } from '@/lib/widget-i18n';
+import { useWidgetStrings } from '@/lib/widget-i18n-context';
 
 const CURRENCY_SYMBOLS: Record<string, string> = {
   EUR: '€', USD: '$', GBP: '£',

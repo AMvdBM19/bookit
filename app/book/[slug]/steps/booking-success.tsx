@@ -1,6 +1,7 @@
 'use client';
 
-import { formatWidgetMoney, useWidgetStrings } from '@/lib/widget-i18n';
+import { formatWidgetMoney } from '@/lib/widget-i18n';
+import { useWidgetStrings } from '@/lib/widget-i18n-context';
 
 interface Props {
   status: string;

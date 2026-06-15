@@ -2,7 +2,8 @@
 
 import Spinner from '@/components/ui/spinner';
 import type { CatalogSettings, CatalogStaff } from '../catalog-loader';
-import { formatWidgetMoney, useWidgetStrings } from '@/lib/widget-i18n';
+import { formatWidgetMoney } from '@/lib/widget-i18n';
+import { useWidgetStrings } from '@/lib/widget-i18n-context';
 
 interface Tag {
   id: string;

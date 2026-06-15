@@ -2,11 +2,8 @@
 
 import { useEffect, useState } from 'react';
 import type { Catalog, CatalogStaff } from './catalog-loader';
-import {
-  WidgetI18nProvider,
-  getWidgetStrings,
-  type WidgetLanguage,
-} from '@/lib/widget-i18n';
+import { getWidgetStrings, type WidgetLanguage } from '@/lib/widget-i18n';
+import { WidgetI18nProvider } from '@/lib/widget-i18n-context';
 import StaffBrowse from './steps/staff-browse';
 import DateTimeSelect from './steps/datetime-select';
 import DetailsForm from './steps/details-form';

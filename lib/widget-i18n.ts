@@ -1,5 +1,3 @@
-'use client';
-
 // Widget interface translations (Phase 16-C). No i18n library: a typed
 // dictionary + tiny context. Scope is the public widget chrome ONLY —
 // tenant-authored text (terminology, notes label/placeholder, service
@@ -7,8 +5,13 @@
 //
 // The `en` strings must stay byte-identical to the pre-i18n hardcoded
 // widget text: 'en' is the default for every existing tenant.
-
-import { createContext, useContext } from 'react';
+//
+// IMPORTANT: this module is intentionally NOT 'use client'. The widget
+// page (a Server Component) imports isWidgetLanguage from here; if this
+// file were a client module, Next would turn these exports into client
+// references and calling them during SSR throws "is not a function" (the
+// public widget 500'd platform-wide — Phase 17 fix). The React context,
+// provider and hook live in widget-i18n-context.tsx ('use client').
 
 export type WidgetLanguage = 'en' | 'nl';
 
@@ -320,24 +323,4 @@ export function formatWidgetMoney(
     const sym = CURRENCY_SYMBOLS[currency] ?? currency;
     return `${sym}${amount.toFixed(2)}`;
   }
-}
-
-const WidgetI18nContext = createContext<WidgetStrings>(en);
-
-export function WidgetI18nProvider({
-  lang,
-  children,
-}: {
-  lang: WidgetLanguage;
-  children: React.ReactNode;
-}) {
-  return (
-    <WidgetI18nContext.Provider value={getWidgetStrings(lang)}>
-      {children}
-    </WidgetI18nContext.Provider>
-  );
-}
-
-export function useWidgetStrings(): WidgetStrings {
-  return useContext(WidgetI18nContext);
 }

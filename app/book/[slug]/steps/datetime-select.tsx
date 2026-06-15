@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import Spinner from '@/components/ui/spinner';
-import { useWidgetStrings } from '@/lib/widget-i18n';
+import { useWidgetStrings } from '@/lib/widget-i18n-context';
 
 interface Slot {
   start: string;

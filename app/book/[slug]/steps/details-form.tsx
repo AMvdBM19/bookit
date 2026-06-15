@@ -3,7 +3,8 @@
 import { useRef, useState } from 'react';
 import type { CatalogSettings } from '../catalog-loader';
 import type { FeatureFlags } from '@/lib/types/tenant-config';
-import { formatWidgetMoney, useWidgetStrings } from '@/lib/widget-i18n';
+import { formatWidgetMoney } from '@/lib/widget-i18n';
+import { useWidgetStrings } from '@/lib/widget-i18n-context';
 
 interface Tag {
   id: string;
