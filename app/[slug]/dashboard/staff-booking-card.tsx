@@ -19,6 +19,7 @@ interface Props {
     booking_notes: string | null;
     status?: string;
     source?: string | null;
+    assigned_by?: string | null;
     requested_at?: string | null;
     tags: string[];
     clientName: string;
@@ -191,6 +192,11 @@ export default function StaffBookingCard({ slug, booking, showActions, canComple
           <p className="text-fg-muted text-xs mt-0.5">
             {formatDuration(booking.duration_minutes)} &middot; {booking.clientName}
           </p>
+          {booking.assigned_by === 'agent_assign' && (
+            <span className="inline-block mt-1 px-2 py-0.5 text-[10px] font-medium uppercase tracking-wider rounded bg-elevated text-fg-muted border border-border">
+              Assigned by admin
+            </span>
+          )}
         </div>
         {!showActions && (
           <div className="flex items-center gap-2 shrink-0">

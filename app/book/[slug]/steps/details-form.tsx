@@ -9,11 +9,17 @@ import { useWidgetStrings } from '@/lib/widget-i18n-context';
 interface Tag {
   id: string;
   name: string;
+  description?: string | null;
   extra_price: number;
+  duration_minutes?: number | null;
+  blocks_slot?: boolean | null;
+  allow_quantity?: boolean | null;
+  max_quantity?: number | null;
 }
 
 interface State {
   selectedTagIds: string[];
+  selectedTagQuantities: Record<string, number>;
   guestName: string;
   guestEmail: string;
   guestPhone: string;
@@ -108,6 +114,23 @@ export default function DetailsForm({
     onChange({ selectedTagIds: next });
   }
 
+  // Quantity steppers: changing a quantity to 0 deselects the tag; raising it
+  // from 0 selects it. Quantity is clamped to [1, max_quantity].
+  function setQuantity(tag: Tag, qty: number) {
+    const max = Math.max(1, tag.max_quantity ?? 1);
+    const clamped = Math.max(0, Math.min(max, Math.floor(qty)));
+    const quantities = { ...state.selectedTagQuantities };
+    let ids = state.selectedTagIds;
+    if (clamped <= 0) {
+      delete quantities[tag.id];
+      ids = ids.filter(id => id !== tag.id);
+    } else {
+      quantities[tag.id] = clamped;
+      if (!ids.includes(tag.id)) ids = [...ids, tag.id];
+    }
+    onChange({ selectedTagIds: ids, selectedTagQuantities: quantities });
+  }
+
   if (clientMode === 'account') {
     return (
       <div className="space-y-4">
@@ -135,43 +158,110 @@ export default function DetailsForm({
 
   return (
     <div className="space-y-4">
-      {staffTags.length > 0 && (
-        <div>
-          <p className={labelCls}>{t.whatWouldYouLike}</p>
-          <div className="flex flex-wrap gap-2">
-            {staffTags.map(tag => {
-              const selected = state.selectedTagIds.includes(tag.id);
+      {staffTags.length > 0 && (() => {
+        const chipTags = staffTags.filter(tag => !tag.allow_quantity);
+        const qtyTags = staffTags.filter(tag => tag.allow_quantity);
+        return (
+          <div className="space-y-3">
+            <p className={labelCls}>{t.whatWouldYouLike}</p>
+
+            {chipTags.length > 0 && (
+              <div className="flex flex-wrap gap-2">
+                {chipTags.map(tag => {
+                  const selected = state.selectedTagIds.includes(tag.id);
+                  return (
+                    <button
+                      key={tag.id}
+                      type="button"
+                      onClick={() => toggleTag(tag.id)}
+                      title={tag.description ?? undefined}
+                      className={`px-3 py-1.5 rounded-full text-xs border transition-colors ${
+                        selected
+                          ? 'text-white border-transparent'
+                          : 'w-el w-tx-soft w-bd2 w-hbd'
+                      }`}
+                      style={selected ? { backgroundColor: brandColor } : undefined}
+                    >
+                      {tag.name}
+                      {showPrice && tag.extra_price > 0 && (
+                        <span className={selected ? 'opacity-75 ml-1' : 'w-tx3 ml-1'}>
+                          +{sym}{tag.extra_price}
+                        </span>
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+
+            {/* Per-chip descriptions (chips can't wrap helper text). */}
+            {chipTags.some(tag => tag.description) && (
+              <div className="space-y-0.5">
+                {chipTags
+                  .filter(tag => tag.description)
+                  .map(tag => (
+                    <p key={tag.id} className="text-[11px] w-tx3">
+                      <span className="w-tx2">{tag.name}:</span> {tag.description}
+                    </p>
+                  ))}
+              </div>
+            )}
+
+            {qtyTags.map(tag => {
+              const qty = state.selectedTagQuantities[tag.id] ?? 0;
+              const max = Math.max(1, tag.max_quantity ?? 1);
               return (
-                <button
+                <div
                   key={tag.id}
-                  type="button"
-                  onClick={() => toggleTag(tag.id)}
-                  className={`px-3 py-1.5 rounded-full text-xs border transition-colors ${
-                    selected
-                      ? 'text-white border-transparent'
-                      : 'w-el w-tx-soft w-bd2 w-hbd'
-                  }`}
-                  style={selected ? { backgroundColor: brandColor } : undefined}
+                  className="flex items-center justify-between gap-3 w-round border w-bd w-el w-pad-sm"
                 >
-                  {tag.name}
-                  {showPrice && tag.extra_price > 0 && (
-                    <span className={selected ? 'opacity-75 ml-1' : 'w-tx3 ml-1'}>
-                      +{sym}{tag.extra_price}
-                    </span>
-                  )}
-                </button>
+                  <div className="min-w-0">
+                    <p className="text-xs w-tx-soft">
+                      {tag.name}
+                      {showPrice && tag.extra_price > 0 && (
+                        <span className="w-tx3 ml-1">+{sym}{tag.extra_price} {t.each}</span>
+                      )}
+                    </p>
+                    {tag.description && (
+                      <p className="text-[11px] w-tx3">{tag.description}</p>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-2 shrink-0">
+                    <button
+                      type="button"
+                      onClick={() => setQuantity(tag, qty - 1)}
+                      disabled={qty <= 0}
+                      aria-label={t.decrease}
+                      className="w-round border w-bd w-sf w-hbd w-tx-soft w-7 h-7 flex items-center justify-center text-sm disabled:opacity-30 disabled:cursor-not-allowed focus:outline-none w-focus"
+                    >
+                      −
+                    </button>
+                    <span className="text-sm w-tx font-medium w-6 text-center tabular-nums">{qty}</span>
+                    <button
+                      type="button"
+                      onClick={() => setQuantity(tag, qty + 1)}
+                      disabled={qty >= max}
+                      aria-label={t.increase}
+                      className="w-round border w-bd w-sf w-hbd w-tx-soft w-7 h-7 flex items-center justify-center text-sm disabled:opacity-30 disabled:cursor-not-allowed focus:outline-none w-focus"
+                    >
+                      +
+                    </button>
+                  </div>
+                </div>
               );
             })}
           </div>
-        </div>
-      )}
+        );
+      })()}
 
       {showPrice && durationMinutes > 0 && (() => {
         const baseRate = settings?.base_rate_per_30min ?? 0;
         const slots30 = durationMinutes / 30;
         const baseTotal = baseRate * slots30;
-        const selectedExtras = staffTags.filter(t => state.selectedTagIds.includes(t.id));
-        const extrasTotal = selectedExtras.reduce((sum, t) => sum + (t.extra_price ?? 0), 0);
+        const selectedExtras = staffTags
+          .filter(t => state.selectedTagIds.includes(t.id))
+          .map(t => ({ ...t, qty: t.allow_quantity ? (state.selectedTagQuantities[t.id] ?? 1) : 1 }));
+        const extrasTotal = selectedExtras.reduce((sum, t) => sum + (t.extra_price ?? 0) * t.qty, 0);
         const subtotal = baseTotal + extrasTotal;
         const currency = settings?.currency ?? 'EUR';
         return (
@@ -182,8 +272,8 @@ export default function DetailsForm({
             </div>
             {selectedExtras.map(tag => (
               <div key={tag.id} className="flex justify-between text-xs">
-                <span className="w-tx2">{tag.name}</span>
-                <span className="w-tx-soft">+{formatWidgetMoney(tag.extra_price, currency, t)}</span>
+                <span className="w-tx2">{tag.name}{tag.qty > 1 ? ` ×${tag.qty}` : ''}</span>
+                <span className="w-tx-soft">+{formatWidgetMoney((tag.extra_price ?? 0) * tag.qty, currency, t)}</span>
               </div>
             ))}
             <div className="flex justify-between text-sm pt-1.5 border-t w-bd2">

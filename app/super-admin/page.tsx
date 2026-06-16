@@ -35,6 +35,7 @@ interface Stats {
   bookings_by_status_30d: Record<string, number>;
   staff_count: number;
   active_staff_count: number;
+  max_staff?: number;
   client_count: number;
   guest_count: number;
   whatsapp: { configured: boolean; provider: string | null };
@@ -376,6 +377,19 @@ function TenantsTab({ apiKey, onAuthError }: { apiKey: string; onAuthError: () =
                             <p className="text-xs text-zinc-500">Loading stats…</p>
                           )}
                           {statsCache[t.id] && <StatsPanel stats={statsCache[t.id]} />}
+                          {statsCache[t.id] && (
+                            <StaffLimitEditor
+                              apiKey={apiKey}
+                              tenantId={t.id}
+                              current={statsCache[t.id].max_staff ?? 5}
+                              onSaved={next =>
+                                setStatsCache(prev => ({
+                                  ...prev,
+                                  [t.id]: { ...prev[t.id], max_staff: next },
+                                }))
+                              }
+                            />
+                          )}
                           <TenantConfigPanel apiKey={apiKey} tenantId={t.id} templates={templates} />
                         </td>
                       </tr>
@@ -448,6 +462,71 @@ function Card({ label, value }: { label: string; value: string | number }) {
     <div className="bg-white rounded border border-zinc-200 px-3 py-2">
       <p className="text-[10px] text-zinc-500 uppercase tracking-wider">{label}</p>
       <p className="text-sm text-zinc-900 font-medium mt-0.5">{value}</p>
+    </div>
+  );
+}
+
+// Phase 19 A6: super-admin editor for a tenant's staff seat limit.
+function StaffLimitEditor({
+  apiKey,
+  tenantId,
+  current,
+  onSaved,
+}: {
+  apiKey: string;
+  tenantId: string;
+  current: number;
+  onSaved: (next: number) => void;
+}) {
+  const [value, setValue] = useState(String(current));
+  const [saving, setSaving] = useState(false);
+
+  async function save() {
+    const n = Number(value);
+    if (!Number.isInteger(n) || n < 1 || n > 500) {
+      toast.error('Staff limit must be between 1 and 500.');
+      return;
+    }
+    setSaving(true);
+    try {
+      const res = await fetch(`/api/super-admin/tenants/${tenantId}`, {
+        method: 'PATCH',
+        headers: authHeaders(apiKey),
+        body: JSON.stringify({ max_staff: n }),
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        toast.error(data.error ?? 'Failed to update staff limit.');
+        return;
+      }
+      toast.success(`Staff limit set to ${n}.`);
+      onSaved(n);
+    } catch {
+      toast.error('Failed to update staff limit.');
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <div className="mt-3 flex items-center gap-2">
+      <label className="text-xs text-zinc-600">Staff limit (max_staff)</label>
+      <input
+        type="number"
+        min={1}
+        max={500}
+        value={value}
+        onChange={e => setValue(e.target.value)}
+        className="w-20 text-sm border border-zinc-300 rounded px-2 py-1"
+      />
+      <button
+        type="button"
+        onClick={save}
+        disabled={saving || value === String(current)}
+        className="text-xs px-2 py-1 bg-zinc-800 text-white rounded hover:bg-zinc-700 disabled:opacity-40"
+      >
+        {saving ? 'Saving…' : 'Save'}
+      </button>
     </div>
   );
 }

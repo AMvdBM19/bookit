@@ -63,9 +63,14 @@ acceptance) are template-level notices, not tenant-editable.
 - **Email notifications** — status badge ("Not configured" / "Active")
   and a **Configure** button opening a modal: **sender display name**
   (clients' inboxes show "{name} via Book-IT"), optional **reply-to**
-  address, and an Active toggle. Sending infrastructure (Resend) is
-  platform-managed — the owner never enters API keys. While not
-  configured, no emails are sent and everything else works normally.
+  address, and an Active toggle. By default emails go out via Book-IT's
+  shared Resend infrastructure. To send from their own domain, the owner can
+  optionally add their own **Resend API key** (masked after save) and a
+  **sending domain**; the modal then shows guided **DNS setup steps**, a
+  **domain verification status**, and a **Send test email** button. When a
+  key + verified domain are set, emails are sent from
+  `{sender}@{sending_domain}` using the tenant's own key. While not
+  configured/active, no emails are sent and everything else works normally.
 - **Payments (Mollie)** — status badge ("Not configured" / "Test mode" /
   "Active (Mollie)") and a **Configure** button opening a modal: the
   tenant's **Mollie API key** (a `test_…` key runs in test mode, `live_…`

@@ -17,6 +17,7 @@ import BookingsCalendar from './bookings-calendar';
 import BookingsKanban from './bookings-kanban';
 
 interface JoinObj {
+  id?: string;
   pseudonym?: string;
   display_name?: string;
   name?: string;
@@ -24,6 +25,14 @@ interface JoinObj {
   phone?: string | null;
   wa_opt_in?: boolean | null;
 }
+
+const STATUS_FILTER_OPTIONS: Array<{ key: string; label: string }> = [
+  { key: 'pending_staff', label: 'Pending' },
+  { key: 'confirmed', label: 'Confirmed' },
+  { key: 'completed', label: 'Completed' },
+  { key: 'no_show', label: 'No-show' },
+  { key: 'cancelled', label: 'Cancelled' },
+];
 
 interface Booking extends BookingDetail {
   created_at: string;
@@ -231,6 +240,12 @@ export default function BookingsSection({ slug }: { slug: string }) {
   const [dateRange, setDateRange] = useState<DateRangeKey>('all');
   const [customFrom, setCustomFrom] = useState('');
   const [customTo, setCustomTo] = useState('');
+  // Advanced filters (Phase 19 A8) — collapsed by default, shared across views.
+  const [showFilters, setShowFilters] = useState(false);
+  const [staffFilter, setStaffFilter] = useState<string>('all'); // staffId | 'all' | 'unassigned'
+  const [statusFilter, setStatusFilter] = useState<Set<string>>(new Set()); // empty = all
+  const [sourceFilter, setSourceFilter] = useState<'all' | 'widget' | 'manual'>('all');
+  const [paymentFilter, setPaymentFilter] = useState<'all' | 'unpaid' | 'deposit_paid' | 'paid'>('all');
 
   // Debounce the keyword search (300ms).
   useEffect(() => {
@@ -441,8 +456,42 @@ export default function BookingsSection({ slug }: { slug: string }) {
         .toLowerCase();
       if (!haystack.includes(debouncedSearch)) return false;
     }
+    // Staff filter: a concrete id, or 'unassigned' for pool bookings.
+    if (staffFilter !== 'all') {
+      const staffId = pickOne(b.staff)?.id ?? null;
+      if (staffFilter === 'unassigned') {
+        if (staffId) return false;
+      } else if (staffId !== staffFilter) {
+        return false;
+      }
+    }
+    if (statusFilter.size > 0 && !statusFilter.has(b.status)) return false;
+    if (sourceFilter !== 'all' && (b.source ?? 'widget') !== sourceFilter) return false;
+    if (paymentFilter !== 'all' && (b.payment_status ?? 'unpaid') !== paymentFilter) return false;
     return true;
   });
+
+  const activeFilterCount =
+    (staffFilter !== 'all' ? 1 : 0) +
+    (statusFilter.size > 0 ? 1 : 0) +
+    (sourceFilter !== 'all' ? 1 : 0) +
+    (paymentFilter !== 'all' ? 1 : 0);
+
+  function toggleStatusFilter(key: string) {
+    setStatusFilter(prev => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
+      return next;
+    });
+  }
+
+  function clearFilters() {
+    setStaffFilter('all');
+    setStatusFilter(new Set());
+    setSourceFilter('all');
+    setPaymentFilter('all');
+  }
 
   const pending = filtered.filter(b => b.status === 'pending_staff');
   const upcoming = filtered.filter(
@@ -565,14 +614,108 @@ export default function BookingsSection({ slug }: { slug: string }) {
               />
             </>
           )}
+          <button
+            type="button"
+            onClick={() => setShowFilters(v => !v)}
+            aria-expanded={showFilters}
+            className={`text-xs px-2 py-1.5 rounded border transition-colors ${
+              showFilters || activeFilterCount > 0
+                ? 'bg-fg text-canvas border-transparent'
+                : 'bg-elevated text-fg-muted border-border hover:bg-sunken'
+            }`}
+          >
+            Filters{activeFilterCount > 0 ? ` (${activeFilterCount})` : ''}
+          </button>
         </div>
       </div>
+
+      {/* Collapsible advanced filters (staff, status, source, payment) */}
+      {showFilters && (
+        <div className="-mt-4 rounded-lg border border-border bg-surface p-3 space-y-3">
+          <div className="flex flex-wrap items-center gap-4">
+            <label className="flex items-center gap-1.5 text-xs text-fg-muted">
+              {terminology.staff}
+              <select
+                value={staffFilter}
+                onChange={e => setStaffFilter(e.target.value)}
+                className="text-xs bg-elevated text-fg border border-border rounded px-2 py-1 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              >
+                <option value="all">All</option>
+                <option value="unassigned">Unassigned (pool)</option>
+                {staffOptions.map(s => (
+                  <option key={s.id} value={s.id}>{s.pseudonym}</option>
+                ))}
+              </select>
+            </label>
+
+            <label className="flex items-center gap-1.5 text-xs text-fg-muted">
+              Source
+              <select
+                value={sourceFilter}
+                onChange={e => setSourceFilter(e.target.value as typeof sourceFilter)}
+                className="text-xs bg-elevated text-fg border border-border rounded px-2 py-1 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              >
+                <option value="all">All</option>
+                <option value="widget">Widget</option>
+                <option value="manual">Manual</option>
+              </select>
+            </label>
+
+            <label className="flex items-center gap-1.5 text-xs text-fg-muted">
+              Payment
+              <select
+                value={paymentFilter}
+                onChange={e => setPaymentFilter(e.target.value as typeof paymentFilter)}
+                className="text-xs bg-elevated text-fg border border-border rounded px-2 py-1 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              >
+                <option value="all">All</option>
+                <option value="unpaid">Unpaid</option>
+                <option value="deposit_paid">Deposit paid</option>
+                <option value="paid">Paid</option>
+              </select>
+            </label>
+
+            {activeFilterCount > 0 && (
+              <button
+                type="button"
+                onClick={clearFilters}
+                className="text-xs text-fg-muted hover:text-fg underline ml-auto"
+              >
+                Clear filters
+              </button>
+            )}
+          </div>
+
+          <div className="flex flex-wrap items-center gap-1.5">
+            <span className="text-xs text-fg-muted mr-1">Status</span>
+            {STATUS_FILTER_OPTIONS.map(opt => {
+              const on = statusFilter.has(opt.key);
+              return (
+                <button
+                  key={opt.key}
+                  type="button"
+                  onClick={() => toggleStatusFilter(opt.key)}
+                  aria-pressed={on}
+                  className={`text-[11px] px-2 py-0.5 rounded-full border transition-colors ${
+                    on
+                      ? 'bg-fg text-canvas border-transparent'
+                      : 'bg-elevated text-fg-muted border-border hover:bg-sunken'
+                  }`}
+                >
+                  {opt.label}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
       {viewMode === 'calendar' ? (
         <BookingsCalendar
           bookings={filtered}
           currency={currency}
           slug={slug}
+          selectedStaffId={staffFilter !== 'all' && staffFilter !== 'unassigned' ? staffFilter : null}
           onEdit={setEditBookingId}
           staffOptions={staffOptions}
           onAssign={async (id, staffId) => {

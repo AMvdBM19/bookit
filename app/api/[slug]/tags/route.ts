@@ -47,7 +47,7 @@ export async function POST(request: NextRequest) {
   }
   const description =
     typeof body?.description === 'string' && body.description.trim()
-      ? body.description.trim().slice(0, 300)
+      ? body.description.trim().slice(0, 100)
       : null;
 
   const supabase = createServiceClient();

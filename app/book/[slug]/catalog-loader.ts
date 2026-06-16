@@ -12,7 +12,16 @@ export interface CatalogStaff {
   nationality: string | null;
   age: number | null;
   languages: string[] | null;
-  tags: Array<{ id: string; name: string; extra_price: number; duration_minutes: number | null }>;
+  tags: Array<{
+    id: string;
+    name: string;
+    description: string | null;
+    extra_price: number;
+    duration_minutes: number | null;
+    blocks_slot: boolean;
+    allow_quantity: boolean;
+    max_quantity: number;
+  }>;
 }
 
 export interface CatalogSettings {
@@ -59,7 +68,16 @@ export interface Catalog {
   };
   settings: CatalogSettings | null;
   staff: CatalogStaff[];
-  tags: Array<{ id: string; name: string; extra_price: number | null; duration_minutes?: number | null }>;
+  tags: Array<{
+    id: string;
+    name: string;
+    description?: string | null;
+    extra_price: number | null;
+    duration_minutes?: number | null;
+    blocks_slot?: boolean | null;
+    allow_quantity?: boolean | null;
+    max_quantity?: number | null;
+  }>;
   terminology: Terminology;
   featureFlags: FeatureFlags;
 }
@@ -119,11 +137,22 @@ export async function loadCatalog(slug: string): Promise<Catalog | null> {
       const tag = Array.isArray(join.service_tags) ? join.service_tags[0] : join.service_tags;
       if (tag) {
         if (!staffTagMap[join.staff_id]) staffTagMap[join.staff_id] = [];
+        const t = tag as {
+          duration_minutes?: number | null;
+          description?: string | null;
+          blocks_slot?: boolean | null;
+          allow_quantity?: boolean | null;
+          max_quantity?: number | null;
+        };
         staffTagMap[join.staff_id].push({
           id: tag.id,
           name: tag.name,
+          description: t.description ?? null,
           extra_price: tag.extra_price ?? 0,
-          duration_minutes: (tag as { duration_minutes?: number | null }).duration_minutes ?? null,
+          duration_minutes: t.duration_minutes ?? null,
+          blocks_slot: t.blocks_slot ?? true,
+          allow_quantity: t.allow_quantity ?? false,
+          max_quantity: t.max_quantity ?? 1,
         });
       }
     }

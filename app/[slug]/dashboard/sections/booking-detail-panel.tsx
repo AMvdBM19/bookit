@@ -39,7 +39,7 @@ export interface BookingDetail {
   staff: BookingDetailJoin | BookingDetailJoin[] | null;
   clients: BookingDetailJoin | BookingDetailJoin[] | null;
   guest_clients: BookingDetailJoin | BookingDetailJoin[] | null;
-  booking_service_tags: Array<{ tag_name: string; extra_price?: number | string | null }>;
+  booking_service_tags: Array<{ tag_name: string; extra_price?: number | string | null; quantity?: number | null }>;
 }
 
 function pickOne<T>(v: T | T[] | null | undefined): T | null {
@@ -352,11 +352,13 @@ export default function BookingDetailPanel({
           ) : (
             <ul className="space-y-0.5">
               {booking.booking_service_tags.map(t => {
-                const extra = fmtMoney(t.extra_price, currency);
+                const qty = Number(t.quantity ?? 1);
+                const lineExtra = Number(t.extra_price ?? 0) * (qty || 1);
+                const extra = fmtMoney(lineExtra, currency);
                 return (
                   <li key={t.tag_name} className="flex justify-between gap-3">
-                    <span>{t.tag_name}</span>
-                    {extra && Number(t.extra_price) > 0 && (
+                    <span>{t.tag_name}{qty > 1 ? ` ×${qty}` : ''}</span>
+                    {extra && lineExtra > 0 && (
                       <span className="text-fg-muted">+{extra}</span>
                     )}
                   </li>

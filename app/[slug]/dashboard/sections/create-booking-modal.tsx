@@ -22,6 +22,7 @@ interface StaffOption {
 interface TagOption {
   id: string;
   name: string;
+  description?: string | null;
   extra_price: number | null;
   is_active: boolean;
 }
@@ -354,6 +355,7 @@ export default function CreateBookingModal({
                       type="button"
                       onClick={() => toggleTag(t.id)}
                       aria-pressed={active}
+                      title={t.description ?? undefined}
                       className={`px-3 py-1.5 rounded-full text-xs border transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
                         active
                           ? 'bg-fg text-canvas border-transparent'

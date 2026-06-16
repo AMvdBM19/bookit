@@ -63,7 +63,7 @@ export default async function DashboardPage({
     const { data: upcomingBookings } = await supabase
       .from('bookings')
       .select(`
-        id, slot_date, slot_start, slot_end, duration_minutes, booking_notes, status, source, requested_at,
+        id, slot_date, slot_start, slot_end, duration_minutes, booking_notes, status, source, assigned_by, requested_at,
         clients(display_name),
         guest_clients(name),
         booking_service_tags(tag_name)

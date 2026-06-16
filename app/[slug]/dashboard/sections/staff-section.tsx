@@ -58,6 +58,7 @@ const STATUS_VARIANT: Record<string, BadgeVariant> = {
 export default function StaffSection({ slug }: { slug: string }) {
   const { terminology } = useTenantConfig();
   const [staff, setStaff] = useState<StaffRow[]>([]);
+  const [maxStaff, setMaxStaff] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showCreate, setShowCreate] = useState(false);
@@ -76,6 +77,7 @@ export default function StaffSection({ slug }: { slug: string }) {
         return;
       }
       setStaff(data.staff ?? []);
+      setMaxStaff(typeof data.max_staff === 'number' ? data.max_staff : null);
     } catch {
       setError('Network error');
     } finally {
@@ -108,10 +110,20 @@ export default function StaffSection({ slug }: { slug: string }) {
     }
   }
 
+  const activeCount = staff.filter(s => s.status === 'active').length;
+  const atLimit = maxStaff != null && activeCount >= maxStaff;
+
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <h2 className="text-sm font-semibold text-fg">{terminology.staff_plural}</h2>
+        <div className="flex items-baseline gap-2">
+          <h2 className="text-sm font-semibold text-fg">{terminology.staff_plural}</h2>
+          {maxStaff != null && (
+            <span className="text-xs text-fg-muted" title="Active team members vs your plan limit">
+              {activeCount} / {maxStaff} {terminology.staff_plural.toLowerCase()}
+            </span>
+          )}
+        </div>
         <div className="flex items-center gap-2">
           <a
             href={`/api/${slug}/export/staff`}
@@ -123,12 +135,20 @@ export default function StaffSection({ slug }: { slug: string }) {
           <button
             type="button"
             onClick={() => setShowCreate(true)}
-            className="text-xs px-3 py-1.5 bg-fg text-canvas rounded hover:opacity-90 transition-opacity"
+            disabled={atLimit}
+            title={atLimit ? `Staff limit reached (${maxStaff}). Contact support to raise it.` : undefined}
+            className="text-xs px-3 py-1.5 bg-fg text-canvas rounded hover:opacity-90 transition-opacity disabled:opacity-40 disabled:cursor-not-allowed"
           >
             + Add {terminology.staff}
           </button>
         </div>
       </div>
+      {atLimit && (
+        <p className="text-[11px] text-amber-600 dark:text-amber-400">
+          You&apos;ve reached your limit of {maxStaff} active {terminology.staff_plural.toLowerCase()}.
+          Deactivate one or contact support to raise your limit.
+        </p>
+      )}
 
       {loading && (
         <div className="flex justify-center py-16 text-fg-muted">

@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import type { Catalog, CatalogStaff } from './catalog-loader';
+import { effectiveDurationMinutes } from '@/lib/availability/duration';
 import { getWidgetStrings, type WidgetLanguage } from '@/lib/widget-i18n';
 import { WidgetI18nProvider } from '@/lib/widget-i18n-context';
 import StaffBrowse from './steps/staff-browse';
@@ -18,6 +19,8 @@ interface BookingState {
   selectedDate: string | null;
   selectedSlot: { start: string; end: string } | null;
   selectedTagIds: string[];
+  /** Per-tag quantities for allow_quantity tags (tag_id → count). */
+  selectedTagQuantities: Record<string, number>;
   guestName: string;
   guestEmail: string;
   guestPhone: string;
@@ -45,6 +48,7 @@ const INITIAL_STATE: BookingState = {
   selectedDate: null,
   selectedSlot: null,
   selectedTagIds: [],
+  selectedTagQuantities: {},
   guestName: '',
   guestEmail: '',
   guestPhone: '',
@@ -183,6 +187,7 @@ function BookingWidgetInner({ slug, catalog, lang }: Required<Props>) {
           slot_start: state.selectedSlot.start,
           slot_end: state.selectedSlot.end,
           tag_ids: state.selectedTagIds,
+          tag_quantities: state.selectedTagQuantities,
           guest_name: state.guestName,
           guest_email: state.guestEmail,
           guest_phone: state.guestPhone || undefined,
@@ -245,8 +250,12 @@ function BookingWidgetInner({ slug, catalog, lang }: Required<Props>) {
     ? catalog.tags.map(t => ({
         id: t.id,
         name: t.name,
+        description: t.description ?? null,
         extra_price: t.extra_price ?? 0,
         duration_minutes: t.duration_minutes ?? null,
+        blocks_slot: t.blocks_slot ?? true,
+        allow_quantity: t.allow_quantity ?? false,
+        max_quantity: t.max_quantity ?? 1,
       }))
     : selectedStaff?.tags ?? [];
   const selectedTags = staffTags.filter(t => state.selectedTagIds.includes(t.id));
@@ -255,16 +264,9 @@ function BookingWidgetInner({ slug, catalog, lang }: Required<Props>) {
   // When the slot picked earlier no longer matches, the client must re-confirm.
   const perServiceDuration = catalog.settings?.per_service_duration_enabled ?? false;
   const defaultSlotMinutes = catalog.settings?.default_slot_minutes ?? 30;
-  const effectiveDuration = (() => {
-    if (!perServiceDuration) return defaultSlotMinutes;
-    // NULL duration = a normal-length service: it contributes the default
-    // slot length to the sum, not zero (must match the availability APIs).
-    const total = selectedTags.reduce(
-      (sum, t) => sum + (t.duration_minutes ?? defaultSlotMinutes),
-      0
-    );
-    return total > 0 ? total : defaultSlotMinutes;
-  })();
+  const effectiveDuration = perServiceDuration
+    ? effectiveDurationMinutes(selectedTags, defaultSlotMinutes)
+    : defaultSlotMinutes;
   const durationMismatch =
     perServiceDuration && state.selectedSlot !== null && effectiveDuration !== slotDurationMinutes();
 
@@ -387,6 +389,7 @@ function BookingWidgetInner({ slug, catalog, lang }: Required<Props>) {
                 staffTags={staffTags}
                 state={{
                   selectedTagIds: state.selectedTagIds,
+                  selectedTagQuantities: state.selectedTagQuantities,
                   guestName: state.guestName,
                   guestEmail: state.guestEmail,
                   guestPhone: state.guestPhone,
@@ -448,6 +451,7 @@ function BookingWidgetInner({ slug, catalog, lang }: Required<Props>) {
                   date={state.selectedDate}
                   slot={state.selectedSlot}
                   selectedTags={selectedTags}
+                  tagQuantities={state.selectedTagQuantities}
                   notes={state.bookingNotes}
                   settings={catalog.settings}
                   submitting={state.submitting}

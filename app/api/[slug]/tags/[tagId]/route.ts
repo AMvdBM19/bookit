@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase/server';
 import { requireRole } from '@/lib/auth/session';
 
-const ALLOWED_FIELDS = ['extra_price', 'is_active', 'name', 'description', 'display_order', 'duration_minutes'] as const;
+const ALLOWED_FIELDS = ['extra_price', 'is_active', 'name', 'description', 'display_order', 'duration_minutes', 'blocks_slot', 'allow_quantity', 'max_quantity'] as const;
 
 // PATCH — update a service tag's pricing/status (agent-only, tenant-scoped).
 export async function PATCH(
@@ -49,6 +49,26 @@ export async function PATCH(
       );
     }
     updates.duration_minutes = minutes;
+  }
+
+  if ('blocks_slot' in updates) updates.blocks_slot = Boolean(updates.blocks_slot);
+  if ('allow_quantity' in updates) updates.allow_quantity = Boolean(updates.allow_quantity);
+  if ('max_quantity' in updates) {
+    const max = Number(updates.max_quantity);
+    if (!Number.isInteger(max) || max < 1 || max > 20) {
+      return NextResponse.json(
+        { error: 'max_quantity must be an integer between 1 and 20' },
+        { status: 400 }
+      );
+    }
+    updates.max_quantity = max;
+  }
+
+  if ('description' in updates) {
+    updates.description =
+      typeof updates.description === 'string' && updates.description.trim()
+        ? updates.description.trim().slice(0, 100)
+        : null;
   }
 
   const supabase = createServiceClient();

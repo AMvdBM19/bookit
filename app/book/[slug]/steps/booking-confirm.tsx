@@ -8,7 +8,9 @@ import { useWidgetStrings } from '@/lib/widget-i18n-context';
 interface Tag {
   id: string;
   name: string;
+  description?: string | null;
   extra_price: number;
+  allow_quantity?: boolean | null;
 }
 
 interface Props {
@@ -16,6 +18,8 @@ interface Props {
   date: string;
   slot: { start: string; end: string };
   selectedTags: Tag[];
+  /** Per-tag quantities for allow_quantity tags (tag_id → count). */
+  tagQuantities?: Record<string, number>;
   notes: string;
   settings: CatalogSettings | null;
   submitting: boolean;
@@ -54,6 +58,7 @@ export default function BookingConfirm({
   date,
   slot,
   selectedTags,
+  tagQuantities = {},
   notes,
   settings,
   submitting,
@@ -71,7 +76,8 @@ export default function BookingConfirm({
   const duration = durationMinutes(slot.start, slot.end);
   const slots30 = duration / 30;
   const baseTotal = baseRate * slots30;
-  const tagExtrasTotal = selectedTags.reduce((sum, t) => sum + (t.extra_price ?? 0), 0);
+  const qtyOf = (tag: Tag) => (tag.allow_quantity ? (tagQuantities[tag.id] ?? 1) : 1);
+  const tagExtrasTotal = selectedTags.reduce((sum, t) => sum + (t.extra_price ?? 0) * qtyOf(t), 0);
   const totalPrice = baseTotal + tagExtrasTotal;
 
   const depositPct = settings?.deposit_pct ?? 0;
@@ -103,14 +109,18 @@ export default function BookingConfirm({
           <div>
             <p className="text-xs w-tx3 mb-1">{t.services}</p>
             <div className="flex flex-wrap gap-1.5">
-              {selectedTags.map(t => (
-                <span
-                  key={t.id}
-                  className="w-el border w-bd2 rounded-full px-2 py-0.5 text-[11px] w-tx-soft"
-                >
-                  {t.name}
-                </span>
-              ))}
+              {selectedTags.map(tag => {
+                const q = qtyOf(tag);
+                return (
+                  <span
+                    key={tag.id}
+                    title={tag.description ?? undefined}
+                    className="w-el border w-bd2 rounded-full px-2 py-0.5 text-[11px] w-tx-soft"
+                  >
+                    {tag.name}{q > 1 ? ` ×${q}` : ''}
+                  </span>
+                );
+              })}
             </div>
           </div>
         )}
@@ -132,14 +142,17 @@ export default function BookingConfirm({
               {formatWidgetMoney(baseTotal, currency, t)}
             </span>
           </div>
-          {selectedTags.filter(tag => tag.extra_price > 0).map(tag => (
-            <div key={tag.id} className="flex justify-between gap-4">
-              <span className="text-xs w-tx3">{tag.name}</span>
-              <span className="text-xs w-tx">
-                +{formatWidgetMoney(tag.extra_price, currency, t)}
-              </span>
-            </div>
-          ))}
+          {selectedTags.filter(tag => tag.extra_price > 0).map(tag => {
+            const q = qtyOf(tag);
+            return (
+              <div key={tag.id} className="flex justify-between gap-4">
+                <span className="text-xs w-tx3">{tag.name}{q > 1 ? ` ×${q}` : ''}</span>
+                <span className="text-xs w-tx">
+                  +{formatWidgetMoney((tag.extra_price ?? 0) * q, currency, t)}
+                </span>
+              </div>
+            );
+          })}
           <div className="flex justify-between gap-4 pt-1.5 border-t w-bd">
             <span className="text-sm w-tx font-medium">{t.total}</span>
             <span className="text-sm w-tx font-medium">

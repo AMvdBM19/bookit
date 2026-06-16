@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase/server';
 import { checkPoolAvailability } from '@/lib/availability/pool';
+import { effectiveDurationMinutes } from '@/lib/availability/duration';
 
 export const dynamic = 'force-dynamic';
 
@@ -70,16 +71,12 @@ export async function GET(
     if (serviceTagIds.length > 0) {
       const { data: tagRows } = await supabase
         .from('service_tags')
-        .select('id, duration_minutes')
+        .select('id, duration_minutes, blocks_slot')
         .in('id', serviceTagIds)
         .eq('tenant_id', tenant.id);
-      // NULL duration = a normal-length service: it contributes the default
-      // slot length to the sum, not zero.
-      const total = (tagRows ?? []).reduce(
-        (sum, t) => sum + (typeof t.duration_minutes === 'number' ? t.duration_minutes : defaultSlotMinutes),
-        0
-      );
-      if (total > 0) slotMinutes = total;
+      // Only blocks_slot tags contribute time; all-non-blocking falls back to
+      // the default slot length.
+      slotMinutes = effectiveDurationMinutes(tagRows ?? [], defaultSlotMinutes);
     }
   }
 

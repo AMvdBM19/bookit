@@ -67,6 +67,7 @@ export async function POST(
       staff_id: staff.id,
       status: 'confirmed',
       confirmed_at: new Date().toISOString(),
+      assigned_by: 'agent_assign',
     })
     .eq('id', bookingId)
     .is('staff_id', null)

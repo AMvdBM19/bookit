@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase/server';
 import { checkAvailability } from '@/lib/availability/check';
 import { checkPoolAvailability } from '@/lib/availability/pool';
+import { effectiveDurationMinutes } from '@/lib/availability/duration';
 import { calculatePricing } from '@/lib/pricing/calculate';
 import type { FeatureFlags } from '@/lib/types/tenant-config';
 import { DEFAULT_FEATURE_FLAGS } from '@/lib/types/tenant-config';
@@ -19,6 +20,8 @@ interface BookingBody {
   slot_start?: string;
   slot_end?: string;
   tag_ids?: string[];
+  /** Optional per-tag quantities (tag_id → count) for allow_quantity tags. */
+  tag_quantities?: Record<string, number>;
   guest_name?: string;
   guest_email?: string;
   guest_phone?: string;
@@ -287,21 +290,39 @@ export async function POST(
   }
 
   const tagIds: string[] = Array.isArray(body.tag_ids) ? body.tag_ids : [];
+  const tagQuantities: Record<string, number> =
+    body.tag_quantities && typeof body.tag_quantities === 'object' ? body.tag_quantities : {};
   let tagDetails: Array<{
     id: string;
     name: string;
     extra_price: number | null;
     duration_minutes: number | null;
+    blocks_slot?: boolean | null;
+    allow_quantity?: boolean | null;
+    max_quantity?: number | null;
   }> = [];
   if (tagIds.length > 0) {
     const { data: tags } = await supabase
       .from('service_tags')
-      .select('id, name, extra_price, duration_minutes')
+      .select('*')
       .in('id', tagIds)
       .eq('tenant_id', tenant.id);
     tagDetails = tags ?? [];
   }
-  const tagExtras = tagDetails.map(t => t.extra_price ?? 0);
+
+  // Resolve the booked quantity per tag: 1 unless the tag allows quantity, then
+  // clamp the client's request to [1, max_quantity]. Server-authoritative so a
+  // tampered client can't over-charge or under-charge.
+  function resolveQty(t: (typeof tagDetails)[number]): number {
+    if (!t.allow_quantity) return 1;
+    const max = Math.max(1, Number(t.max_quantity ?? 1));
+    const raw = Math.floor(Number(tagQuantities[t.id] ?? 1));
+    if (!Number.isFinite(raw) || raw < 1) return 1;
+    return Math.min(raw, max);
+  }
+
+  // extra_price is per-unit; multiply by the booked quantity for the total.
+  const tagExtras = tagDetails.map(t => (t.extra_price ?? 0) * resolveQty(t));
 
   const [startH, startM] = body.slot_start.split(':').map(Number);
   const [endH, endM] = body.slot_end.split(':').map(Number);
@@ -317,10 +338,8 @@ export async function POST(
   // underblocking the calendar / underpricing the booking.
   if (settings?.per_service_duration_enabled && tagIds.length > 0) {
     const defaultMinutes = settings?.default_slot_minutes ?? 30;
-    const expectedDuration = tagDetails.reduce(
-      (sum, t) => sum + (typeof t.duration_minutes === 'number' ? t.duration_minutes : defaultMinutes),
-      0
-    );
+    // blocks_slot-aware: non-blocking tags add price, not time.
+    const expectedDuration = effectiveDurationMinutes(tagDetails, defaultMinutes);
     if (expectedDuration > 0 && durationMinutes !== expectedDuration) {
       return NextResponse.json(
         { error: 'Slot duration does not match the selected services. Please pick your time again.' },
@@ -382,6 +401,9 @@ export async function POST(
       deposit_amount: depositAmount,
       status,
       confirmed_at: confirmedAt,
+      // A client who picked their own staff owns the assignment. Pool bookings
+      // land unassigned and get assigned_by set on claim/assign.
+      assigned_by: staff ? 'client' : null,
     })
     .select('id')
     .single();
@@ -399,6 +421,7 @@ export async function POST(
         tag_id: t.id,
         tag_name: t.name,
         extra_price: t.extra_price ?? 0,
+        quantity: resolveQty(t),
       }))
     );
   }

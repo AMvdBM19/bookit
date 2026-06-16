@@ -38,6 +38,9 @@ interface ServiceTag {
   is_active: boolean;
   display_order: number;
   duration_minutes?: number | null;
+  blocks_slot?: boolean | null;
+  allow_quantity?: boolean | null;
+  max_quantity?: number | null;
 }
 
 const inputCls =
@@ -803,10 +806,18 @@ function TagPriceRow({
 }) {
   const [name, setName] = useState(tag.name);
   const [savedName, setSavedName] = useState(tag.name);
+  const [description, setDescription] = useState(tag.description ?? '');
+  const [savedDescription, setSavedDescription] = useState(tag.description ?? '');
   const [price, setPrice] = useState(String(num(tag.extra_price)));
   const [savedPrice, setSavedPrice] = useState(num(tag.extra_price));
   const [duration, setDuration] = useState(tag.duration_minutes != null ? String(tag.duration_minutes) : '');
   const [savedDuration, setSavedDuration] = useState(tag.duration_minutes != null ? String(tag.duration_minutes) : '');
+  const [blocksSlot, setBlocksSlot] = useState(tag.blocks_slot ?? true);
+  const [savedBlocksSlot, setSavedBlocksSlot] = useState(tag.blocks_slot ?? true);
+  const [allowQuantity, setAllowQuantity] = useState(tag.allow_quantity ?? false);
+  const [savedAllowQuantity, setSavedAllowQuantity] = useState(tag.allow_quantity ?? false);
+  const [maxQuantity, setMaxQuantity] = useState(String(tag.max_quantity ?? 1));
+  const [savedMaxQuantity, setSavedMaxQuantity] = useState(String(tag.max_quantity ?? 1));
   const [active, setActive] = useState(tag.is_active);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -815,7 +826,12 @@ function TagPriceRow({
   const dirty =
     num(price) !== savedPrice ||
     (name.trim() !== savedName && name.trim() !== '') ||
-    (showDuration && duration !== savedDuration);
+    description.trim() !== savedDescription.trim() ||
+    (showDuration &&
+      (duration !== savedDuration ||
+        blocksSlot !== savedBlocksSlot ||
+        allowQuantity !== savedAllowQuantity ||
+        maxQuantity !== savedMaxQuantity));
 
   async function patch(updates: Record<string, unknown>): Promise<boolean> {
     setBusy(true);
@@ -845,13 +861,23 @@ function TagPriceRow({
   async function savePrice() {
     const updates: Record<string, unknown> = { extra_price: num(price) };
     if (name.trim() && name.trim() !== savedName) updates.name = name.trim();
+    updates.description = description.trim() === '' ? null : description.trim().slice(0, 100);
     if (showDuration) {
-      updates.duration_minutes = duration.trim() === '' ? null : num(duration);
+      // A non-blocking service adds price but no time — its duration is moot.
+      updates.duration_minutes = !blocksSlot || duration.trim() === '' ? null : num(duration);
+      updates.blocks_slot = blocksSlot;
+      updates.allow_quantity = allowQuantity;
+      updates.max_quantity = allowQuantity ? Math.max(1, Math.min(20, num(maxQuantity) || 1)) : 1;
     }
     const ok = await patch(updates);
     if (ok) {
       setSavedPrice(num(price));
-      setSavedDuration(duration);
+      setSavedDuration(updates.duration_minutes == null ? '' : String(updates.duration_minutes));
+      if (updates.duration_minutes == null && !blocksSlot) setDuration('');
+      setSavedDescription(description.trim());
+      setSavedBlocksSlot(blocksSlot);
+      setSavedAllowQuantity(allowQuantity);
+      setSavedMaxQuantity(String(updates.max_quantity ?? maxQuantity));
       if (typeof updates.name === 'string') setSavedName(updates.name);
       toast.success('Service saved.');
     }
@@ -888,17 +914,26 @@ function TagPriceRow({
 
   return (
     <tr className="hover:bg-elevated">
-      <td className="px-3 py-3 text-fg">
+      <td className="px-3 py-3 text-fg align-top">
         <input
           type="text"
           value={name}
           onChange={e => setName(e.target.value)}
           maxLength={80}
           aria-label="Service name"
-          className="w-full max-w-[180px] text-sm bg-transparent text-fg border border-transparent hover:border-border focus:border-border rounded px-2 py-1 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          className="w-full max-w-[200px] text-sm bg-transparent text-fg border border-transparent hover:border-border focus:border-border rounded px-2 py-1 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+        />
+        <input
+          type="text"
+          value={description}
+          onChange={e => setDescription(e.target.value)}
+          maxLength={100}
+          aria-label="Service description"
+          placeholder="e.g. Starting from / Per wheel"
+          className="w-full max-w-[200px] text-xs bg-transparent text-fg-muted border border-transparent hover:border-border focus:border-border rounded px-2 py-1 mt-1 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
         />
       </td>
-      <td className="px-3 py-3">
+      <td className="px-3 py-3 align-top">
         <div className="flex items-center gap-1.5">
           <span className="text-fg-muted text-xs">{currency}</span>
           <input
@@ -913,7 +948,7 @@ function TagPriceRow({
         {error && <p className="text-[11px] text-red-500 mt-1">{error}</p>}
       </td>
       {showDuration && (
-        <td className="px-3 py-3">
+        <td className="px-3 py-3 align-top">
           <input
             type="number"
             min={5}
@@ -921,12 +956,45 @@ function TagPriceRow({
             step={5}
             value={duration}
             onChange={e => setDuration(e.target.value)}
+            disabled={!blocksSlot}
             placeholder="Default"
-            className="w-24 text-sm bg-elevated text-fg border border-border rounded px-2 py-1 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus:border-border-strong"
+            aria-label="Duration in minutes"
+            className="w-24 text-sm bg-elevated text-fg border border-border rounded px-2 py-1 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus:border-border-strong disabled:opacity-40 disabled:cursor-not-allowed"
           />
+          <label className="flex items-center gap-1.5 mt-2 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={blocksSlot}
+              onChange={e => setBlocksSlot(e.target.checked)}
+            />
+            <span className="text-[11px] text-fg-muted">Blocks time slot</span>
+          </label>
+          <label className="flex items-center gap-1.5 mt-1 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={allowQuantity}
+              onChange={e => setAllowQuantity(e.target.checked)}
+            />
+            <span className="text-[11px] text-fg-muted">Allow quantity</span>
+          </label>
+          {allowQuantity && (
+            <div className="flex items-center gap-1.5 mt-1">
+              <span className="text-[11px] text-fg-muted">Max</span>
+              <input
+                type="number"
+                min={1}
+                max={20}
+                step={1}
+                value={maxQuantity}
+                onChange={e => setMaxQuantity(e.target.value)}
+                aria-label="Maximum quantity"
+                className="w-16 text-sm bg-elevated text-fg border border-border rounded px-2 py-1 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus:border-border-strong"
+              />
+            </div>
+          )}
         </td>
       )}
-      <td className="px-3 py-3">
+      <td className="px-3 py-3 align-top">
         <button
           type="button"
           onClick={toggleActive}
@@ -940,7 +1008,7 @@ function TagPriceRow({
           {active ? 'Active' : 'Inactive'}
         </button>
       </td>
-      <td className="px-3 py-3 text-right">
+      <td className="px-3 py-3 text-right align-top">
         <div className="inline-flex items-center gap-1">
           <button
             type="button"

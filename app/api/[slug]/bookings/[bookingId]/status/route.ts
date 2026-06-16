@@ -33,7 +33,7 @@ export async function PATCH(
 
   const { data: booking } = await supabase
     .from('bookings')
-    .select('id, tenant_id, staff_id, client_id, guest_client_id, slot_date, slot_start, slot_end, status')
+    .select('id, tenant_id, staff_id, client_id, guest_client_id, slot_date, slot_start, slot_end, status, assigned_by')
     .eq('id', bookingId)
     .single();
 
@@ -98,6 +98,14 @@ export async function PATCH(
   }
 
   // status === 'cancelled'
+  // Staff may not cancel a booking an administrator assigned to them — only the
+  // admin who made the assignment can (Phase 19 A4).
+  if (user.role === 'staff' && booking.assigned_by === 'agent_assign') {
+    return NextResponse.json(
+      { error: 'This booking was assigned by an administrator and can only be cancelled by them.' },
+      { status: 403 }
+    );
+  }
   if (booking.status !== 'pending_staff' && booking.status !== 'confirmed') {
     return NextResponse.json(
       { error: `Cannot cancel a booking with status '${booking.status}'` },

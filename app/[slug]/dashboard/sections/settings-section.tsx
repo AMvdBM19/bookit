@@ -948,7 +948,9 @@ function WhatsAppConfigModal({
 interface EmailState {
   configured: boolean;
   is_active: boolean;
-  config: { reply_to?: string | null };
+  config: { reply_to?: string | null; resend_api_key?: string | null; sending_domain?: string | null };
+  has_own_key?: boolean;
+  domain_status?: string | null;
   sender_name: string | null;
   sender_name_fallback: string | null;
 }
@@ -966,8 +968,11 @@ function EmailConfigModal({
   const [current, setCurrent] = useState<EmailState | null>(null);
   const [senderName, setSenderName] = useState('');
   const [replyTo, setReplyTo] = useState('');
+  const [apiKey, setApiKey] = useState('');
+  const [sendingDomain, setSendingDomain] = useState('');
   const [isActive, setIsActive] = useState(true);
   const [submitting, setSubmitting] = useState(false);
+  const [testing, setTesting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -978,6 +983,10 @@ function EmailConfigModal({
         if (cancelled) return;
         setCurrent(data);
         setSenderName(data.sender_name ?? '');
+        setSendingDomain(data.config?.sending_domain ?? '');
+        // Pre-fill the masked key so the field shows a value; the PUT route
+        // treats a masked value as "unchanged".
+        if (data.config?.resend_api_key) setApiKey(data.config.resend_api_key);
         if (data.configured) setIsActive(data.is_active);
       })
       .catch(() => {})
@@ -1000,6 +1009,8 @@ function EmailConfigModal({
         body: JSON.stringify({
           is_active: isActive,
           sender_name: senderName,
+          resend_api_key: apiKey,
+          sending_domain: sendingDomain.trim(),
           ...(replyTo.trim() ? { reply_to: replyTo.trim() } : {}),
         }),
       });
@@ -1018,6 +1029,27 @@ function EmailConfigModal({
       setSubmitting(false);
     }
   }
+
+  async function sendTest() {
+    setTesting(true);
+    setError(null);
+    try {
+      const res = await fetch(`/api/${slug}/integrations/email/test`, { method: 'POST' });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setError(data.error ?? 'Test email failed');
+        toast.error(data.error ?? 'Test email failed.');
+        return;
+      }
+      toast.success(`Test email sent to ${data.sent_to}.`);
+    } catch {
+      toast.error('Test email failed. Please try again.');
+    } finally {
+      setTesting(false);
+    }
+  }
+
+  const domainStatus = current?.domain_status ?? null;
 
   return (
     <Modal title="Email notifications" onClose={onClose} maxWidth="max-w-md">
@@ -1073,6 +1105,104 @@ function EmailConfigModal({
             </p>
           </div>
 
+          {/* Self-service sending: own Resend key + verified domain (Phase 19 A5) */}
+          <div className="border-t border-border pt-3 space-y-3">
+            <p className="text-xs font-medium text-fg">Send from your own domain (optional)</p>
+            <p className="text-[11px] text-fg-muted">
+              By default emails are sent via Book-IT&apos;s shared infrastructure.
+              To send from your own domain, add a{' '}
+              <a
+                href="https://resend.com"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="underline hover:text-fg"
+              >
+                Resend
+              </a>{' '}
+              API key and verified sending domain.
+            </p>
+
+            <div>
+              <label className="block text-xs text-fg-muted mb-1" htmlFor="email-apikey">
+                Resend API key
+              </label>
+              <input
+                id="email-apikey"
+                type="text"
+                value={apiKey}
+                onChange={e => setApiKey(e.target.value)}
+                className={inputCls}
+                placeholder="re_…"
+                autoComplete="off"
+                spellCheck={false}
+              />
+              <p className="text-[11px] text-fg-muted mt-1">
+                Stored encrypted; only the last 4 characters are shown after saving.
+              </p>
+            </div>
+
+            <div>
+              <label className="block text-xs text-fg-muted mb-1" htmlFor="email-domain">
+                Sending domain
+              </label>
+              <input
+                id="email-domain"
+                type="text"
+                value={sendingDomain}
+                onChange={e => setSendingDomain(e.target.value)}
+                className={inputCls}
+                placeholder="mail.yourbusiness.nl"
+                autoComplete="off"
+                spellCheck={false}
+              />
+              {sendingDomain.trim() && (
+                <p className="text-[11px] text-fg-muted mt-1">
+                  Emails will be sent from{' '}
+                  <span className="text-fg">
+                    {(senderName.trim() || current?.sender_name_fallback || 'bookings')
+                      .toLowerCase()
+                      .replace(/[^a-z0-9]+/g, '')
+                      .slice(0, 30) || 'bookings'}
+                    @{sendingDomain.trim()}
+                  </span>
+                </p>
+              )}
+            </div>
+
+            {/* Verification status */}
+            {current?.has_own_key && current?.config.sending_domain && (
+              <div className="text-[11px]">
+                {domainStatus === 'verified' ? (
+                  <span className="text-emerald-600 dark:text-emerald-400">✓ Domain verified</span>
+                ) : domainStatus === 'not_found' ? (
+                  <span className="text-amber-600 dark:text-amber-400">
+                    Domain not found in your Resend account — add it there first.
+                  </span>
+                ) : domainStatus ? (
+                  <span className="text-amber-600 dark:text-amber-400">
+                    Domain status: {domainStatus} — finish the DNS steps below.
+                  </span>
+                ) : (
+                  <span className="text-fg-muted">Could not check verification status.</span>
+                )}
+              </div>
+            )}
+
+            {/* Guided DNS steps appear once a domain is entered */}
+            {sendingDomain.trim() && (
+              <details className="rounded border border-border bg-elevated p-2">
+                <summary className="text-[11px] text-fg cursor-pointer">DNS setup steps</summary>
+                <ol className="list-decimal ml-4 mt-2 space-y-1 text-[11px] text-fg-muted">
+                  <li>In Resend, go to <span className="text-fg">Domains → Add Domain</span> and enter <span className="text-fg">{sendingDomain.trim()}</span>.</li>
+                  <li>Add the <span className="text-fg">MX</span> and <span className="text-fg">TXT (SPF)</span> records Resend shows to your DNS provider.</li>
+                  <li>Add the <span className="text-fg">DKIM</span> CNAME/TXT records Resend provides.</li>
+                  <li>Optionally add the <span className="text-fg">DMARC</span> TXT record for best deliverability.</li>
+                  <li>Click <span className="text-fg">Verify</span> in Resend, then reopen this dialog to confirm the status here.</li>
+                </ol>
+              </details>
+            )}
+          </div>
+
           <label className="flex items-center gap-2 cursor-pointer">
             <input
               type="checkbox"
@@ -1085,22 +1215,33 @@ function EmailConfigModal({
 
           {error && <p className="text-xs text-red-500">{error}</p>}
 
-          <div className="flex justify-end gap-2 pt-2">
+          <div className="flex justify-between gap-2 pt-2">
             <button
               type="button"
-              onClick={onClose}
-              disabled={submitting}
-              className="text-sm px-3 py-1.5 text-fg hover:bg-elevated rounded"
+              onClick={sendTest}
+              disabled={testing || submitting || !current?.configured}
+              title={!current?.configured ? 'Save the integration first' : undefined}
+              className="text-sm px-3 py-1.5 bg-elevated text-fg rounded hover:bg-sunken transition-colors disabled:opacity-50"
             >
-              Cancel
+              {testing ? 'Sending…' : 'Send test email'}
             </button>
-            <button
-              type="submit"
-              disabled={submitting}
-              className="text-sm px-4 py-1.5 bg-fg text-canvas rounded hover:opacity-90 transition-opacity disabled:opacity-50"
-            >
-              {submitting ? 'Saving…' : 'Save'}
-            </button>
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={onClose}
+                disabled={submitting}
+                className="text-sm px-3 py-1.5 text-fg hover:bg-elevated rounded"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                disabled={submitting}
+                className="text-sm px-4 py-1.5 bg-fg text-canvas rounded hover:opacity-90 transition-opacity disabled:opacity-50"
+              >
+                {submitting ? 'Saving…' : 'Save'}
+              </button>
+            </div>
           </div>
         </form>
       )}

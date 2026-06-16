@@ -18,12 +18,16 @@ booking, services…) comes from the tenant's template.
 2. **Date & time** — a month-grid calendar with previous/next month
    navigation, bounded by the minimum lead time (below) and the tenant's
    max booking window (above); out-of-range days are disabled. Tapping a
-   date loads free slots. Slot length is the default slot minutes, or the
-   summed durations of selected services when per-service duration is on.
+   date loads free slots. Slot length is the default slot minutes, or — with
+   per-service duration on — the summed durations of the selected services
+   that block the slot (non-blocking services add price but no time).
 3. **Details** — name, email, phone (optional), service selection, notes
    (label, placeholder and required-ness are template-driven), and an age
-   confirmation checkbox when the age gate is active. If changing services
-   changes the duration, the client is asked to re-pick a time.
+   confirmation checkbox when the age gate is active. Each service can show a
+   short **description** under its name. Services configured with a quantity
+   show a **+/− stepper** instead of a checkbox; the price multiplies by the
+   chosen quantity. If changing services changes the duration, the client is
+   asked to re-pick a time.
 4. **Confirm** — summary card; price breakdown when "Show price to client"
    is on; deposit notice when applicable (pricing-guide.md); submit.
 5. **Success** — "confirmed" (auto-confirm tenants) or "request submitted,

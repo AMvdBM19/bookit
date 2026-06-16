@@ -50,6 +50,9 @@ export interface WidgetStrings {
   // Details form
   whatWouldYouLike: string;
   subtotal: string;
+  each: string;
+  increase: string;
+  decrease: string;
   accountRequiredTitle: string;
   accountRequiredBefore: string;
   accountRequiredLogin: string;
@@ -138,6 +141,9 @@ const en: WidgetStrings = {
 
   whatWouldYouLike: 'What would you like?',
   subtotal: 'Subtotal',
+  each: 'each',
+  increase: 'Increase quantity',
+  decrease: 'Decrease quantity',
   accountRequiredTitle: 'Account required',
   accountRequiredBefore: 'This business requires an account to book. Please',
   accountRequiredLogin: 'log in',
@@ -227,6 +233,9 @@ const nl: WidgetStrings = {
 
   whatWouldYouLike: 'Wat wil je laten doen?',
   subtotal: 'Subtotaal',
+  each: 'per stuk',
+  increase: 'Aantal verhogen',
+  decrease: 'Aantal verlagen',
   accountRequiredTitle: 'Account vereist',
   accountRequiredBefore: 'Voor een boeking bij dit bedrijf heb je een account nodig.',
   accountRequiredLogin: 'Log in',

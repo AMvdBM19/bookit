@@ -19,6 +19,24 @@ export async function POST(request: NextRequest) {
 
   const supabase = createServiceClient();
 
+  // Enforce the tenant's staff seat limit (Phase 19 A6). Counts active staff
+  // against tenant_settings.max_staff (defaults to 5).
+  const [{ data: limitSettings }, { count: activeCount }] = await Promise.all([
+    supabase.from('tenant_settings').select('max_staff').eq('tenant_id', user.tenantId).maybeSingle(),
+    supabase
+      .from('staff')
+      .select('id', { count: 'exact', head: true })
+      .eq('tenant_id', user.tenantId)
+      .eq('status', 'active'),
+  ]);
+  const maxStaff = limitSettings?.max_staff ?? 5;
+  if ((activeCount ?? 0) >= maxStaff) {
+    return NextResponse.json(
+      { error: `Staff limit reached. Your plan allows up to ${maxStaff} team members.` },
+      { status: 403 }
+    );
+  }
+
   const { data: tenantConfig } = await supabase
     .from('tenant_config')
     .select('feature_flags')

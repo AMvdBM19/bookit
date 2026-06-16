@@ -5,6 +5,13 @@
 
 ## Creating a staff member (owner)
 
+Each tenant has a **staff seat limit** (`max_staff`, default 5). The Staff tab
+header shows current usage as "X / Y {staff}" (active members vs the limit).
+When the limit is reached the **+ Add {staff}** button is disabled and the
+creation API returns 403 ("Staff limit reached. Your plan allows up to N team
+members."). Deactivating a member frees a seat; raising the limit requires a
+super-admin (super-admin console → tenant **Details** → **Staff limit**).
+
 Dashboard → **Staff** tab → **+ Add {staff}** button. The modal asks for:
 
 - **Email** — becomes their login.

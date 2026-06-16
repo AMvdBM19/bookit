@@ -256,6 +256,9 @@ export async function POST(
       status: body.status,
       confirmed_at: body.status === 'confirmed' ? new Date().toISOString() : null,
       completed_at: body.status === 'completed' ? new Date().toISOString() : null,
+      // A manually-created booking with a staff member is an admin assignment;
+      // staff can't self-cancel it (Phase 19 A4).
+      assigned_by: staffId ? 'agent_assign' : null,
     })
     .select('id')
     .single();

@@ -64,11 +64,19 @@ export async function GET(
     .limit(1)
     .maybeSingle();
 
+  // Staff seat limit (Phase 19 A6)
+  const { data: settings } = await supabase
+    .from('tenant_settings')
+    .select('max_staff')
+    .eq('tenant_id', tenantId)
+    .maybeSingle();
+
   return NextResponse.json({
     stats: {
       bookings_by_status_30d: bookingCountsByStatus,
       staff_count: staffCount ?? 0,
       active_staff_count: activeStaffCount ?? 0,
+      max_staff: settings?.max_staff ?? 5,
       client_count: clientCount ?? 0,
       guest_count: guestCount ?? 0,
       whatsapp: waIntegration

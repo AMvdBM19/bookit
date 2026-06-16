@@ -3,6 +3,30 @@
 > Feature history for the AI assistant: what exists and since when. Newest
 > first. Maintained per the AI Docs Maintenance Protocol in CLAUDE.md.
 
+## 2026-06-16 — Service model & operational fixes (Phase 19-A)
+
+- **Service descriptions**: each service tag now has an optional one-line
+  description (e.g. "Starting from", "Per wheel"), editable on the Pricing tab
+  and shown to clients under the service name in the booking widget.
+- **Non-blocking services**: a service can be set to *not* block time
+  ("Blocks time slot" toggle, on by default). Non-blocking services add their
+  price but no duration; when every selected service is non-blocking the
+  booking uses the default slot length.
+- **Service quantities**: a service can allow a quantity (1..max). The widget
+  shows a +/− stepper and the price is multiplied by the chosen quantity.
+- **Admin-assigned bookings**: staff can no longer cancel a booking an
+  administrator assigned to them; those cards show an "Assigned by admin" label.
+- **Own-domain email**: tenants can add their own Resend API key and verified
+  sending domain under Settings → Integrations → Email, with guided DNS steps,
+  a verification status, and a "Send test email" button.
+- **Staff limit**: each tenant has a staff seat limit (default 5). The Staff
+  tab shows "X / Y", new staff are blocked at the limit, and super-admins can
+  raise it per tenant.
+- **Calendar availability overlay**: with a staff member selected in the
+  Bookings filters, the calendar shades their working hours and marks days off.
+- **Bookings filters**: a collapsible Filters bar (staff, status, source,
+  payment status) applies consistently across the list, calendar and board.
+
 ## 2026-06-15 — Embed guides & WordPress plugin (Phase 18-C/D)
 
 - New **Book-IT Booking Widget** WordPress plugin: `[bookit slug lang height]`

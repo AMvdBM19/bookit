@@ -54,10 +54,16 @@ function minutesOf(time: string): number {
   return h * 60 + m;
 }
 
+interface StaffAvailability {
+  schedule: Array<{ day_of_week: number; start_time: string; end_time: string }>;
+  exceptions: Array<{ date: string; reason: string | null }>;
+}
+
 export default function BookingsCalendar({
   bookings,
   currency,
   slug,
+  selectedStaffId = null,
   onEdit,
   staffOptions = [],
   onAssign,
@@ -66,6 +72,8 @@ export default function BookingsCalendar({
   bookings: BookingDetail[];
   currency: string;
   slug?: string;
+  /** When set, shade each day by this staff member's schedule + days off (A7). */
+  selectedStaffId?: string | null;
   onEdit?: (bookingId: string) => void;
   staffOptions?: Array<{ id: string; pseudonym: string }>;
   onAssign?: (id: string, staffId: string) => Promise<void>;
@@ -83,6 +91,34 @@ export default function BookingsCalendar({
   const [cancelBooking, setCancelBooking] = useState<BookingDetail | null>(null);
   const [cancelReason, setCancelReason] = useState('');
   const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // A7 — staff availability overlay. Cached per staffId for the session.
+  const [availability, setAvailability] = useState<StaffAvailability | null>(null);
+  const availabilityCache = useRef<Record<string, StaffAvailability>>({});
+
+  useEffect(() => {
+    if (!selectedStaffId || !slug) {
+      setAvailability(null);
+      return;
+    }
+    const cached = availabilityCache.current[selectedStaffId];
+    if (cached) {
+      setAvailability(cached);
+      return;
+    }
+    let cancelled = false;
+    fetch(`/api/${slug}/staff/${selectedStaffId}/availability`)
+      .then(res => (res.ok ? res.json() : null))
+      .then((data: StaffAvailability | null) => {
+        if (cancelled || !data) return;
+        availabilityCache.current[selectedStaffId] = data;
+        setAvailability(data);
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [selectedStaffId, slug]);
 
   const quickActionsEnabled = !!onStatus;
 
@@ -242,6 +278,50 @@ export default function BookingsCalendar({
                   className="relative border-l border-border"
                   style={{ height: columnHeight }}
                 >
+                  {/* A7 — staff availability overlay (shading + days off) */}
+                  {availability && (() => {
+                    const dow = new Date(ds + 'T00:00:00').getDay();
+                    const exception = availability.exceptions.find(e => e.date === ds);
+                    if (exception) {
+                      return (
+                        <div
+                          className="absolute inset-0 bg-red-500/10 pointer-events-none"
+                          title={exception.reason ?? 'Day off'}
+                        >
+                          <span className="absolute top-1 left-1 text-[9px] font-medium uppercase tracking-wider text-red-600 dark:text-red-300">
+                            Day off
+                          </span>
+                        </div>
+                      );
+                    }
+                    const blocks = availability.schedule.filter(s => s.day_of_week === dow);
+                    return (
+                      <>
+                        {/* Out-of-schedule hatch */}
+                        <div
+                          className="absolute inset-0 pointer-events-none"
+                          style={{
+                            backgroundImage:
+                              'repeating-linear-gradient(45deg, rgba(120,120,120,0.10) 0, rgba(120,120,120,0.10) 5px, transparent 5px, transparent 11px)',
+                          }}
+                        />
+                        {/* Working-hours bands cut through the hatch */}
+                        {blocks.map((blk, i) => {
+                          const s = Math.max(minutesOf(blk.start_time), startHour * 60);
+                          const e = Math.min(minutesOf(blk.end_time), endHour * 60);
+                          if (e <= s) return null;
+                          return (
+                            <div
+                              key={i}
+                              className="absolute inset-x-0 bg-surface pointer-events-none"
+                              style={{ top: ((s - startHour * 60) / 60) * HOUR_PX, height: ((e - s) / 60) * HOUR_PX }}
+                            />
+                          );
+                        })}
+                      </>
+                    );
+                  })()}
+
                   {hours.map(h => (
                     <div
                       key={h}
@@ -322,6 +402,24 @@ export default function BookingsCalendar({
           <span className="inline-block w-2.5 h-2.5 rounded-sm border border-dashed border-border-strong" />
           Pool / unassigned
         </span>
+        {availability && (
+          <>
+            <span className="inline-flex items-center gap-1">
+              <span
+                className="inline-block w-2.5 h-2.5 rounded-sm border border-border-strong"
+                style={{
+                  backgroundImage:
+                    'repeating-linear-gradient(45deg, rgba(120,120,120,0.3) 0, rgba(120,120,120,0.3) 2px, transparent 2px, transparent 4px)',
+                }}
+              />
+              Out of schedule
+            </span>
+            <span className="inline-flex items-center gap-1">
+              <span className="inline-block w-2.5 h-2.5 rounded-sm bg-red-500/20 border border-red-300" />
+              Day off
+            </span>
+          </>
+        )}
       </div>
 
       {openBooking && (

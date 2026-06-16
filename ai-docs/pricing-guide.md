@@ -6,11 +6,16 @@
 ## How a booking's price is calculated
 
 ```
-price = base_rate_per_30min × (duration_minutes / 30) + Σ extra_price of selected services
+price = base_rate_per_30min × (duration_minutes / 30) + Σ (extra_price × quantity) of selected services
 ```
 
 - **Duration** is the tenant's `default_slot_minutes`, or — when per-service
-  duration is enabled — the sum of the selected services' own durations.
+  duration is enabled — the sum of the durations of the selected services that
+  **block the slot**. Services marked as not blocking the slot add price but no
+  time; if every selected service is non-blocking, the booking uses the default
+  slot length.
+- **Quantity**: a service can allow a quantity (e.g. "per wheel"); its extra
+  price is multiplied by the quantity the client picks.
 - Manual bookings auto-suggest this price but the owner can override it.
 - Prices are shown to clients in the widget only when **Show price to
   client** is on (and pricing is enabled).
@@ -83,6 +88,10 @@ A table of the tenant's service tags with inline editing:
   service tag any time; it starts with extra price 0 and active.
 - **Service name** — editable inline; renaming takes effect on the widget
   immediately after Save.
+- **Description** — optional one-line note under the name (e.g. "Starting
+  from", "Per wheel"), max 100 characters. Shown to clients under the service
+  name in the widget, and beside the service in the manual-booking modal and
+  booking detail panel.
 - **Extra price** — added on top of the base-rate calculation when the
   client selects that service.
 - **Per-service duration** checkbox (above the table) — when enabled, a
@@ -92,6 +101,15 @@ A table of the tenant's service tags with inline editing:
   services without a custom duration count as the default appointment
   length in that sum. New tenants can also enable this during onboarding
   ("Services have different durations" in the Booking Configuration step).
+- **Blocks time slot** toggle (shown with per-service duration, on by
+  default) — turn it off for an extra that adds price but no time (e.g. a
+  product or surcharge). Its duration field is disabled while off. When every
+  service the client selects is non-blocking, the booking falls back to the
+  default slot length.
+- **Allow quantity** toggle (shown with per-service duration, off by default)
+  — when on, set a **Max** (1–20). The widget shows a +/− quantity stepper for
+  that service instead of a checkbox, and the extra price is multiplied by the
+  chosen quantity.
 - **Active/Inactive** toggle — inactive services disappear from the widget
   but keep their history.
 - **Delete** (trash icon, asks for confirmation) — permanently removes a
@@ -115,6 +133,11 @@ A table of the tenant's service tags with inline editing:
 - *"Service X takes 90 minutes, not 30"* — enable **Per-service duration**,
   then set 90 in its Duration column. The widget will offer 90-minute slots
   when that service is selected.
+- *"Add-on X shouldn't change the appointment length"* — enable **Per-service
+  duration**, then turn **Blocks time slot** off for X. It adds its price but
+  no time.
+- *"Clients should pick how many of X"* — turn **Allow quantity** on for X and
+  set a Max. The widget shows a +/− stepper and multiplies the price.
 - *"Clients shouldn't see prices"* — Base Pricing → Edit → untick **Show
   price to client**.
 - *"I need a different base rate (or currency)"* — Base Pricing → Edit →
@@ -129,5 +152,6 @@ A table of the tenant's service tags with inline editing:
 - `PATCH /api/{slug}/settings` — editable pricing fields.
 - `GET /api/{slug}/tags`, `POST /api/{slug}/tags` (create),
   `PATCH /api/{slug}/tags/{tagId}` (name, description, extra_price,
-  duration_minutes, is_active, display_order),
+  duration_minutes, blocks_slot, allow_quantity, max_quantity, is_active,
+  display_order),
   `DELETE /api/{slug}/tags/{tagId}` (409 when booking history exists).

@@ -27,14 +27,14 @@ export async function GET(request: NextRequest) {
   let query = supabase
     .from('bookings')
     .select(`
-      id, slot_date, slot_start, slot_end, duration_minutes, booking_notes, status, source,
+      id, slot_date, slot_start, slot_end, duration_minutes, booking_notes, status, source, assigned_by,
       service_address, reference_image_url, edited_at,
       total_price, tag_extras_total, base_rate_per_30, payment_status, deposit_amount,
       created_at: requested_at, confirmed_at, cancelled_at, cancellation_reason,
       staff:staff_id(id, pseudonym),
       clients:client_id(id, display_name, email, phone, wa_opt_in),
       guest_clients:guest_client_id(id, name, email, phone, wa_opt_in),
-      booking_service_tags(tag_name, extra_price)
+      booking_service_tags(tag_name, extra_price, quantity)
     `)
     .eq('tenant_id', user.tenantId)
     .order('slot_date', { ascending: false })
