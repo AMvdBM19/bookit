@@ -38,11 +38,17 @@ with a "Day off" label.
 
 A **Single staff ⇄ All staff** toggle sits in the calendar header. **All
 staff** switches to a single-day view with **one column per active {staff}**:
-each column shows that person's working hours (clear), out-of-hours time
-(hatched), days off (red tint with a "Day off" label) and their bookings as
-blocks. Use ‹ / › to move day by day. Clicking an empty spot inside a working
-column opens the manual-booking form prefilled with that {staff}, date and
-time. (Availability per day is fetched once and cached for the session.)
+working hours show **clear**, out-of-hours and unscheduled days show a clearly
+**greyed/hatched** "Outside working hours" band (a column with no schedule that
+day is labelled "Not scheduled"), days off are **red-tinted with a "Day off"
+label**, and a **red line marks the current time** on today. Booking blocks
+show the **time range, {client} and service**, colored by status; clicking one
+opens the detail panel. All toolbar filters (staff, status, date range, source,
+payment, search) apply to these blocks. Use ‹ / › to move day by day, and the
+view scrolls horizontally on narrow screens. Clicking an empty spot inside a
+working column opens the manual-booking form prefilled with that {staff}, date
+and time. (Each {staff} member's schedule/day-off info for the date is fetched
+once and cached for the session.)
 
 The **Board** is a Kanban: columns for pending → confirmed → completed /
 no-show / cancelled (the last three collapsed by default) with counts.
@@ -67,7 +73,7 @@ Every row in all three tables has a chevron ("See details") that expands an
 inline panel showing, when present: {client} contact (email, phone,
 WhatsApp opt-in), the booking notes, the service address, a clickable
 reference-image thumbnail, and any **custom booking-form fields** the tenant
-collects (see Settings → Booking form), selected services with per-service
+collects (managed in Widget → Booking form fields), selected services with per-service
 extras and the total price, the assigned {staff} (or "Unassigned — pool"),
 the source (Widget/Manual), and requested/confirmed/cancelled timestamps
 plus cancellation reason. Staff see a slimmer "See details" on their own
@@ -80,7 +86,7 @@ The **+ New** button opens manual creation.
 ## Editing a booking
 
 The detail panel has an **Edit** button (owner always; staff only on their
-own bookings and only when Settings → Booking form → "Staff can edit
+own bookings and only when Settings → Staff permissions → "Staff can edit
 bookings" is on). The edit modal changes **services** (checklist),
 **notes**, and the **total price** — the price recomputes from base rate +
 service extras as services change, and can be overridden manually; a price
@@ -122,7 +128,7 @@ The owner can create bookings directly — useful for phone/walk-in requests:
 - **Services, notes, price**: price auto-suggests from base rate × duration +
   service extras, but can be overridden.
 - **Service address**: shown only when the tenant's booking form has the
-  address field enabled (Settings → Booking form); optional here.
+  address field enabled (Widget → Booking form fields); optional here.
 - **Status**: Pending, Confirmed or Completed (for backfilling history).
 - **Notify**: optionally send the client a WhatsApp confirmation (requires a
   phone number and Confirmed status).
@@ -156,10 +162,11 @@ restricted this way.
    duration count as the default appointment length in that sum).
 3. **Details** — name, email, phone, service selection, notes (label and
    required-ness are template-driven), age confirmation when the age gate is on.
-   Two optional template/tenant-driven fields can appear here (Settings →
-   Booking form): a **reference image** upload (optional for the client;
-   JPEG/PNG/WebP, max 5 MB — e.g. a tattoo design idea) and a required
-   **service address** (for at-home services).
+   Any **custom booking-form fields** the owner has defined appear here
+   (managed in Widget → Booking form fields). These include built-in
+   **service address** (for at-home services) and **file upload** fields. A
+   file-upload field accepts JPEG/PNG/WebP/PDF/DOC/DOCX (max 5 MB) and shows no
+   hint unless the owner sets help text.
    If changing services changes the appointment duration, the client is asked
    to re-pick a time slot.
 4. **Confirm** — summary, optional price breakdown, optional deposit notice,

@@ -13,10 +13,14 @@ import { checkUploadRateLimit } from '@/lib/rate-limit/upload';
 
 const BUCKET = 'booking-references';
 const MAX_BYTES = 5 * 1024 * 1024;
+// General document/file upload — images plus common documents (Fix 1).
 const ALLOWED_TYPES: Record<string, string> = {
   'image/jpeg': 'jpg',
   'image/png': 'png',
   'image/webp': 'webp',
+  'application/pdf': 'pdf',
+  'application/msword': 'doc',
+  'application/vnd.openxmlformats-officedocument.wordprocessingml.document': 'docx',
 };
 
 export async function POST(
@@ -76,22 +80,36 @@ export async function POST(
   if (!(file instanceof File)) {
     return NextResponse.json({ error: 'file is required' }, { status: 400 });
   }
-  const ext = ALLOWED_TYPES[file.type];
+  // Resolve the extension from the MIME type, falling back to the filename for
+  // browsers that report an empty type for .doc/.docx.
+  let ext = ALLOWED_TYPES[file.type];
+  if (!ext && file.type === '') {
+    const m = /\.(jpe?g|png|webp|pdf|docx?)$/i.exec(file.name);
+    if (m) ext = m[1].toLowerCase().replace('jpeg', 'jpg');
+  }
   if (!ext) {
     return NextResponse.json(
-      { error: 'Only JPEG, PNG or WebP images are allowed' },
+      { error: 'Allowed file types: JPEG, PNG, WebP, PDF, DOC or DOCX' },
       { status: 400 }
     );
   }
   if (file.size > MAX_BYTES) {
-    return NextResponse.json({ error: 'Image must be 5 MB or smaller' }, { status: 400 });
+    return NextResponse.json({ error: 'File must be 5 MB or smaller' }, { status: 400 });
   }
 
+  const EXT_CONTENT_TYPE: Record<string, string> = {
+    jpg: 'image/jpeg',
+    png: 'image/png',
+    webp: 'image/webp',
+    pdf: 'application/pdf',
+    doc: 'application/msword',
+    docx: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+  };
   const path = `${tenant.id}/${randomUUID()}.${ext}`;
   const buffer = Buffer.from(await file.arrayBuffer());
   const { error: uploadError } = await supabase.storage
     .from(BUCKET)
-    .upload(path, buffer, { contentType: file.type });
+    .upload(path, buffer, { contentType: file.type || EXT_CONTENT_TYPE[ext] });
 
   if (uploadError) {
     console.error('[reference-upload] error:', uploadError);

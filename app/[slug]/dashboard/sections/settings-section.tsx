@@ -8,7 +8,6 @@ import Badge from '@/components/ui/badge';
 import Modal from '@/components/ui/modal';
 import ConfirmDialog from '@/components/ui/confirm-dialog';
 import { ONBOARDING_REOPEN_EVENT } from '@/components/onboarding-checklist';
-import BookingFormBuilder from './booking-form-builder';
 
 interface Tenant {
   name: string;
@@ -432,8 +431,20 @@ export default function SettingsSection({ slug }: { slug: string }) {
         </div>
       </section>
 
-      {/* Booking form — tenant-defined custom fields (Phase 20-C builder) */}
-      <BookingFormBuilder slug={slug} />
+      {/* Booking form fields moved to the Widget customizer (Fix 2) so changes
+          can be previewed live alongside the widget. */}
+      <section>
+        <h3 className="text-xs font-semibold text-fg-muted uppercase tracking-wider mb-2">
+          Booking form
+        </h3>
+        <div className="bg-surface rounded-lg border border-border px-4 py-3">
+          <p className="text-sm text-fg-muted">
+            Custom booking-form fields are now managed in the{' '}
+            <span className="text-fg font-medium">Widget</span> tab, where you can
+            add, edit and reorder them while previewing the booking widget live.
+          </p>
+        </div>
+      </section>
 
       {/* Staff permissions (tenant_config flags) */}
       <BookingFormSection slug={slug} />

@@ -52,6 +52,18 @@ const CURRENCY_SYMBOLS: Record<string, string> = {
   EUR: '€', USD: '$', GBP: '£',
 };
 
+// General document/file upload: images plus common documents (Fix 1).
+const FILE_ACCEPT =
+  'image/jpeg,image/png,image/webp,application/pdf,.doc,.docx,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+const FILE_ALLOWED_MIME = new Set([
+  'image/jpeg',
+  'image/png',
+  'image/webp',
+  'application/pdf',
+  'application/msword',
+  'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+]);
+
 const inputCls = 'w-full w-input px-3 py-2 text-sm';
 const labelCls = 'block text-xs w-tx2 mb-1';
 
@@ -82,7 +94,10 @@ export default function DetailsForm({
 
   async function handleFileUpload(field: BookingField, file: File) {
     setFileErrors(prev => ({ ...prev, [field.field_key]: '' }));
-    if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type)) {
+    // Some browsers report an empty MIME type for .doc/.docx — fall back to the
+    // extension in that case so legitimate documents aren't rejected.
+    const extOk = /\.(jpe?g|png|webp|pdf|docx?)$/i.test(file.name);
+    if (!FILE_ALLOWED_MIME.has(file.type) && !(file.type === '' && extOk)) {
       setFileErrors(prev => ({ ...prev, [field.field_key]: t.referenceImageTypeError }));
       return;
     }
@@ -292,13 +307,18 @@ export default function DetailsForm({
         const path = typeof value === 'string' ? value : '';
         const preview = state.customFieldPreviews[key];
         const err = fileErrors[key];
+        const isImage = /\.(jpe?g|png|webp)$/i.test(path);
         return (
           <div key={key}>
             {labelEl}
-            {path && preview ? (
+            {path ? (
               <div className="flex items-center gap-3">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={preview} alt={field.label} className="w-16 h-16 w-round object-cover border w-bd" />
+                {isImage && preview ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={preview} alt={field.label} className="w-16 h-16 w-round object-cover border w-bd" />
+                ) : (
+                  <span className="text-xs w-tx2 truncate max-w-[14rem]">{t.fileAttached}</span>
+                )}
                 <button
                   type="button"
                   onClick={() => {
@@ -321,7 +341,7 @@ export default function DetailsForm({
                   }}
                   id={`cf-${key}`}
                   type="file"
-                  accept="image/jpeg,image/png,image/webp"
+                  accept={FILE_ACCEPT}
                   className="hidden"
                   onChange={e => {
                     const file = e.target.files?.[0];
@@ -336,7 +356,10 @@ export default function DetailsForm({
                 >
                   {uploadingKey === key ? t.referenceImageUploading : t.referenceImageUpload}
                 </button>
-                <p className="text-[11px] w-tx3 mt-1">{field.help_text ?? t.referenceImageHint}</p>
+                {/* Only show help text the tenant has explicitly set — no default hint. */}
+                {field.help_text && (
+                  <p className="text-[11px] w-tx3 mt-1">{field.help_text}</p>
+                )}
               </>
             )}
             {err && <p className="text-red-400 text-xs mt-1">{err}</p>}

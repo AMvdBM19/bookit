@@ -40,7 +40,14 @@ const EMPTY_DRAFT: FieldDraft = {
  * fields with reorder / edit / activate / delete, and an Add modal supporting
  * all 8 field types. Talks to /api/{slug}/booking-fields.
  */
-export default function BookingFormBuilder({ slug }: { slug: string }) {
+export default function BookingFormBuilder({
+  slug,
+  onChanged,
+}: {
+  slug: string;
+  /** Called after any successful field mutation (e.g. to refresh a preview). */
+  onChanged?: () => void;
+}) {
   const [fields, setFields] = useState<BookingField[] | null>(null);
   const [busy, setBusy] = useState(false);
   const [showAdd, setShowAdd] = useState(false);
@@ -90,11 +97,17 @@ export default function BookingFormBuilder({ slug }: { slug: string }) {
     // Swap display_order on both.
     const okA = await patch(a.id, { display_order: b.display_order });
     const okB = await patch(b.id, { display_order: a.display_order });
-    if (okA && okB) await reload();
+    if (okA && okB) {
+      await reload();
+      onChanged?.();
+    }
   }
 
   async function toggleActive(field: BookingField) {
-    if (await patch(field.id, { is_active: !field.is_active })) await reload();
+    if (await patch(field.id, { is_active: !field.is_active })) {
+      await reload();
+      onChanged?.();
+    }
   }
 
   async function remove(field: BookingField) {
@@ -108,6 +121,7 @@ export default function BookingFormBuilder({ slug }: { slug: string }) {
       }
       toast.success('Field deleted.');
       await reload();
+      onChanged?.();
     } finally {
       setBusy(false);
       setDeleting(null);
@@ -216,6 +230,7 @@ export default function BookingFormBuilder({ slug }: { slug: string }) {
           onSaved={() => {
             setShowAdd(false);
             reload();
+            onChanged?.();
           }}
         />
       )}
@@ -229,6 +244,7 @@ export default function BookingFormBuilder({ slug }: { slug: string }) {
           onSaved={() => {
             setEditing(null);
             reload();
+            onChanged?.();
           }}
         />
       )}

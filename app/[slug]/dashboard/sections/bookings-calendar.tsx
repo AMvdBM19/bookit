@@ -318,10 +318,8 @@ export default function BookingsCalendar({
           loading={summaryLoading}
           dateStr={toDateStr(anchor)}
           isToday={toDateStr(anchor) === todayStr}
-          onOpenBooking={id => {
-            const b = bookings.find(x => x.id === id);
-            if (b) setOpenBooking(b);
-          }}
+          bookingsForDate={byDay[toDateStr(anchor)] ?? []}
+          onOpenBooking={setOpenBooking}
           onCreateAt={onCreateAt}
         />
       )}
@@ -391,30 +389,27 @@ export default function BookingsCalendar({
                         </div>
                       );
                     }
-                    const blocks = availability.schedule.filter(s => s.day_of_week === dow);
+                    const blocks = availability.schedule
+                      .filter(s => s.day_of_week === dow)
+                      .map(s => ({ start: s.start_time, end: s.end_time }));
+                    // Grey out the hours outside the working bands so available
+                    // time reads as clear and unavailable time is obvious.
+                    const gaps = unavailableSegments(blocks, startHour * 60, endHour * 60);
                     return (
                       <>
-                        {/* Out-of-schedule hatch */}
-                        <div
-                          className="absolute inset-0 pointer-events-none"
-                          style={{
-                            backgroundImage:
-                              'repeating-linear-gradient(45deg, rgba(120,120,120,0.10) 0, rgba(120,120,120,0.10) 5px, transparent 5px, transparent 11px)',
-                          }}
-                        />
-                        {/* Working-hours bands cut through the hatch */}
-                        {blocks.map((blk, i) => {
-                          const s = Math.max(minutesOf(blk.start_time), startHour * 60);
-                          const e = Math.min(minutesOf(blk.end_time), endHour * 60);
-                          if (e <= s) return null;
-                          return (
-                            <div
-                              key={i}
-                              className="absolute inset-x-0 bg-surface pointer-events-none"
-                              style={{ top: ((s - startHour * 60) / 60) * HOUR_PX, height: ((e - s) / 60) * HOUR_PX }}
-                            />
-                          );
-                        })}
+                        {gaps.map(([gs, ge], i) => (
+                          <div
+                            key={i}
+                            className="absolute inset-x-0 bg-sunken pointer-events-none"
+                            title="Outside working hours"
+                            style={{
+                              top: ((gs - startHour * 60) / 60) * HOUR_PX,
+                              height: ((ge - gs) / 60) * HOUR_PX,
+                              backgroundImage:
+                                'repeating-linear-gradient(45deg, rgba(120,120,120,0.18) 0, rgba(120,120,120,0.18) 5px, transparent 5px, transparent 11px)',
+                            }}
+                          />
+                        ))}
                       </>
                     );
                   })()}
@@ -426,6 +421,19 @@ export default function BookingsCalendar({
                       style={{ top: (h - startHour) * HOUR_PX }}
                     />
                   ))}
+
+                  {/* Current-time line on today's column */}
+                  {ds === todayStr && (() => {
+                    const now = new Date();
+                    const mins = now.getHours() * 60 + now.getMinutes();
+                    if (mins < startHour * 60 || mins > endHour * 60) return null;
+                    return (
+                      <div
+                        className="absolute inset-x-0 border-t-2 border-red-500 pointer-events-none z-10"
+                        style={{ top: ((mins - startHour * 60) / 60) * HOUR_PX }}
+                      />
+                    );
+                  })()}
 
                   {(byDay[ds] ?? []).map(b => {
                     const top = ((minutesOf(b.slot_start) - startHour * 60) / 60) * HOUR_PX;
@@ -500,17 +508,17 @@ export default function BookingsCalendar({
           <span className="inline-block w-2.5 h-2.5 rounded-sm border border-dashed border-border-strong" />
           Pool / unassigned
         </span>
-        {availability && (
+        {(availability || allStaff) && (
           <>
             <span className="inline-flex items-center gap-1">
               <span
-                className="inline-block w-2.5 h-2.5 rounded-sm border border-border-strong"
+                className="inline-block w-2.5 h-2.5 rounded-sm border border-border-strong bg-sunken"
                 style={{
                   backgroundImage:
-                    'repeating-linear-gradient(45deg, rgba(120,120,120,0.3) 0, rgba(120,120,120,0.3) 2px, transparent 2px, transparent 4px)',
+                    'repeating-linear-gradient(45deg, rgba(120,120,120,0.35) 0, rgba(120,120,120,0.35) 2px, transparent 2px, transparent 4px)',
                 }}
               />
-              Out of schedule
+              Outside working hours
             </span>
             <span className="inline-flex items-center gap-1">
               <span className="inline-block w-2.5 h-2.5 rounded-sm bg-red-500/20 border border-red-300" />
@@ -689,24 +697,40 @@ export default function BookingsCalendar({
   );
 }
 
-const SUMMARY_BLOCK_COLORS: Record<string, string> = {
-  pending_staff:
-    'bg-amber-100 border-amber-300 text-amber-900 dark:bg-amber-500/20 dark:border-amber-500/50 dark:text-amber-200',
-  confirmed:
-    'bg-emerald-100 border-emerald-300 text-emerald-900 dark:bg-emerald-500/20 dark:border-emerald-500/50 dark:text-emerald-200',
-};
+/** Gaps within [winStart, winEnd] (minutes) not covered by working blocks. */
+function unavailableSegments(
+  working: Array<{ start: string; end: string }>,
+  winStart: number,
+  winEnd: number
+): Array<[number, number]> {
+  const sorted = [...working]
+    .map(w => [minutesOf(w.start), minutesOf(w.end)] as [number, number])
+    .sort((a, b) => a[0] - b[0]);
+  const segs: Array<[number, number]> = [];
+  let cursor = winStart;
+  for (const [ws, we] of sorted) {
+    if (ws > cursor) segs.push([cursor, Math.min(ws, winEnd)]);
+    cursor = Math.max(cursor, we);
+  }
+  if (cursor < winEnd) segs.push([cursor, winEnd]);
+  return segs.filter(([a, b]) => b > a);
+}
 
 /**
- * All-staff day view (B2): one column per active {staff} for a single date.
- * Working hours render clear over a hatched out-of-hours background; days off
- * tint the column red; bookings render as positioned blocks. Clicking an empty
- * spot inside a working band prefills the manual-booking modal.
+ * All-staff day view (B2, overhauled): one column per active {staff} for a
+ * single date. Working hours show clear; out-of-hours and unscheduled days show
+ * a clearly greyed/hatched "unavailable" band; days off tint the column red.
+ * Booking blocks (sourced from the already-filtered list, so all toolbar
+ * filters apply) show time, {client} and service. A red line marks the current
+ * time. Clicking an empty spot inside a working band prefills the manual-booking
+ * modal with that {staff}, date and time.
  */
 function AllStaffDay({
   summary,
   loading,
   dateStr,
   isToday,
+  bookingsForDate,
   onOpenBooking,
   onCreateAt,
 }: {
@@ -714,10 +738,21 @@ function AllStaffDay({
   loading: boolean;
   dateStr: string;
   isToday: boolean;
-  onOpenBooking: (bookingId: string) => void;
+  bookingsForDate: BookingDetail[];
+  onOpenBooking: (b: BookingDetail) => void;
   onCreateAt?: (init: { staffId: string; date: string; start: string }) => void;
 }) {
   const staff = summary?.staff ?? [];
+
+  // Bookings grouped by assigned staff (filters already applied upstream).
+  const bookingsByStaff = useMemo(() => {
+    const map: Record<string, BookingDetail[]> = {};
+    for (const b of bookingsForDate) {
+      const sid = pickOne(b.staff)?.id;
+      if (sid) (map[sid] ??= []).push(b);
+    }
+    return map;
+  }, [bookingsForDate]);
 
   // Fit the hour window to the day's schedules + bookings (default 8–20).
   let startHour = 8;
@@ -727,19 +762,27 @@ function AllStaffDay({
       startHour = Math.min(startHour, Math.floor(minutesOf(w.start) / 60));
       endHour = Math.max(endHour, Math.ceil(minutesOf(w.end) / 60));
     }
-    for (const b of s.bookings) {
-      startHour = Math.min(startHour, Math.floor(minutesOf(b.start) / 60));
-      endHour = Math.max(endHour, Math.ceil(minutesOf(b.end) / 60));
-    }
+  }
+  for (const b of bookingsForDate) {
+    startHour = Math.min(startHour, Math.floor(minutesOf(b.slot_start) / 60));
+    endHour = Math.max(endHour, Math.ceil(minutesOf(b.slot_end) / 60));
   }
   const hours = Array.from({ length: endHour - startHour }, (_, i) => startHour + i);
   const columnHeight = (endHour - startHour) * HOUR_PX;
+  const winStart = startHour * 60;
+  const winEnd = endHour * 60;
+
+  // Current-time indicator.
+  const now = new Date();
+  const nowMinutes = now.getHours() * 60 + now.getMinutes();
+  const showNow = isToday && nowMinutes >= winStart && nowMinutes <= winEnd;
+  const nowTop = ((nowMinutes - winStart) / 60) * HOUR_PX;
 
   function handleColumnClick(e: React.MouseEvent<HTMLDivElement>, s: StaffSummaryEntry) {
     if (!onCreateAt || s.day_off) return;
     const rect = e.currentTarget.getBoundingClientRect();
     const offsetY = e.clientY - rect.top;
-    const minutes = startHour * 60 + (offsetY / HOUR_PX) * 60;
+    const minutes = winStart + (offsetY / HOUR_PX) * 60;
     const start = snapToQuarter(minutes);
     // Only offer creation inside a working band.
     const inWorking = s.working_blocks.some(w => start >= w.start && start < w.end);
@@ -756,11 +799,11 @@ function AllStaffDay({
           <p className="text-sm text-fg-muted text-center py-10">No active staff to show.</p>
         ) : (
           <div className="overflow-x-auto">
-            <div style={{ minWidth: `${56 + staff.length * 130}px` }}>
+            <div style={{ minWidth: `${56 + staff.length * 150}px` }}>
               {/* Staff headers */}
               <div
                 className="grid border-b border-border bg-elevated"
-                style={{ gridTemplateColumns: `56px repeat(${staff.length}, 1fr)` }}
+                style={{ gridTemplateColumns: `56px repeat(${staff.length}, minmax(130px, 1fr))` }}
               >
                 <div />
                 {staff.map(s => (
@@ -770,11 +813,15 @@ function AllStaffDay({
                     title={s.pseudonym}
                   >
                     {s.pseudonym}
-                    {s.day_off && (
+                    {s.day_off ? (
                       <span className="block text-[9px] font-normal uppercase tracking-wider text-red-600 dark:text-red-300">
                         Day off
                       </span>
-                    )}
+                    ) : s.working_blocks.length === 0 ? (
+                      <span className="block text-[9px] font-normal uppercase tracking-wider text-fg-subtle">
+                        Not scheduled
+                      </span>
+                    ) : null}
                   </div>
                 ))}
               </div>
@@ -782,7 +829,7 @@ function AllStaffDay({
               {/* Body */}
               <div
                 className="grid"
-                style={{ gridTemplateColumns: `56px repeat(${staff.length}, 1fr)` }}
+                style={{ gridTemplateColumns: `56px repeat(${staff.length}, minmax(130px, 1fr))` }}
               >
                 {/* Hour gutter */}
                 <div className="relative" style={{ height: columnHeight }}>
@@ -795,9 +842,20 @@ function AllStaffDay({
                       {h > 0 ? `${String(h).padStart(2, '0')}:00` : ''}
                     </span>
                   ))}
+                  {showNow && (
+                    <span
+                      className="absolute right-1.5 -translate-y-1/2 text-[10px] font-medium text-red-600 dark:text-red-400"
+                      style={{ top: nowTop }}
+                    >
+                      {String(now.getHours()).padStart(2, '0')}:
+                      {String(now.getMinutes()).padStart(2, '0')}
+                    </span>
+                  )}
                 </div>
 
-                {staff.map(s => (
+                {staff.map(s => {
+                  const gaps = s.day_off ? [] : unavailableSegments(s.working_blocks, winStart, winEnd);
+                  return (
                   <div
                     key={s.id}
                     onClick={e => handleColumnClick(e, s)}
@@ -805,31 +863,29 @@ function AllStaffDay({
                     style={{ height: columnHeight }}
                   >
                     {s.day_off ? (
-                      <div className="absolute inset-0 bg-red-500/10 pointer-events-none" title={s.day_off_reason ?? 'Day off'} />
+                      <div
+                        className="absolute inset-0 bg-red-500/10 pointer-events-none flex items-start justify-center"
+                        title={s.day_off_reason ?? 'Day off'}
+                      >
+                        <span className="mt-2 text-[10px] font-medium uppercase tracking-wider text-red-600 dark:text-red-300">
+                          Day off
+                        </span>
+                      </div>
                     ) : (
-                      <>
-                        {/* Out-of-schedule hatch */}
+                      /* Unavailable (out-of-hours) bands over a clear column */
+                      gaps.map(([gs, ge], i) => (
                         <div
-                          className="absolute inset-0 pointer-events-none"
+                          key={i}
+                          className="absolute inset-x-0 bg-sunken pointer-events-none"
+                          title="Outside working hours"
                           style={{
+                            top: ((gs - winStart) / 60) * HOUR_PX,
+                            height: ((ge - gs) / 60) * HOUR_PX,
                             backgroundImage:
-                              'repeating-linear-gradient(45deg, rgba(120,120,120,0.10) 0, rgba(120,120,120,0.10) 5px, transparent 5px, transparent 11px)',
+                              'repeating-linear-gradient(45deg, rgba(120,120,120,0.18) 0, rgba(120,120,120,0.18) 5px, transparent 5px, transparent 11px)',
                           }}
                         />
-                        {/* Working bands (clear) */}
-                        {s.working_blocks.map((w, i) => {
-                          const top = Math.max(((minutesOf(w.start) - startHour * 60) / 60) * HOUR_PX, 0);
-                          const bot = Math.min(((minutesOf(w.end) - startHour * 60) / 60) * HOUR_PX, columnHeight);
-                          if (bot <= top) return null;
-                          return (
-                            <div
-                              key={i}
-                              className="absolute inset-x-0 bg-surface pointer-events-none"
-                              style={{ top, height: bot - top }}
-                            />
-                          );
-                        })}
-                      </>
+                      ))
                     )}
 
                     {/* Hour lines */}
@@ -841,29 +897,46 @@ function AllStaffDay({
                       />
                     ))}
 
+                    {/* Current-time line */}
+                    {showNow && (
+                      <div
+                        className="absolute inset-x-0 border-t-2 border-red-500 pointer-events-none z-10"
+                        style={{ top: nowTop }}
+                      />
+                    )}
+
                     {/* Booking blocks */}
-                    {s.bookings.map(b => {
-                      const top = ((minutesOf(b.start) - startHour * 60) / 60) * HOUR_PX;
-                      const height = Math.max(18, ((minutesOf(b.end) - minutesOf(b.start)) / 60) * HOUR_PX);
-                      const colors = SUMMARY_BLOCK_COLORS[b.status] ?? SUMMARY_BLOCK_COLORS.confirmed;
+                    {(bookingsByStaff[s.id] ?? []).map(b => {
+                      const start = minutesOf(b.slot_start);
+                      const end = minutesOf(b.slot_end);
+                      const top = ((start - winStart) / 60) * HOUR_PX;
+                      const height = Math.max(20, ((end - start) / 60) * HOUR_PX);
+                      const colors = STATUS_BLOCK_COLORS[b.status] ?? STATUS_BLOCK_COLORS.confirmed;
+                      const client =
+                        pickOne(b.clients)?.display_name ?? pickOne(b.guest_clients)?.name ?? 'Unknown';
+                      const service = b.booking_service_tags?.[0]?.tag_name;
+                      const timeRange = `${b.slot_start.slice(0, 5)}–${b.slot_end.slice(0, 5)}`;
                       return (
                         <button
                           key={b.id}
                           type="button"
                           onClick={e => {
                             e.stopPropagation();
-                            onOpenBooking(b.id);
+                            onOpenBooking(b);
                           }}
-                          title={`${b.start}–${b.end}`}
-                          className={`absolute inset-x-0.5 rounded border px-1 py-0.5 text-left text-[10px] leading-tight overflow-hidden hover:opacity-80 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring ${colors}`}
+                          title={`${timeRange} · ${client}${service ? ` · ${service}` : ''}`}
+                          className={`absolute inset-x-0.5 rounded border px-1.5 py-0.5 text-left text-[10px] leading-tight overflow-hidden hover:opacity-80 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring z-20 ${colors}`}
                           style={{ top, height }}
                         >
-                          <span className="font-medium block truncate">{b.start}</span>
+                          <span className="font-medium block truncate">{timeRange}</span>
+                          <span className="block truncate">{client}</span>
+                          {service && <span className="block truncate opacity-80">{service}</span>}
                         </button>
                       );
                     })}
                   </div>
-                ))}
+                  );
+                })}
               </div>
             </div>
           </div>

@@ -3,6 +3,25 @@
 > Feature history for the AI assistant: what exists and since when. Newest
 > first. Maintained per the AI Docs Maintenance Protocol in CLAUDE.md.
 
+## 2026-06-29 — Phase 20 follow-up fixes
+
+- **File upload field**: file-type booking fields now accept **JPEG, PNG, WebP,
+  PDF, DOC and DOCX** (max 5 MB), not just images. No default help text is
+  shown anymore — a hint appears only if the owner sets one. Images preview as a
+  thumbnail; other files show a "File attached" confirmation.
+- **Booking form builder moved to the Widget tab** (was under Settings). It now
+  sits beside the live widget preview: adding, editing, reordering, hiding or
+  deleting a field saves instantly and refreshes the preview. Settings shows a
+  pointer to the Widget tab.
+- **All-staff calendar overhaul**: working hours read as **clear**, out-of-hours
+  and unscheduled days show an obvious **greyed/hatched "Outside working hours"**
+  band (unscheduled columns are labelled "Not scheduled"), days off are
+  red-tinted, and a **red current-time line** marks "now". Booking blocks now
+  show **time range, {client} and service**. All toolbar filters (staff, status,
+  date range, source, payment, search) apply to the all-staff view, and it
+  scrolls horizontally on small screens. The single-staff overlay got the same
+  clearer shading + current-time line.
+
 ## 2026-06-16 — Custom booking-form fields (Phase 20-C)
 
 - **Booking form builder** (Settings → Booking form): owners can now define

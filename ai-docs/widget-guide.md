@@ -85,6 +85,39 @@ immediately; the public widget switches on Save & Apply.
 - **Widget logo URL** — overrides the main logo (Settings → Identity) for
   the widget only; falls back to the main logo when blank.
 
+### Booking form fields
+
+A **field builder** for the extra questions shown to clients on the **Details**
+step of the widget. It lives here (moved from Settings) so changes preview
+live: each add/edit/reorder/hide/delete saves instantly and reloads the
+preview iframe — move to the Details step in the preview to see them.
+
+Each field has a **label**, a **type**, an optional **placeholder** and **help
+text**, and a **required** toggle. Fields are listed in display order with
+**▲ / ▼** reorder buttons, an **Edit** button, a **Hide / Show** toggle
+(deactivate without deleting — existing bookings keep their values), and
+**Delete** (with confirmation). **+ Add field** opens the add modal.
+
+Field **types** (8): Short text, Paragraph, Date, Address, Single choice
+(radio), Multiple choice (checkboxes), Dropdown, and **File upload**. Choice
+and dropdown types take a list of **options** (one per line). A field's type
+can't be changed after it's created.
+
+A **File upload** field is a general document/file upload: it accepts JPEG,
+PNG, WebP, PDF, DOC and DOCX (max 5 MB). No help text is shown unless the owner
+sets it — there is no default hint. Image uploads preview as a thumbnail;
+other files show a "File attached" confirmation.
+
+Submitted values appear in the **booking detail panel**, on the **manual
+booking** form (file fields excluded there — uploads happen via the widget),
+and as extra columns in the **bookings CSV export**.
+
+Two built-in fields migrated from older toggles appear here automatically and
+work the same way: **Service address** (an address field, used by businesses
+that work at the client's location) and **Reference image** (a file upload,
+e.g. a design idea — private, viewed from the detail panel). They are marked
+"built-in"; you can reorder, hide, edit or delete them like any field.
+
 ### Actions
 
 - **Save & Apply** — publishes the theme to the live widget immediately.
@@ -135,4 +168,7 @@ valid — no embed needed.
 - `GET /book/{slug}/api/availability?staff_id=&date=` — public slots.
 - `GET /book/{slug}/api/pool-availability?date=` — pool mode slots.
 - `POST /book/{slug}/api/book` — create booking (rate-limited).
+- `POST /book/{slug}/api/reference-upload` — public file upload for file-type
+  fields (JPEG/PNG/WebP/PDF/DOC/DOCX, max 5 MB).
+- `GET|POST|PATCH|DELETE /api/{slug}/booking-fields` — custom field builder (agent).
 - `PATCH /api/{slug}/settings` — widget_* theme fields (agent).

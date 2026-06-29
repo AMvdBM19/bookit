@@ -11,6 +11,7 @@ import {
   settingsToTheme,
 } from '@/lib/widget-theme';
 import type { WidgetTheme, WidgetSettingsRow } from '@/lib/widget-theme';
+import BookingFormBuilder from './booking-form-builder';
 
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://app.bookit.monoliet.cloud';
 
@@ -92,7 +93,12 @@ export default function WidgetSection({ slug }: { slug: string }) {
   const [language, setLanguage] = useState<'en' | 'nl'>('en');
   const [embedTab, setEmbedTab] = useState<EmbedTab>('wordpress');
   const [copied, setCopied] = useState(false);
+  // Bumped to remount/reload the preview iframe so server-rendered changes
+  // (e.g. custom booking fields) show up live.
+  const [previewNonce, setPreviewNonce] = useState(0);
   const iframeRef = useRef<HTMLIFrameElement>(null);
+
+  const reloadPreview = useCallback(() => setPreviewNonce(n => n + 1), []);
 
   // Load current saved theme.
   useEffect(() => {
@@ -381,6 +387,15 @@ export default function WidgetSection({ slug }: { slug: string }) {
           </div>
         </section>
 
+        {/* Booking form fields — managed here so changes preview live (Fix 2) */}
+        <section className={sectionCls}>
+          <BookingFormBuilder slug={slug} onChanged={reloadPreview} />
+          <p className="text-[11px] text-fg-muted mt-2">
+            Fields apply instantly. Move to the <strong>Details</strong> step in
+            the preview to see them.
+          </p>
+        </section>
+
         {/* Actions */}
         <div className="flex items-center gap-2">
           <button
@@ -501,6 +516,7 @@ export default function WidgetSection({ slug }: { slug: string }) {
           }`}
         >
           <iframe
+            key={previewNonce}
             ref={iframeRef}
             src={`/book/${slug}?preview=1&lang=${language}`}
             onLoad={() => pushTheme(theme)}

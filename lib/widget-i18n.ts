@@ -74,6 +74,7 @@ export interface WidgetStrings {
   referenceImageTypeError: string;
   referenceImageSizeError: string;
   referenceImageUploadError: string;
+  fileAttached: string;
   serviceAddress: string;
   serviceAddressPlaceholder: string;
 
@@ -160,12 +161,13 @@ const en: WidgetStrings = {
   ageConfirm: n => `I confirm I am at least ${n} years old.`,
   referenceImage: 'Reference image',
   referenceImageRemove: 'Remove',
-  referenceImageUpload: 'Upload an image',
+  referenceImageUpload: 'Upload a file',
   referenceImageUploading: 'Uploading…',
   referenceImageHint: 'Show us what you have in mind. JPEG, PNG or WebP, max 5 MB.',
-  referenceImageTypeError: 'Only JPEG, PNG or WebP images are allowed.',
-  referenceImageSizeError: 'Image must be 5 MB or smaller.',
+  referenceImageTypeError: 'Allowed file types: JPEG, PNG, WebP, PDF, DOC or DOCX.',
+  referenceImageSizeError: 'File must be 5 MB or smaller.',
   referenceImageUploadError: 'Upload failed. Please try again.',
+  fileAttached: 'File attached',
   serviceAddress: 'Service address',
   serviceAddressPlaceholder: 'Street, number, city',
 
@@ -253,12 +255,13 @@ const nl: WidgetStrings = {
   ageConfirm: n => `Ik bevestig dat ik minimaal ${n} jaar oud ben.`,
   referenceImage: 'Voorbeeldfoto',
   referenceImageRemove: 'Verwijderen',
-  referenceImageUpload: 'Foto uploaden',
+  referenceImageUpload: 'Bestand uploaden',
   referenceImageUploading: 'Uploaden…',
   referenceImageHint: 'Laat zien wat je in gedachten hebt. JPEG, PNG of WebP, max. 5 MB.',
-  referenceImageTypeError: 'Alleen JPEG-, PNG- of WebP-afbeeldingen zijn toegestaan.',
-  referenceImageSizeError: 'De afbeelding mag maximaal 5 MB zijn.',
+  referenceImageTypeError: 'Toegestane bestandstypen: JPEG, PNG, WebP, PDF, DOC of DOCX.',
+  referenceImageSizeError: 'Het bestand mag maximaal 5 MB zijn.',
   referenceImageUploadError: 'Uploaden is niet gelukt. Probeer het opnieuw.',
+  fileAttached: 'Bestand toegevoegd',
   serviceAddress: 'Adres voor de afspraak',
   serviceAddressPlaceholder: 'Straat, huisnummer, plaats',
 
