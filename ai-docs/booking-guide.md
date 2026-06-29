@@ -31,8 +31,7 @@ The **Calendar** is a read-only week or day grid (hour rows × day
 columns): blocks are colored by status, pool/unassigned bookings show a
 dashed outline, clicking a block opens the detail panel, and
 right-click / long-press opens a quick-action menu (assign, complete,
-no-show, cancel, edit, details). Rescheduling from the calendar is not
-available yet. When a specific {staff} is chosen in the Filters bar, the
+no-show, cancel, **reschedule**, edit, details). When a specific {staff} is chosen in the Filters bar, the
 calendar **shades that member's availability**: their scheduled working hours
 show clear, hours outside their schedule are hatched, and days off are tinted
 with a "Day off" label.
@@ -82,6 +81,25 @@ changed (no rescheduling). Editing is allowed on pending, confirmed, and
 completed-within-24-hours bookings. Edited bookings show an **Edited**
 badge and timestamp in the detail panel, and every edit is stored in an
 audit trail (who, when, what changed). Clients are not notified of edits.
+
+## Rescheduling a booking
+
+Rescheduling moves a booking to a **new date/time** and optionally reassigns
+it to **another {staff}** — separate from Edit (which only changes services,
+notes and price). It is **owner-only** and available on **pending** and
+**confirmed** bookings via a **Reschedule** action in the detail panel, the
+Board card, and the calendar quick-action menu.
+
+The reschedule modal lets the owner pick a {staff}, a new date, and a free
+time slot (slots come from the same availability engine the widget uses, so
+only genuinely open times appear). The new slot keeps the booking's existing
+duration. The server re-checks availability — excluding the booking itself,
+so moving it a little within the same window is allowed — and rejects a
+conflicting slot with a clear message (the modal stays open so another slot
+can be picked). On success the booking's status is unchanged, the {client}
+receives a **booking_rescheduled** notification (email + WhatsApp), and the
+booking shows a **Rescheduled** badge. Every reschedule is recorded in the
+edit audit trail.
 
 ## Manual booking creation
 

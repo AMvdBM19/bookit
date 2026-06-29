@@ -69,6 +69,18 @@ function defaultTemplates() {
       body: 'Hi [client_name],\n\nYour booking with [staff_name] on [date] has been cancelled.\n\n[agency_name]',
     },
     {
+      event_type: 'booking_rescheduled',
+      channel: 'whatsapp',
+      subject: null,
+      body: 'Hi [client_name], your appointment has been rescheduled to [date] at [time] with [staff_name]. See you then! [agency_name]',
+    },
+    {
+      event_type: 'booking_rescheduled',
+      channel: 'email',
+      subject: 'Appointment rescheduled — [agency_name]',
+      body: 'Hi [client_name],\n\nYour appointment has been rescheduled.\n\nNew date: [date] at [time]\nWith: [staff_name]\nServices: [services]\n\nSee you then,\n[agency_name]',
+    },
+    {
       event_type: 'client_approved',
       channel: 'whatsapp',
       subject: null,

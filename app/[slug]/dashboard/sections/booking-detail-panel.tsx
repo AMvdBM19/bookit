@@ -6,6 +6,7 @@ import { useTenantConfig } from '@/lib/context/tenant-config';
 import Badge from '@/components/ui/badge';
 
 export interface BookingDetailJoin {
+  id?: string;
   pseudonym?: string;
   display_name?: string;
   name?: string;
@@ -25,7 +26,10 @@ export interface BookingDetail {
   booking_notes?: string | null;
   service_address?: string | null;
   reference_image_url?: string | null;
+  custom_field_values?: Record<string, unknown> | null;
   edited_at?: string | null;
+  rescheduled_at?: string | null;
+  reschedule_count?: number | null;
   total_price?: number | string | null;
   tag_extras_total?: number | string | null;
   base_rate_per_30?: number | string | null;
@@ -290,6 +294,7 @@ export default function BookingDetailPanel({
   currency = 'EUR',
   slug,
   onEdit,
+  onReschedule,
   onChanged,
 }: {
   booking: BookingDetail;
@@ -297,6 +302,8 @@ export default function BookingDetailPanel({
   slug?: string;
   /** When provided, shows an Edit button for editable statuses (B7). */
   onEdit?: (bookingId: string) => void;
+  /** When provided (agent only), shows a Reschedule button for active statuses (Phase 20-A3). */
+  onReschedule?: (booking: BookingDetail) => void;
   /** Called after a payment action (e.g. charge to terminal) so lists reload. */
   onChanged?: () => void;
 }) {
@@ -417,6 +424,11 @@ export default function BookingDetailPanel({
                 <Badge variant="warning">Edited</Badge>
               </span>
             )}
+            {(booking.reschedule_count ?? 0) > 0 && (
+              <span className="ml-1.5">
+                <Badge variant="info">Rescheduled</Badge>
+              </span>
+            )}
           </p>
           {requested && <p className="text-fg-muted mt-0.5">Requested {requested}</p>}
           {confirmed && <p className="text-fg-muted">Confirmed {confirmed}</p>}
@@ -432,15 +444,27 @@ export default function BookingDetailPanel({
 
       {slug && <PaymentActions slug={slug} booking={booking} onChanged={onChanged} />}
 
-      {onEdit && ['pending_staff', 'confirmed', 'completed'].includes(booking.status) && (
-        <div className="flex justify-end mt-3">
-          <button
-            type="button"
-            onClick={() => onEdit(booking.id)}
-            className="text-xs px-3 py-1 bg-elevated hover:bg-sunken text-fg rounded"
-          >
-            Edit
-          </button>
+      {((onEdit && ['pending_staff', 'confirmed', 'completed'].includes(booking.status)) ||
+        (onReschedule && ['pending_staff', 'confirmed'].includes(booking.status))) && (
+        <div className="flex justify-end gap-2 mt-3">
+          {onReschedule && ['pending_staff', 'confirmed'].includes(booking.status) && (
+            <button
+              type="button"
+              onClick={() => onReschedule(booking)}
+              className="text-xs px-3 py-1 bg-elevated hover:bg-sunken text-fg rounded"
+            >
+              Reschedule
+            </button>
+          )}
+          {onEdit && ['pending_staff', 'confirmed', 'completed'].includes(booking.status) && (
+            <button
+              type="button"
+              onClick={() => onEdit(booking.id)}
+              className="text-xs px-3 py-1 bg-elevated hover:bg-sunken text-fg rounded"
+            >
+              Edit
+            </button>
+          )}
         </div>
       )}
     </div>

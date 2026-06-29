@@ -16,6 +16,8 @@ export interface AvailabilityOptions {
   bufferBeforeMinutes?: number;
   /** Minutes blocked after each existing booking (cleanup time). */
   bufferAfterMinutes?: number;
+  /** Booking id to ignore when checking conflicts (e.g. the one being rescheduled). */
+  excludeBookingId?: string;
 }
 
 /** Shift an HH:MM time by a signed number of minutes, clamped to 00:00–23:59. */
@@ -43,6 +45,18 @@ export async function checkAvailability(
 ): Promise<AvailabilityResult> {
   const dayOfWeek = new Date(date + 'T00:00:00').getDay();
 
+  let bookingsQuery = supabase
+    .from('bookings')
+    .select('slot_start, slot_end')
+    .eq('staff_id', staffId)
+    .eq('tenant_id', tenantId)
+    .eq('slot_date', date)
+    .in('status', ['pending_staff', 'confirmed']);
+  // Exclude the booking being rescheduled so it doesn't conflict with itself.
+  if (options?.excludeBookingId) {
+    bookingsQuery = bookingsQuery.neq('id', options.excludeBookingId);
+  }
+
   const [scheduleRes, exceptionsRes, bookingsRes] = await Promise.all([
     supabase
       .from('staff_schedule')
@@ -56,13 +70,7 @@ export async function checkAvailability(
       .eq('staff_id', staffId)
       .eq('tenant_id', tenantId)
       .eq('exception_date', date),
-    supabase
-      .from('bookings')
-      .select('slot_start, slot_end')
-      .eq('staff_id', staffId)
-      .eq('tenant_id', tenantId)
-      .eq('slot_date', date)
-      .in('status', ['pending_staff', 'confirmed']),
+    bookingsQuery,
   ]);
 
   if (exceptionsRes.data && exceptionsRes.data.length > 0) {

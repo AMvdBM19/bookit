@@ -285,6 +285,27 @@ export async function notifyBookingCancelled(
   await sendBookingEmail({ tenantId, bookingId, eventType: 'booking_cancelled', variables });
 }
 
+export async function notifyBookingRescheduled(
+  tenantId: string,
+  bookingId: string,
+  recipientPhone: string | null,
+  waOptIn: boolean,
+  variables: Record<string, string>,
+  recipientType: 'client' | 'guest_client' = 'client'
+) {
+  if (recipientPhone && waOptIn) {
+    await sendWhatsApp({
+      tenantId,
+      recipientPhone,
+      eventType: 'booking_rescheduled',
+      variables,
+      recipientType,
+      bookingId,
+    });
+  }
+  await sendBookingEmail({ tenantId, bookingId, eventType: 'booking_rescheduled', variables });
+}
+
 export async function notifyClientSignup(
   tenantId: string,
   clientId: string,

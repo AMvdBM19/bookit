@@ -59,6 +59,7 @@ not sent.
 | `booking_declined` | Staff/owner declines a pending booking | `[client_name] [staff_name] [date] [time] [agency_name]` |
 | `booking_reminder` | Reminder lead time before a confirmed slot | `[client_name] [staff_name] [date] [time]` |
 | `booking_cancelled` | Confirmed/pending booking cancelled (now wired — Phase 17-A) | `[client_name] [staff_name] [date] [agency_name]` |
+| `booking_rescheduled` | Owner reschedules a booking to a new date/time/{staff} (Phase 20-A) | `[client_name] [staff_name] [date] [time] [services] [agency_name]` |
 | `client_approved` | Owner approves a client account (account mode) | `[client_name] [agency_name]` |
 | `payment_received` | A deposit payment is received (**email only** — no WhatsApp) | `[client_name] [deposit_amount] [date] [time] [agency_name]` |
 | `payment_receipt` | A booking is fully **paid**, e.g. at the terminal (**email only**) | `[client_name] [date] [time] [staff_name] [services] [total] [paid_amount] [payment_method] [deposit_line] [agency_name]` |

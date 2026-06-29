@@ -64,6 +64,7 @@ export default function BookingsKanban({
   onAssign,
   onStatus,
   onEdit,
+  onReschedule,
   onViewDetails,
 }: {
   bookings: KanbanBooking[];
@@ -72,6 +73,7 @@ export default function BookingsKanban({
   onAssign: (id: string, staffId: string) => Promise<void>;
   onStatus: (id: string, target: string, reason?: string) => Promise<boolean>;
   onEdit: (id: string) => void;
+  onReschedule: (b: KanbanBooking) => void;
   onViewDetails: (b: KanbanBooking) => void;
 }) {
   const { terminology } = useTenantConfig();
@@ -168,6 +170,7 @@ export default function BookingsKanban({
                           setCancelId(b.id);
                         }}
                         onEdit={onEdit}
+                        onReschedule={onReschedule}
                         onViewDetails={onViewDetails}
                       />
                     ))
@@ -218,6 +221,7 @@ function KanbanCard({
   onStatus,
   onCancel,
   onEdit,
+  onReschedule,
   onViewDetails,
 }: {
   b: KanbanBooking;
@@ -230,6 +234,7 @@ function KanbanCard({
   onStatus: (id: string, target: string, reason?: string) => Promise<boolean>;
   onCancel: () => void;
   onEdit: (id: string) => void;
+  onReschedule: (b: KanbanBooking) => void;
   onViewDetails: (b: KanbanBooking) => void;
 }) {
   const staffName = staffNameOf(b);
@@ -237,6 +242,7 @@ function KanbanCard({
   const ended = hasEnded(b);
   const total = money(b.total_price, currency);
   const editable = ['pending_staff', 'confirmed', 'completed'].includes(b.status);
+  const reschedulable = ['pending_staff', 'confirmed'].includes(b.status);
 
   return (
     <div
@@ -249,7 +255,10 @@ function KanbanCard({
     >
       <div className="flex items-center justify-between gap-2">
         <span className="font-medium text-fg">{b.slot_start?.slice(0, 5)}</span>
-        <span className="text-fg-subtle text-[10px]">
+        <span className="inline-flex items-center gap-1 text-fg-subtle text-[10px]">
+          {(b.reschedule_count ?? 0) > 0 && (
+            <span className="text-sky-600 dark:text-sky-400">Rescheduled</span>
+          )}
           {b.source === 'manual' ? 'Manual' : 'Widget'}
         </span>
       </div>
@@ -317,6 +326,15 @@ function KanbanCard({
             className="text-[10px] px-1.5 py-0.5 bg-elevated hover:bg-sunken text-fg rounded"
           >
             Cancel
+          </button>
+        )}
+        {reschedulable && (
+          <button
+            type="button"
+            onClick={() => onReschedule(b)}
+            className="text-[10px] px-1.5 py-0.5 bg-elevated hover:bg-sunken text-fg rounded"
+          >
+            Reschedule
           </button>
         )}
         {editable && (

@@ -28,7 +28,7 @@ export async function GET(request: NextRequest) {
     .from('bookings')
     .select(`
       id, slot_date, slot_start, slot_end, duration_minutes, booking_notes, status, source, assigned_by,
-      service_address, reference_image_url, edited_at,
+      service_address, reference_image_url, custom_field_values, edited_at, reschedule_count,
       total_price, tag_extras_total, base_rate_per_30, payment_status, deposit_amount,
       created_at: requested_at, confirmed_at, cancelled_at, cancellation_reason,
       staff:staff_id(id, pseudonym),

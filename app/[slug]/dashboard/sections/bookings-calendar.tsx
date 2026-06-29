@@ -65,6 +65,7 @@ export default function BookingsCalendar({
   slug,
   selectedStaffId = null,
   onEdit,
+  onReschedule,
   staffOptions = [],
   onAssign,
   onStatus,
@@ -75,6 +76,8 @@ export default function BookingsCalendar({
   /** When set, shade each day by this staff member's schedule + days off (A7). */
   selectedStaffId?: string | null;
   onEdit?: (bookingId: string) => void;
+  /** Agent-only reschedule action (Phase 20-A3). */
+  onReschedule?: (b: BookingDetail) => void;
   staffOptions?: Array<{ id: string; pseudonym: string }>;
   onAssign?: (id: string, staffId: string) => Promise<void>;
   onStatus?: (id: string, target: string, reason?: string) => Promise<boolean>;
@@ -440,6 +443,14 @@ export default function BookingsCalendar({
                   }
                 : undefined
             }
+            onReschedule={
+              onReschedule
+                ? bk => {
+                    setOpenBooking(null);
+                    onReschedule(bk);
+                  }
+                : undefined
+            }
           />
         </Modal>
       )}
@@ -450,6 +461,7 @@ export default function BookingsCalendar({
         const isPool = !staff && b.status === 'pending_staff';
         const ended = new Date(`${b.slot_date}T${b.slot_end}`) < new Date();
         const editable = ['pending_staff', 'confirmed', 'completed'].includes(b.status);
+        const reschedulable = ['pending_staff', 'confirmed'].includes(b.status);
         const item = 'block w-full text-left px-3 py-1.5 text-xs text-fg hover:bg-elevated';
         return (
           <div
@@ -514,6 +526,18 @@ export default function BookingsCalendar({
                 }}
               >
                 Cancel
+              </button>
+            )}
+            {reschedulable && onReschedule && (
+              <button
+                type="button"
+                className={item}
+                onClick={() => {
+                  setMenu(null);
+                  onReschedule(b);
+                }}
+              >
+                Reschedule
               </button>
             )}
             {editable && onEdit && (

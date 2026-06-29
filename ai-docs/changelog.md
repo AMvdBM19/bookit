@@ -3,6 +3,20 @@
 > Feature history for the AI assistant: what exists and since when. Newest
 > first. Maintained per the AI Docs Maintenance Protocol in CLAUDE.md.
 
+## 2026-06-16 — Booking reschedule (Phase 20-A)
+
+- **Reschedule a booking**: owners can now move a pending or confirmed booking
+  to a new date/time, and optionally reassign it to another {staff}, without
+  re-creating it. A **Reschedule** action is available in the booking detail
+  panel, on Board cards, and in the calendar quick-action menu.
+- The reschedule modal picks a free slot from the same availability engine the
+  widget uses; the server re-validates (excluding the booking itself) and
+  rejects conflicting slots. The booking keeps its existing duration and status.
+- The {client} gets a new **booking_rescheduled** notification (email +
+  WhatsApp); a default template is seeded for every tenant and editable on the
+  Notifications tab. Rescheduled bookings show a **Rescheduled** badge, and each
+  reschedule is recorded in the edit audit trail.
+
 ## 2026-06-16 — Service model & operational fixes (Phase 19-A)
 
 - **Service descriptions**: each service tag now has an optional one-line

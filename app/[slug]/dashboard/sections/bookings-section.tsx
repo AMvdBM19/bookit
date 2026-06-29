@@ -12,6 +12,7 @@ import type { CalendarEvent } from '@/lib/calendar/buildUrl';
 import Modal from '@/components/ui/modal';
 import CreateBookingModal from './create-booking-modal';
 import EditBookingModal from '@/components/edit-booking-modal';
+import RescheduleBookingModal, { type RescheduleTarget } from '@/components/reschedule-booking-modal';
 import BookingDetailPanel, { PaymentStatusBadge, type BookingDetail } from './booking-detail-panel';
 import BookingsCalendar from './bookings-calendar';
 import BookingsKanban from './bookings-kanban';
@@ -75,6 +76,18 @@ function calendarEventOf(b: Booking, bookingLabel: string): CalendarEvent {
     startTime: b.slot_start,
     endTime: b.slot_end,
     ...(tags ? { description: `Services: ${tags}` } : {}),
+  };
+}
+
+function rescheduleTargetOf(b: BookingDetail): RescheduleTarget {
+  const staff = pickOne(b.staff);
+  return {
+    id: b.id,
+    staff_id: staff?.id ?? null,
+    staff_name: staff?.pseudonym ?? null,
+    slot_date: b.slot_date,
+    slot_start: b.slot_start,
+    duration_minutes: b.duration_minutes,
   };
 }
 
@@ -230,6 +243,7 @@ export default function BookingsSection({ slug }: { slug: string }) {
   const [staffOptions, setStaffOptions] = useState<Array<{ id: string; pseudonym: string }>>([]);
   const [showCreate, setShowCreate] = useState(false);
   const [editBookingId, setEditBookingId] = useState<string | null>(null);
+  const [rescheduleTarget, setRescheduleTarget] = useState<RescheduleTarget | null>(null);
   const [detailBooking, setDetailBooking] = useState<Booking | null>(null);
   const [confirmNoShowId, setConfirmNoShowId] = useState<string | null>(null);
   const [expandedId, setExpandedId] = useState<string | null>(null);
@@ -717,6 +731,7 @@ export default function BookingsSection({ slug }: { slug: string }) {
           slug={slug}
           selectedStaffId={staffFilter !== 'all' && staffFilter !== 'unassigned' ? staffFilter : null}
           onEdit={setEditBookingId}
+          onReschedule={b => setRescheduleTarget(rescheduleTargetOf(b))}
           staffOptions={staffOptions}
           onAssign={async (id, staffId) => {
             setAssignChoice(prev => ({ ...prev, [id]: staffId }));
@@ -735,6 +750,7 @@ export default function BookingsSection({ slug }: { slug: string }) {
           }}
           onStatus={handleBoardStatus}
           onEdit={setEditBookingId}
+          onReschedule={b => setRescheduleTarget(rescheduleTargetOf(b))}
           onViewDetails={b => setDetailBooking(b as Booking)}
         />
       ) : (
@@ -906,7 +922,7 @@ export default function BookingsSection({ slug }: { slug: string }) {
                       {expandedId === b.id && (
                         <tr>
                           <td colSpan={8} className="p-0">
-                            <BookingDetailPanel booking={b} currency={currency} slug={slug} onEdit={setEditBookingId} onChanged={reload} />
+                            <BookingDetailPanel booking={b} currency={currency} slug={slug} onEdit={setEditBookingId} onReschedule={b => setRescheduleTarget(rescheduleTargetOf(b))} onChanged={reload} />
                           </td>
                         </tr>
                       )}
@@ -991,7 +1007,7 @@ export default function BookingsSection({ slug }: { slug: string }) {
                     {expandedId === b.id && (
                       <tr>
                         <td colSpan={6} className="p-0">
-                          <BookingDetailPanel booking={b} currency={currency} slug={slug} onEdit={setEditBookingId} onChanged={reload} />
+                          <BookingDetailPanel booking={b} currency={currency} slug={slug} onEdit={setEditBookingId} onReschedule={b => setRescheduleTarget(rescheduleTargetOf(b))} onChanged={reload} />
                         </td>
                       </tr>
                     )}
@@ -1048,7 +1064,7 @@ export default function BookingsSection({ slug }: { slug: string }) {
                     {expandedId === b.id && (
                       <tr>
                         <td colSpan={5} className="p-0">
-                          <BookingDetailPanel booking={b} currency={currency} slug={slug} onEdit={setEditBookingId} onChanged={reload} />
+                          <BookingDetailPanel booking={b} currency={currency} slug={slug} onEdit={setEditBookingId} onReschedule={b => setRescheduleTarget(rescheduleTargetOf(b))} onChanged={reload} />
                         </td>
                       </tr>
                     )}
@@ -1092,8 +1108,20 @@ export default function BookingsSection({ slug }: { slug: string }) {
           onClose={() => setDetailBooking(null)}
           maxWidth="max-w-2xl"
         >
-          <BookingDetailPanel booking={detailBooking} currency={currency} slug={slug} onEdit={setEditBookingId} onChanged={reload} />
+          <BookingDetailPanel booking={detailBooking} currency={currency} slug={slug} onEdit={setEditBookingId} onReschedule={b => setRescheduleTarget(rescheduleTargetOf(b))} onChanged={reload} />
         </Modal>
+      )}
+
+      {rescheduleTarget && (
+        <RescheduleBookingModal
+          slug={slug}
+          booking={rescheduleTarget}
+          onClose={() => setRescheduleTarget(null)}
+          onRescheduled={() => {
+            setRescheduleTarget(null);
+            reload();
+          }}
+        />
       )}
 
       {confirmNoShowId && (
