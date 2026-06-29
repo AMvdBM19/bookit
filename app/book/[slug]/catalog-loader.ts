@@ -1,6 +1,7 @@
 import { createServiceClient } from '@/lib/supabase/server';
 import type { Terminology, FeatureFlags } from '@/lib/types/tenant-config';
 import { DEFAULT_TERMINOLOGY, DEFAULT_FEATURE_FLAGS } from '@/lib/types/tenant-config';
+import type { BookingField } from '@/lib/types/booking-fields';
 
 export interface CatalogStaff {
   id: string;
@@ -80,6 +81,8 @@ export interface Catalog {
   }>;
   terminology: Terminology;
   featureFlags: FeatureFlags;
+  /** Tenant's active custom booking-form fields, in display order (Phase 20-C). */
+  bookingFields: BookingField[];
 }
 
 export async function loadCatalog(slug: string): Promise<Catalog | null> {
@@ -184,6 +187,21 @@ export async function loadCatalog(slug: string): Promise<Catalog | null> {
     .eq('tenant_id', tenant.id)
     .maybeSingle();
 
+  // Active custom booking-form fields, in display order (Phase 20-C). Resilient
+  // to the table not existing yet (pre-migration) via the try/empty fallback.
+  let bookingFields: BookingField[] = [];
+  const { data: fieldRows, error: fieldsError } = await supabase
+    .from('booking_fields')
+    .select('id, field_key, label, field_type, placeholder, help_text, required, options, display_order, is_active')
+    .eq('tenant_id', tenant.id)
+    .eq('is_active', true)
+    .order('display_order', { ascending: true });
+  if (fieldsError) {
+    console.error('[catalog] Booking fields query error:', fieldsError.message);
+  } else {
+    bookingFields = (fieldRows ?? []) as BookingField[];
+  }
+
   const terminology = { ...DEFAULT_TERMINOLOGY, ...(tenantConfig?.terminology as Partial<Terminology> | undefined) };
   const featureFlags = (tenantConfig?.feature_flags as FeatureFlags | undefined) ?? DEFAULT_FEATURE_FLAGS;
 
@@ -199,5 +217,6 @@ export async function loadCatalog(slug: string): Promise<Catalog | null> {
     tags: allTags ?? [],
     terminology,
     featureFlags,
+    bookingFields,
   };
 }

@@ -65,9 +65,9 @@ The **List** view has three sections:
 
 Every row in all three tables has a chevron ("See details") that expands an
 inline panel showing, when present: {client} contact (email, phone,
-WhatsApp opt-in), the booking notes, the service address and a clickable
-reference-image thumbnail (when the tenant's booking form collects those —
-see Settings → Booking form), selected services with per-service
+WhatsApp opt-in), the booking notes, the service address, a clickable
+reference-image thumbnail, and any **custom booking-form fields** the tenant
+collects (see Settings → Booking form), selected services with per-service
 extras and the total price, the assigned {staff} (or "Unassigned — pool"),
 the source (Widget/Manual), and requested/confirmed/cancelled timestamps
 plus cancellation reason. Staff see a slimmer "See details" on their own

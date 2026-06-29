@@ -3,6 +3,7 @@
 import { useRef, useState } from 'react';
 import type { CatalogSettings } from '../catalog-loader';
 import type { FeatureFlags } from '@/lib/types/tenant-config';
+import type { BookingField } from '@/lib/types/booking-fields';
 import { formatWidgetMoney } from '@/lib/widget-i18n';
 import { useWidgetStrings } from '@/lib/widget-i18n-context';
 
@@ -26,9 +27,10 @@ interface State {
   guestWaOptIn: boolean;
   bookingNotes: string;
   ageConfirmed: boolean;
-  serviceAddress: string;
-  referenceImagePath: string | null;
-  referenceImagePreview: string | null;
+  /** Custom booking-field values keyed by field_key (Phase 20-C). */
+  customFieldValues: Record<string, string | string[]>;
+  /** Object-URL previews for file fields, keyed by field_key. */
+  customFieldPreviews: Record<string, string>;
 }
 
 interface Props {
@@ -37,6 +39,7 @@ interface Props {
   featureFlags: FeatureFlags;
   settings: CatalogSettings | null;
   staffTags: Tag[];
+  bookingFields: BookingField[];
   state: State;
   onChange: (updates: Partial<State>) => void;
   brandColor: string;
@@ -58,6 +61,7 @@ export default function DetailsForm({
   featureFlags,
   settings,
   staffTags,
+  bookingFields,
   state,
   onChange,
   brandColor,
@@ -68,21 +72,25 @@ export default function DetailsForm({
   const t = useWidgetStrings();
   const showPrice = settings?.show_price_to_client ?? false;
   const sym = CURRENCY_SYMBOLS[settings?.currency ?? 'EUR'] ?? settings?.currency ?? 'EUR';
-  const [uploadingRef, setUploadingRef] = useState(false);
-  const [refError, setRefError] = useState<string | null>(null);
-  const refFileInput = useRef<HTMLInputElement>(null);
+  const [uploadingKey, setUploadingKey] = useState<string | null>(null);
+  const [fileErrors, setFileErrors] = useState<Record<string, string>>({});
+  const fileInputs = useRef<Record<string, HTMLInputElement | null>>({});
 
-  async function handleReferenceFile(file: File) {
-    setRefError(null);
+  function setFieldValue(key: string, value: string | string[]) {
+    onChange({ customFieldValues: { ...state.customFieldValues, [key]: value } });
+  }
+
+  async function handleFileUpload(field: BookingField, file: File) {
+    setFileErrors(prev => ({ ...prev, [field.field_key]: '' }));
     if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type)) {
-      setRefError(t.referenceImageTypeError);
+      setFileErrors(prev => ({ ...prev, [field.field_key]: t.referenceImageTypeError }));
       return;
     }
     if (file.size > 5 * 1024 * 1024) {
-      setRefError(t.referenceImageSizeError);
+      setFileErrors(prev => ({ ...prev, [field.field_key]: t.referenceImageSizeError }));
       return;
     }
-    setUploadingRef(true);
+    setUploadingKey(field.field_key);
     try {
       const form = new FormData();
       form.append('file', file);
@@ -92,18 +100,22 @@ export default function DetailsForm({
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) {
-        setRefError((t.locale === 'en-GB' ? data.error : null) ?? t.referenceImageUploadError);
+        setFileErrors(prev => ({
+          ...prev,
+          [field.field_key]: (t.locale === 'en-GB' ? data.error : null) ?? t.referenceImageUploadError,
+        }));
         return;
       }
       onChange({
-        referenceImagePath: data.path,
-        referenceImagePreview: URL.createObjectURL(file),
+        customFieldValues: { ...state.customFieldValues, [field.field_key]: data.path },
+        customFieldPreviews: { ...state.customFieldPreviews, [field.field_key]: URL.createObjectURL(file) },
       });
     } catch {
-      setRefError(t.referenceImageUploadError);
+      setFileErrors(prev => ({ ...prev, [field.field_key]: t.referenceImageUploadError }));
     } finally {
-      setUploadingRef(false);
-      if (refFileInput.current) refFileInput.current.value = '';
+      setUploadingKey(null);
+      const input = fileInputs.current[field.field_key];
+      if (input) input.value = '';
     }
   }
 
@@ -155,6 +167,204 @@ export default function DetailsForm({
 
   const requireAge = settings?.require_age_confirm ?? false;
   const ageMin = settings?.age_gate_minimum ?? 18;
+
+  // --w-* themed renderer for one tenant-defined custom field.
+  function renderCustomField(field: BookingField) {
+    const key = field.field_key;
+    const value = state.customFieldValues[key];
+    const required = field.required;
+    const labelEl = (
+      <label className={labelCls} htmlFor={`cf-${key}`}>
+        {field.label}{' '}
+        {required ? (
+          <span className="text-red-400">*</span>
+        ) : (
+          <span className="w-tx3">{t.optionalSuffix}</span>
+        )}
+      </label>
+    );
+    const help = field.help_text ? (
+      <p className="text-[11px] w-tx3 mt-1">{field.help_text}</p>
+    ) : null;
+    const options = field.options ?? [];
+
+    switch (field.field_type) {
+      case 'textarea':
+        return (
+          <div key={key}>
+            {labelEl}
+            <textarea
+              id={`cf-${key}`}
+              value={typeof value === 'string' ? value : ''}
+              onChange={e => setFieldValue(key, e.target.value)}
+              className={inputCls + ' h-24 resize-none'}
+              placeholder={field.placeholder ?? ''}
+              maxLength={2000}
+              required={required}
+            />
+            {help}
+          </div>
+        );
+      case 'date':
+        return (
+          <div key={key}>
+            {labelEl}
+            <input
+              id={`cf-${key}`}
+              type="date"
+              value={typeof value === 'string' ? value : ''}
+              onChange={e => setFieldValue(key, e.target.value)}
+              className={inputCls}
+              required={required}
+            />
+            {help}
+          </div>
+        );
+      case 'select':
+        return (
+          <div key={key}>
+            {labelEl}
+            <select
+              id={`cf-${key}`}
+              value={typeof value === 'string' ? value : ''}
+              onChange={e => setFieldValue(key, e.target.value)}
+              className={inputCls}
+              required={required}
+            >
+              <option value="">{field.placeholder ?? '—'}</option>
+              {options.map(opt => (
+                <option key={opt} value={opt}>{opt}</option>
+              ))}
+            </select>
+            {help}
+          </div>
+        );
+      case 'radio':
+        return (
+          <div key={key}>
+            {labelEl}
+            <div className="space-y-1.5">
+              {options.map(opt => (
+                <label key={opt} className="flex items-center gap-2 cursor-pointer text-xs w-tx2">
+                  <input
+                    type="radio"
+                    name={`cf-${key}`}
+                    checked={value === opt}
+                    onChange={() => setFieldValue(key, opt)}
+                  />
+                  {opt}
+                </label>
+              ))}
+            </div>
+            {help}
+          </div>
+        );
+      case 'checkbox': {
+        const arr = Array.isArray(value) ? value : [];
+        return (
+          <div key={key}>
+            {labelEl}
+            <div className="space-y-1.5">
+              {options.map(opt => {
+                const checked = arr.includes(opt);
+                return (
+                  <label key={opt} className="flex items-center gap-2 cursor-pointer text-xs w-tx2">
+                    <input
+                      type="checkbox"
+                      checked={checked}
+                      onChange={() =>
+                        setFieldValue(
+                          key,
+                          checked ? arr.filter(o => o !== opt) : [...arr, opt]
+                        )
+                      }
+                    />
+                    {opt}
+                  </label>
+                );
+              })}
+            </div>
+            {help}
+          </div>
+        );
+      }
+      case 'file': {
+        const path = typeof value === 'string' ? value : '';
+        const preview = state.customFieldPreviews[key];
+        const err = fileErrors[key];
+        return (
+          <div key={key}>
+            {labelEl}
+            {path && preview ? (
+              <div className="flex items-center gap-3">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={preview} alt={field.label} className="w-16 h-16 w-round object-cover border w-bd" />
+                <button
+                  type="button"
+                  onClick={() => {
+                    const nextValues = { ...state.customFieldValues };
+                    delete nextValues[key];
+                    const nextPreviews = { ...state.customFieldPreviews };
+                    delete nextPreviews[key];
+                    onChange({ customFieldValues: nextValues, customFieldPreviews: nextPreviews });
+                  }}
+                  className="px-3 py-1.5 w-btn2 text-xs w-round transition-colors"
+                >
+                  {t.referenceImageRemove}
+                </button>
+              </div>
+            ) : (
+              <>
+                <input
+                  ref={el => {
+                    fileInputs.current[key] = el;
+                  }}
+                  id={`cf-${key}`}
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp"
+                  className="hidden"
+                  onChange={e => {
+                    const file = e.target.files?.[0];
+                    if (file) handleFileUpload(field, file);
+                  }}
+                />
+                <button
+                  type="button"
+                  onClick={() => fileInputs.current[key]?.click()}
+                  disabled={uploadingKey === key}
+                  className="px-4 py-2 w-btn2 text-xs w-round transition-colors disabled:opacity-50"
+                >
+                  {uploadingKey === key ? t.referenceImageUploading : t.referenceImageUpload}
+                </button>
+                <p className="text-[11px] w-tx3 mt-1">{field.help_text ?? t.referenceImageHint}</p>
+              </>
+            )}
+            {err && <p className="text-red-400 text-xs mt-1">{err}</p>}
+          </div>
+        );
+      }
+      case 'address':
+      case 'text':
+      default:
+        return (
+          <div key={key}>
+            {labelEl}
+            <input
+              id={`cf-${key}`}
+              type="text"
+              value={typeof value === 'string' ? value : ''}
+              onChange={e => setFieldValue(key, e.target.value)}
+              className={inputCls}
+              placeholder={field.placeholder ?? ''}
+              autoComplete={field.field_type === 'address' ? 'street-address' : undefined}
+              maxLength={500}
+              required={required}
+            />
+            {help}
+          </div>
+        );
+    }
+  }
 
   return (
     <div className="space-y-4">
@@ -299,77 +509,8 @@ export default function DetailsForm({
         />
       </div>
 
-      {featureFlags.booking_reference_image && (
-        <div>
-          <label className={labelCls} htmlFor="referenceImage">
-            {t.referenceImage} <span className="w-tx3">{t.optionalSuffix}</span>
-          </label>
-          {state.referenceImagePath && state.referenceImagePreview ? (
-            <div className="flex items-center gap-3">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src={state.referenceImagePreview}
-                alt="Reference"
-                className="w-16 h-16 w-round object-cover border w-bd"
-              />
-              <button
-                type="button"
-                onClick={() =>
-                  onChange({ referenceImagePath: null, referenceImagePreview: null })
-                }
-                className="px-3 py-1.5 w-btn2 text-xs w-round transition-colors"
-              >
-                {t.referenceImageRemove}
-              </button>
-            </div>
-          ) : (
-            <>
-              <input
-                ref={refFileInput}
-                id="referenceImage"
-                type="file"
-                accept="image/jpeg,image/png,image/webp"
-                className="hidden"
-                onChange={e => {
-                  const file = e.target.files?.[0];
-                  if (file) handleReferenceFile(file);
-                }}
-              />
-              <button
-                type="button"
-                onClick={() => refFileInput.current?.click()}
-                disabled={uploadingRef}
-                className="px-4 py-2 w-btn2 text-xs w-round transition-colors disabled:opacity-50"
-              >
-                {uploadingRef ? t.referenceImageUploading : t.referenceImageUpload}
-              </button>
-              <p className="text-[11px] w-tx3 mt-1">
-                {t.referenceImageHint}
-              </p>
-            </>
-          )}
-          {refError && <p className="text-red-400 text-xs mt-1">{refError}</p>}
-        </div>
-      )}
-
-      {featureFlags.booking_address_field && (
-        <div>
-          <label className={labelCls} htmlFor="serviceAddress">
-            {t.serviceAddress} <span className="text-red-400">*</span>
-          </label>
-          <input
-            id="serviceAddress"
-            type="text"
-            value={state.serviceAddress}
-            onChange={e => onChange({ serviceAddress: e.target.value })}
-            className={inputCls}
-            placeholder={t.serviceAddressPlaceholder}
-            autoComplete="street-address"
-            maxLength={500}
-            required
-          />
-        </div>
-      )}
+      {/* Tenant-defined custom booking fields (Phase 20-C) */}
+      {bookingFields.map(renderCustomField)}
 
       <div>
         <label className={labelCls} htmlFor="guestName">

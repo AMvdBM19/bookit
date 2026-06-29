@@ -85,17 +85,31 @@ acceptance) are template-level notices, not tenant-editable.
 
 ## Booking form section
 
-Two toggles controlling extra fields on the public booking widget (these
-live on the tenant's feature configuration, not regular settings):
+A **field builder** for the extra questions shown to clients on the public
+booking widget. Each field has a **label**, a **type**, an optional
+**placeholder** and **help text**, and a **required** toggle. Fields are
+listed in display order with **▲ / ▼** reorder buttons, an **Edit** button, a
+**Hide / Show** toggle (deactivate without deleting — existing bookings keep
+their values), and **Delete** (with confirmation). **+ Add field** opens the
+add modal.
 
-- **Reference image upload** — clients can attach an optional image
-  (JPEG/PNG/WebP, max 5 MB) to their booking, e.g. a design idea. On by
-  default for tattoo-template tenants. The image is private; the owner
-  views it from the booking's detail panel.
-- **Service address field** — adds a required address input to the
-  booking form, for businesses that work at the client's location. The
-  address shows in the booking detail panel, and the manual booking modal
-  gains an optional address field too.
+Field **types** (8): Short text, Paragraph, Date, Address, Single choice
+(radio), Multiple choice (checkboxes), Dropdown, and File upload. Choice and
+dropdown types take a list of **options** (one per line). A field's type can't
+be changed after it's created.
+
+Submitted values appear in the **booking detail panel**, on the **manual
+booking** form (file fields excluded there — uploads happen via the widget),
+and as extra columns in the **bookings CSV export**.
+
+Two built-in fields migrated from older toggles appear here automatically and
+work the same way: **Service address** (an address field, used by businesses
+that work at the client's location) and **Reference image** (a file upload,
+e.g. a design idea — private, viewed from the detail panel). They are marked
+"built-in"; you can reorder, hide, edit or delete them like any field.
+
+## Staff permissions section
+
 - **Staff can edit bookings** — lets team members edit services, notes
   and price on their own bookings from their dashboard (the owner can
   always edit). Every edit is recorded in an audit trail.

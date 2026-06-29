@@ -190,6 +190,81 @@ function PaymentActions({
   );
 }
 
+// Lazy, slug-cached lookup of field_key → { label } so the detail panel can
+// label custom_field_values without threading definitions through every view.
+const fieldMetaCache: Record<string, Promise<Record<string, { label: string; type: string }>>> = {};
+function loadFieldMeta(slug: string): Promise<Record<string, { label: string; type: string }>> {
+  if (!fieldMetaCache[slug]) {
+    fieldMetaCache[slug] = fetch(`/api/${slug}/booking-fields`)
+      .then(r => (r.ok ? r.json() : { fields: [] }))
+      .then((d: { fields?: Array<{ field_key: string; label: string; field_type: string }> }) => {
+        const map: Record<string, { label: string; type: string }> = {};
+        for (const f of d.fields ?? []) map[f.field_key] = { label: f.label, type: f.field_type };
+        return map;
+      })
+      .catch(() => ({}));
+  }
+  return fieldMetaCache[slug];
+}
+
+function humanizeKey(key: string): string {
+  return key.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+}
+
+// Renders a booking's custom_field_values with tenant labels. The two legacy
+// keys (service_address, reference_image) are shown by their own panel items,
+// so they are skipped here.
+const SKIP_CUSTOM_KEYS = ['service_address', 'reference_image'];
+function CustomFieldValues({
+  slug,
+  values,
+}: {
+  slug: string;
+  values: Record<string, unknown>;
+}) {
+  const [meta, setMeta] = useState<Record<string, { label: string; type: string }>>({});
+  useEffect(() => {
+    let cancelled = false;
+    loadFieldMeta(slug).then(m => {
+      if (!cancelled) setMeta(m);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [slug]);
+
+  const entries = Object.entries(values).filter(
+    ([k, v]) =>
+      !SKIP_CUSTOM_KEYS.includes(k) &&
+      v != null &&
+      !(Array.isArray(v) && v.length === 0) &&
+      !(typeof v === 'string' && v.trim() === '')
+  );
+  if (entries.length === 0) return null;
+
+  return (
+    <>
+      {entries.map(([key, value]) => {
+        const m = meta[key];
+        const label = m?.label ?? humanizeKey(key);
+        let display: React.ReactNode;
+        if (m?.type === 'file' || (typeof value === 'string' && /^[0-9a-f-]+\/.+\.(jpg|png|webp)$/i.test(value))) {
+          display = <span className="text-fg-muted">File uploaded</span>;
+        } else if (Array.isArray(value)) {
+          display = value.join(', ');
+        } else {
+          display = String(value);
+        }
+        return (
+          <DetailItem key={key} label={label}>
+            <p className="whitespace-pre-wrap">{display}</p>
+          </DetailItem>
+        );
+      })}
+    </>
+  );
+}
+
 function CopyLinkButton({ url }: { url: string }) {
   const [copied, setCopied] = useState(false);
   return (
@@ -414,6 +489,10 @@ export default function BookingDetailPanel({
           <DetailItem label="Reference image">
             <ReferenceImage slug={slug} bookingId={booking.id} />
           </DetailItem>
+        )}
+
+        {slug && booking.custom_field_values && (
+          <CustomFieldValues slug={slug} values={booking.custom_field_values} />
         )}
 
         <DetailItem label="History">

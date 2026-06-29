@@ -47,15 +47,27 @@ export async function POST(
     return NextResponse.json({ error: 'Not found' }, { status: 404 });
   }
 
-  const { data: tenantConfig } = await supabase
-    .from('tenant_config')
-    .select('feature_flags')
-    .eq('tenant_id', tenant.id)
-    .maybeSingle();
+  // Available when the tenant has at least one active file-type booking field
+  // (Phase 20-C), or — for back-compat — the legacy reference-image flag.
+  const [{ data: fileField }, { data: tenantConfig }] = await Promise.all([
+    supabase
+      .from('booking_fields')
+      .select('id')
+      .eq('tenant_id', tenant.id)
+      .eq('field_type', 'file')
+      .eq('is_active', true)
+      .limit(1)
+      .maybeSingle(),
+    supabase
+      .from('tenant_config')
+      .select('feature_flags')
+      .eq('tenant_id', tenant.id)
+      .maybeSingle(),
+  ]);
 
   const featureFlags =
     (tenantConfig?.feature_flags as FeatureFlags | undefined) ?? DEFAULT_FEATURE_FLAGS;
-  if (!featureFlags.booking_reference_image) {
+  if (!fileField && !featureFlags.booking_reference_image) {
     return NextResponse.json({ error: 'Not available' }, { status: 404 });
   }
 

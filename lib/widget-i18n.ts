@@ -86,6 +86,7 @@ export interface WidgetStrings {
   notesRequired: (notesLabel: string) => string;
   ageConfirmError: (minAge: number) => string;
   addressRequired: string;
+  fieldRequired: (fieldLabel: string) => string;
   durationChangedShort: string;
   durationChangedTo: (minutes: number) => string;
   bookingFailed: string;
@@ -176,6 +177,7 @@ const en: WidgetStrings = {
   notesRequired: l => `${l} is required.`,
   ageConfirmError: n => `Please confirm you are at least ${n} years old.`,
   addressRequired: 'Service address is required.',
+  fieldRequired: l => `${l} is required.`,
   durationChangedShort:
     'Your selected services changed the appointment duration — please pick a new time slot.',
   durationChangedTo: m =>
@@ -268,6 +270,7 @@ const nl: WidgetStrings = {
   notesRequired: l => `${l} is verplicht.`,
   ageConfirmError: n => `Bevestig dat je minimaal ${n} jaar oud bent.`,
   addressRequired: 'Vul het adres voor de afspraak in.',
+  fieldRequired: l => `${l} is verplicht.`,
   durationChangedShort:
     'Door je gekozen services is de duur van de afspraak veranderd — kies een nieuw tijdslot.',
   durationChangedTo: m =>

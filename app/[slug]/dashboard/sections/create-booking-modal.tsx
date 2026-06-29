@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
 import { useTenantConfig } from '@/lib/context/tenant-config';
 import Modal from '@/components/ui/modal';
+import type { BookingField } from '@/lib/types/booking-fields';
 
 interface SearchResult {
   id: string;
@@ -45,10 +46,12 @@ export default function CreateBookingModal({
   /** Optional prefill (e.g. from the All-staff calendar empty-cell click). */
   initial?: { staffId?: string; date?: string; start?: string; end?: string };
 }) {
-  const { terminology, featureFlags } = useTenantConfig();
+  const { terminology } = useTenantConfig();
 
   const [staff, setStaff] = useState<StaffOption[]>([]);
   const [tags, setTags] = useState<TagOption[]>([]);
+  const [bookingFields, setBookingFields] = useState<BookingField[]>([]);
+  const [customFieldValues, setCustomFieldValues] = useState<Record<string, string | string[]>>({});
   const [baseRate, setBaseRate] = useState(0);
   const [currency, setCurrency] = useState('EUR');
 
@@ -67,7 +70,6 @@ export default function CreateBookingModal({
   const [slotEnd, setSlotEnd] = useState(initial?.end ?? '');
   const [selectedTags, setSelectedTags] = useState<Set<string>>(new Set());
   const [notes, setNotes] = useState('');
-  const [serviceAddress, setServiceAddress] = useState('');
   const [price, setPrice] = useState('');
   const [priceTouched, setPriceTouched] = useState(false);
   const [status, setStatus] = useState<Status>('confirmed');
@@ -79,18 +81,27 @@ export default function CreateBookingModal({
   // Load staff, tags, base rate.
   useEffect(() => {
     (async () => {
-      const [staffRes, tagsRes, settingsRes] = await Promise.all([
+      const [staffRes, tagsRes, settingsRes, fieldsRes] = await Promise.all([
         fetch(`/api/${slug}/staff`),
         fetch(`/api/${slug}/tags`),
         fetch(`/api/${slug}/settings/summary`),
+        fetch(`/api/${slug}/booking-fields`),
       ]);
       const staffData = await staffRes.json().catch(() => ({}));
       const tagsData = await tagsRes.json().catch(() => ({}));
       const settingsData = await settingsRes.json().catch(() => ({}));
+      const fieldsData = await fieldsRes.json().catch(() => ({}));
       setStaff((staffData.staff ?? []).filter((s: StaffOption) => s.status === 'active'));
       setTags((tagsData.tags ?? []).filter((t: TagOption) => t.is_active));
       setBaseRate(settingsData.settings?.base_rate_per_30min ?? 0);
       setCurrency(settingsData.settings?.currency ?? 'EUR');
+      // Active, non-file custom fields are editable in the manual modal (file
+      // uploads happen via the public widget only).
+      setBookingFields(
+        (fieldsData.fields ?? []).filter(
+          (f: BookingField) => f.is_active && f.field_type !== 'file'
+        )
+      );
     })();
   }, [slug]);
 
@@ -183,7 +194,7 @@ export default function CreateBookingModal({
       staff_id: staffId || null,
       tag_ids: Array.from(selectedTags),
       booking_notes: notes.trim() || undefined,
-      service_address: serviceAddress.trim() || undefined,
+      custom_field_values: customFieldValues,
       status,
       notify_client: notifyClient,
     };
@@ -373,20 +384,105 @@ export default function CreateBookingModal({
             </div>
           )}
 
-          {/* Service address — only when the tenant's booking form has it */}
-          {featureFlags.booking_address_field && (
-            <div>
-              <label className={labelCls}>Service address</label>
-              <input
-                type="text"
-                value={serviceAddress}
-                onChange={e => setServiceAddress(e.target.value)}
-                className={inputCls}
-                placeholder="Street, number, city"
-                maxLength={500}
-              />
-            </div>
-          )}
+          {/* Custom booking fields (Phase 20-C) — file fields excluded here */}
+          {bookingFields.map(f => {
+            const value = customFieldValues[f.field_key];
+            const setVal = (v: string | string[]) =>
+              setCustomFieldValues(prev => ({ ...prev, [f.field_key]: v }));
+            const options = f.options ?? [];
+            const lbl = (
+              <label className={labelCls}>
+                {f.label}
+                {f.required && <span className="text-red-500 ml-0.5">*</span>}
+              </label>
+            );
+            if (f.field_type === 'textarea') {
+              return (
+                <div key={f.id}>
+                  {lbl}
+                  <textarea
+                    value={typeof value === 'string' ? value : ''}
+                    onChange={e => setVal(e.target.value)}
+                    className={inputCls + ' h-20 resize-none'}
+                    placeholder={f.placeholder ?? ''}
+                  />
+                </div>
+              );
+            }
+            if (f.field_type === 'select') {
+              return (
+                <div key={f.id}>
+                  {lbl}
+                  <select
+                    value={typeof value === 'string' ? value : ''}
+                    onChange={e => setVal(e.target.value)}
+                    className={inputCls}
+                  >
+                    <option value="">{f.placeholder ?? '—'}</option>
+                    {options.map(o => (
+                      <option key={o} value={o}>{o}</option>
+                    ))}
+                  </select>
+                </div>
+              );
+            }
+            if (f.field_type === 'radio') {
+              return (
+                <div key={f.id}>
+                  {lbl}
+                  <div className="space-y-1">
+                    {options.map(o => (
+                      <label key={o} className="flex items-center gap-2 text-sm text-fg cursor-pointer">
+                        <input
+                          type="radio"
+                          name={`cf-${f.id}`}
+                          checked={value === o}
+                          onChange={() => setVal(o)}
+                        />
+                        {o}
+                      </label>
+                    ))}
+                  </div>
+                </div>
+              );
+            }
+            if (f.field_type === 'checkbox') {
+              const arr = Array.isArray(value) ? value : [];
+              return (
+                <div key={f.id}>
+                  {lbl}
+                  <div className="space-y-1">
+                    {options.map(o => {
+                      const checked = arr.includes(o);
+                      return (
+                        <label key={o} className="flex items-center gap-2 text-sm text-fg cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={checked}
+                            onChange={() => setVal(checked ? arr.filter(x => x !== o) : [...arr, o])}
+                          />
+                          {o}
+                        </label>
+                      );
+                    })}
+                  </div>
+                </div>
+              );
+            }
+            return (
+              <div key={f.id}>
+                {lbl}
+                <input
+                  type={f.field_type === 'date' ? 'date' : 'text'}
+                  value={typeof value === 'string' ? value : ''}
+                  onChange={e => setVal(e.target.value)}
+                  className={inputCls}
+                  placeholder={f.placeholder ?? ''}
+                  maxLength={500}
+                />
+              </div>
+            );
+          })}
 
           {/* Notes */}
           <div>

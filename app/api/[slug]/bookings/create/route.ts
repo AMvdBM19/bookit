@@ -25,6 +25,8 @@ interface ManualBookingBody {
   tag_ids?: string[];
   booking_notes?: string;
   service_address?: string;
+  /** Tenant-defined custom field values keyed by field_key (Phase 20-C). */
+  custom_field_values?: Record<string, unknown>;
   total_price?: number;
   status: 'pending_staff' | 'confirmed' | 'completed';
   notify_client?: boolean;
@@ -230,6 +232,41 @@ export async function POST(
     agencyShare = 0;
   }
 
+  // d2) Custom booking fields (Phase 20-C). Lenient on manual bookings — no
+  // required enforcement (agents can backfill) — but values are kept only for
+  // the tenant's known active field keys, and legacy keys map to columns.
+  const { data: fieldDefs } = await supabase
+    .from('booking_fields')
+    .select('field_key, field_type')
+    .eq('tenant_id', tenantId)
+    .eq('is_active', true);
+  const knownKeys = new Set((fieldDefs ?? []).map(f => f.field_key as string));
+  const rawCustom =
+    body.custom_field_values && typeof body.custom_field_values === 'object'
+      ? (body.custom_field_values as Record<string, unknown>)
+      : {};
+  const customFieldValues: Record<string, string | string[]> = {};
+  for (const [key, val] of Object.entries(rawCustom)) {
+    if (!knownKeys.has(key)) continue;
+    if (Array.isArray(val)) {
+      const arr = val.map(v => stripHtml(String(v))).filter(Boolean);
+      if (arr.length > 0) customFieldValues[key] = arr;
+    } else if (val != null) {
+      const s = stripHtml(String(val)).slice(0, 2000);
+      if (s) customFieldValues[key] = s;
+    }
+  }
+  // service_address comes from the custom field or the legacy body field.
+  const customAddress =
+    typeof customFieldValues.service_address === 'string'
+      ? customFieldValues.service_address.slice(0, 500)
+      : null;
+  const serviceAddress =
+    customAddress ??
+    (body.service_address ? stripHtml(body.service_address).slice(0, 500) || null : null);
+  const referenceImagePath =
+    typeof customFieldValues.reference_image === 'string' ? customFieldValues.reference_image : null;
+
   // e) Insert the booking.
   const { data: booking, error: bookingError } = await supabase
     .from('bookings')
@@ -245,9 +282,9 @@ export async function POST(
       slot_end: slotEnd,
       duration_minutes: durationMinutes,
       booking_notes: body.booking_notes ? stripHtml(body.booking_notes) : null,
-      service_address: body.service_address
-        ? stripHtml(body.service_address).slice(0, 500) || null
-        : null,
+      service_address: serviceAddress,
+      reference_image_url: referenceImagePath,
+      custom_field_values: customFieldValues,
       base_rate_per_30: baseRatePer30,
       tag_extras_total: tagExtrasTotal,
       total_price: totalPrice,

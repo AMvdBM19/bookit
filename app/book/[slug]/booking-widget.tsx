@@ -27,9 +27,10 @@ interface BookingState {
   guestWaOptIn: boolean;
   bookingNotes: string;
   ageConfirmed: boolean;
-  serviceAddress: string;
-  referenceImagePath: string | null;
-  referenceImagePreview: string | null;
+  /** Custom booking-field values keyed by field_key (Phase 20-C). */
+  customFieldValues: Record<string, string | string[]>;
+  /** Object-URL previews for file fields, keyed by field_key. */
+  customFieldPreviews: Record<string, string>;
   submitting: boolean;
   submitError: string | null;
   validationError: string | null;
@@ -55,9 +56,8 @@ const INITIAL_STATE: BookingState = {
   guestWaOptIn: false,
   bookingNotes: '',
   ageConfirmed: false,
-  serviceAddress: '',
-  referenceImagePath: null,
-  referenceImagePreview: null,
+  customFieldValues: {},
+  customFieldPreviews: {},
   submitting: false,
   submitError: null,
   validationError: null,
@@ -154,8 +154,16 @@ function BookingWidgetInner({ slug, catalog, lang }: Required<Props>) {
     if (catalog.settings?.require_age_confirm && !state.ageConfirmed) {
       return t.ageConfirmError(catalog.settings.age_gate_minimum);
     }
-    if (catalog.featureFlags.booking_address_field && !state.serviceAddress.trim()) {
-      return t.addressRequired;
+    // Required custom booking fields (Phase 20-C).
+    for (const field of catalog.bookingFields) {
+      if (!field.required) continue;
+      const v = state.customFieldValues[field.field_key];
+      const empty =
+        v === undefined ||
+        v === null ||
+        (typeof v === 'string' && v.trim() === '') ||
+        (Array.isArray(v) && v.length === 0);
+      if (empty) return t.fieldRequired(field.label);
     }
     return null;
   }
@@ -194,8 +202,7 @@ function BookingWidgetInner({ slug, catalog, lang }: Required<Props>) {
           guest_wa_opt_in: state.guestWaOptIn,
           booking_notes: state.bookingNotes || undefined,
           age_confirmed: state.ageConfirmed,
-          service_address: state.serviceAddress.trim() || undefined,
-          reference_image_path: state.referenceImagePath || undefined,
+          custom_field_values: state.customFieldValues,
         }),
       });
 
@@ -387,6 +394,7 @@ function BookingWidgetInner({ slug, catalog, lang }: Required<Props>) {
                 featureFlags={catalog.featureFlags}
                 settings={catalog.settings}
                 staffTags={staffTags}
+                bookingFields={catalog.bookingFields}
                 state={{
                   selectedTagIds: state.selectedTagIds,
                   selectedTagQuantities: state.selectedTagQuantities,
@@ -396,9 +404,8 @@ function BookingWidgetInner({ slug, catalog, lang }: Required<Props>) {
                   guestWaOptIn: state.guestWaOptIn,
                   bookingNotes: state.bookingNotes,
                   ageConfirmed: state.ageConfirmed,
-                  serviceAddress: state.serviceAddress,
-                  referenceImagePath: state.referenceImagePath,
-                  referenceImagePreview: state.referenceImagePreview,
+                  customFieldValues: state.customFieldValues,
+                  customFieldPreviews: state.customFieldPreviews,
                 }}
                 onChange={u => update({ ...u, validationError: null })}
                 brandColor={brandColor}

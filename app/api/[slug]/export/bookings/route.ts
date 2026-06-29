@@ -41,7 +41,7 @@ export async function GET(
     .from('bookings')
     .select(`
       id, slot_date, slot_start, slot_end, duration_minutes, status, source,
-      total_price, requested_at, confirmed_at, cancelled_at, cancellation_reason, booking_notes,
+      total_price, requested_at, confirmed_at, cancelled_at, cancellation_reason, booking_notes, custom_field_values,
       staff:staff_id(pseudonym),
       clients:client_id(display_name, email),
       guest_clients:guest_client_id(name, email),
@@ -62,6 +62,22 @@ export async function GET(
     return NextResponse.json({ error: 'Failed to export bookings' }, { status: 500 });
   }
 
+  // Dynamic custom-field columns (Phase 20-C): one per active booking field.
+  const { data: fieldDefs } = await supabase
+    .from('booking_fields')
+    .select('field_key, label, field_type')
+    .eq('tenant_id', user.tenantId)
+    .order('display_order', { ascending: true });
+  const customCols = (fieldDefs ?? []) as Array<{ field_key: string; label: string; field_type: string }>;
+
+  function formatCustom(values: Record<string, unknown> | null, key: string, type: string): string {
+    const v = values?.[key];
+    if (v == null) return '';
+    if (Array.isArray(v)) return v.join('; ');
+    if (type === 'file') return v ? 'uploaded' : '';
+    return String(v);
+  }
+
   const headers = [
     'booking_id',
     'date',
@@ -80,6 +96,7 @@ export async function GET(
     'cancelled_at',
     'cancellation_reason',
     'notes',
+    ...customCols.map(c => c.label),
   ];
 
   const rows = (data ?? []).map(b => {
@@ -105,6 +122,9 @@ export async function GET(
       b.cancelled_at,
       b.cancellation_reason,
       b.booking_notes,
+      ...customCols.map(c =>
+        formatCustom(b.custom_field_values as Record<string, unknown> | null, c.field_key, c.field_type)
+      ),
     ];
   });
 

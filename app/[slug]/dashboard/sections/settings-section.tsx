@@ -8,6 +8,7 @@ import Badge from '@/components/ui/badge';
 import Modal from '@/components/ui/modal';
 import ConfirmDialog from '@/components/ui/confirm-dialog';
 import { ONBOARDING_REOPEN_EVENT } from '@/components/onboarding-checklist';
+import BookingFormBuilder from './booking-form-builder';
 
 interface Tenant {
   name: string;
@@ -431,7 +432,10 @@ export default function SettingsSection({ slug }: { slug: string }) {
         </div>
       </section>
 
-      {/* Booking form — conditional widget fields (tenant_config flags) */}
+      {/* Booking form — tenant-defined custom fields (Phase 20-C builder) */}
+      <BookingFormBuilder slug={slug} />
+
+      {/* Staff permissions (tenant_config flags) */}
       <BookingFormSection slug={slug} />
 
       {/* Integrations */}
@@ -577,10 +581,12 @@ export default function SettingsSection({ slug }: { slug: string }) {
 }
 
 /**
- * Booking form flags live on tenant_config.feature_flags (not
+ * Staff-permission flags live on tenant_config.feature_flags (not
  * tenant_settings), so this section talks to /api/{slug}/config. The PATCH
  * validator requires the full flag object — toggles merge into the fetched
- * flags before saving.
+ * flags before saving. (The booking-form fields themselves are managed by the
+ * BookingFormBuilder above; the legacy reference-image/address flags are now
+ * builder-driven and no longer toggled here.)
  */
 function BookingFormSection({ slug }: { slug: string }) {
   const [flags, setFlags] = useState<Record<string, unknown> | null>(null);
@@ -605,7 +611,7 @@ function BookingFormSection({ slug }: { slug: string }) {
   }, [slug]);
 
   async function toggle(
-    key: 'booking_reference_image' | 'booking_address_field' | 'staff_can_edit_bookings',
+    key: 'staff_can_edit_bookings',
     next: boolean
   ) {
     if (!flags) return;
@@ -636,38 +642,9 @@ function BookingFormSection({ slug }: { slug: string }) {
   return (
     <section>
       <h3 className="text-xs font-semibold text-fg-muted uppercase tracking-wider mb-2">
-        Booking form
+        Staff permissions
       </h3>
       <div className="bg-surface rounded-lg border border-border px-4 py-1">
-        <div className="py-2 border-b border-border">
-          <label className="flex items-center gap-2 cursor-pointer">
-            <input
-              type="checkbox"
-              checked={flags.booking_reference_image === true}
-              disabled={saving}
-              onChange={e => toggle('booking_reference_image', e.target.checked)}
-            />
-            <span className="text-sm text-fg">Reference image upload</span>
-          </label>
-          <p className="text-[11px] text-fg-muted mt-1 ml-6">
-            Clients can attach an optional image (e.g. a design idea) when booking.
-          </p>
-        </div>
-        <div className="py-2 border-b border-border">
-          <label className="flex items-center gap-2 cursor-pointer">
-            <input
-              type="checkbox"
-              checked={flags.booking_address_field === true}
-              disabled={saving}
-              onChange={e => toggle('booking_address_field', e.target.checked)}
-            />
-            <span className="text-sm text-fg">Service address field</span>
-          </label>
-          <p className="text-[11px] text-fg-muted mt-1 ml-6">
-            Asks clients for a required address — for services performed at the
-            client&apos;s location.
-          </p>
-        </div>
         <div className="py-2">
           <label className="flex items-center gap-2 cursor-pointer">
             <input

@@ -29,8 +29,26 @@ interface BookingBody {
   client_id?: string;
   booking_notes?: string;
   age_confirmed?: boolean;
-  service_address?: string;
-  reference_image_path?: string;
+  /** Tenant-defined custom field values keyed by field_key (Phase 20-C). */
+  custom_field_values?: Record<string, unknown>;
+}
+
+interface BookingFieldDef {
+  field_key: string;
+  label: string;
+  field_type: string;
+  required: boolean;
+  options: string[] | null;
+}
+
+// Validate a reference/file object path produced by our upload endpoint.
+function isValidUploadPath(p: string, tenantId: string): boolean {
+  return (
+    p.startsWith(`${tenantId}/`) &&
+    !p.includes('..') &&
+    p.length <= 300 &&
+    /\.(jpg|png|webp)$/.test(p)
+  );
 }
 
 export async function POST(
@@ -109,34 +127,58 @@ export async function POST(
     );
   }
 
-  // Conditional booking fields (Phase 15-B5): accepted only when the
-  // corresponding feature flag is on; silently ignored otherwise.
-  let serviceAddress: string | null = null;
-  if (featureFlags.booking_address_field) {
-    const addr =
-      typeof body.service_address === 'string'
-        ? stripHtml(body.service_address).slice(0, 500)
-        : '';
-    if (!addr) {
-      return NextResponse.json({ error: 'Service address is required' }, { status: 400 });
-    }
-    serviceAddress = addr;
-  }
+  // Custom booking fields (Phase 20-C): validate submitted values against the
+  // tenant's active field definitions. The two legacy keys (service_address,
+  // reference_image) also persist to their dedicated booking columns.
+  const { data: fieldDefs } = await supabase
+    .from('booking_fields')
+    .select('field_key, label, field_type, required, options')
+    .eq('tenant_id', tenant.id)
+    .eq('is_active', true);
 
+  const rawCustom =
+    body.custom_field_values && typeof body.custom_field_values === 'object'
+      ? (body.custom_field_values as Record<string, unknown>)
+      : {};
+
+  const customFieldValues: Record<string, string | string[]> = {};
+  let serviceAddress: string | null = null;
   let referenceImagePath: string | null = null;
-  if (featureFlags.booking_reference_image && body.reference_image_path) {
-    const p = String(body.reference_image_path);
-    // Must be an object path produced by our reference-upload endpoint for
-    // this tenant — blocks cross-tenant references and path tricks.
-    if (
-      !p.startsWith(`${tenant.id}/`) ||
-      p.includes('..') ||
-      p.length > 300 ||
-      !/\.(jpg|png|webp)$/.test(p)
-    ) {
-      return NextResponse.json({ error: 'Invalid reference image' }, { status: 400 });
+
+  for (const f of (fieldDefs ?? []) as BookingFieldDef[]) {
+    const raw = rawCustom[f.field_key];
+    const options = f.options ?? [];
+
+    if (f.field_type === 'checkbox') {
+      const arr = Array.isArray(raw)
+        ? raw.map(v => stripHtml(String(v))).filter(v => options.length === 0 || options.includes(v))
+        : [];
+      if (f.required && arr.length === 0) {
+        return NextResponse.json({ error: `${f.label} is required` }, { status: 400 });
+      }
+      if (arr.length > 0) customFieldValues[f.field_key] = arr;
+      continue;
     }
-    referenceImagePath = p;
+
+    let value = typeof raw === 'string' ? stripHtml(raw).slice(0, 2000) : '';
+
+    if (f.field_type === 'file' && value) {
+      if (!isValidUploadPath(value, tenant.id)) {
+        return NextResponse.json({ error: `Invalid file for ${f.label}` }, { status: 400 });
+      }
+    }
+    if ((f.field_type === 'select' || f.field_type === 'radio') && value && options.length > 0) {
+      if (!options.includes(value)) value = '';
+    }
+
+    if (f.required && !value) {
+      return NextResponse.json({ error: `${f.label} is required` }, { status: 400 });
+    }
+    if (value) {
+      customFieldValues[f.field_key] = value;
+      if (f.field_key === 'service_address') serviceAddress = value.slice(0, 500);
+      if (f.field_key === 'reference_image') referenceImagePath = value;
+    }
   }
 
   let staff: { id: string; pseudonym: string } | null = null;
@@ -392,6 +434,7 @@ export async function POST(
       booking_notes: body.booking_notes ? stripHtml(body.booking_notes) : null,
       service_address: serviceAddress,
       reference_image_url: referenceImagePath,
+      custom_field_values: customFieldValues,
       base_rate_per_30: pricing.baseRatePer30,
       tag_extras_total: pricing.tagExtrasTotal,
       total_price: pricing.totalPrice,

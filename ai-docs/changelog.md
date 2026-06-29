@@ -3,6 +3,21 @@
 > Feature history for the AI assistant: what exists and since when. Newest
 > first. Maintained per the AI Docs Maintenance Protocol in CLAUDE.md.
 
+## 2026-06-16 — Custom booking-form fields (Phase 20-C)
+
+- **Booking form builder** (Settings → Booking form): owners can now define
+  their own booking-form questions instead of only the two fixed toggles. Each
+  field has a label, type, optional placeholder/help text and a required flag,
+  with reorder, hide, edit and delete. Eight types: short text, paragraph,
+  date, address, single choice (radio), multiple choice (checkboxes), dropdown,
+  and file upload (choice/dropdown types take an options list).
+- The **booking widget** renders these fields dynamically; required fields are
+  validated before submit. The legacy "Reference image upload" and "Service
+  address field" toggles are now builder-managed built-in fields (migrated
+  automatically) and behave like any other field.
+- Submitted values surface in the **booking detail panel**, the **manual
+  booking** form, and as extra columns in the **bookings CSV export**.
+
 ## 2026-06-16 — All-staff calendar view (Phase 20-B)
 
 - **All-staff day view**: the Bookings calendar has a **Single staff ⇄ All
