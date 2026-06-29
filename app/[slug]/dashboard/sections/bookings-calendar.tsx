@@ -59,6 +59,28 @@ interface StaffAvailability {
   exceptions: Array<{ date: string; reason: string | null }>;
 }
 
+// B2 — all-staff day summary (per staff: working window, day off, bookings).
+interface StaffSummaryEntry {
+  id: string;
+  pseudonym: string;
+  day_off: boolean;
+  day_off_reason: string | null;
+  working_blocks: Array<{ start: string; end: string }>;
+  bookings: Array<{ id: string; start: string; end: string; status: string }>;
+}
+interface AvailabilitySummary {
+  date: string;
+  staff: StaffSummaryEntry[];
+}
+
+/** Round HH:MM minutes-from-midnight to the nearest 15 and return HH:MM. */
+function snapToQuarter(totalMinutes: number): string {
+  const snapped = Math.round(totalMinutes / 15) * 15;
+  const hh = Math.floor(snapped / 60);
+  const mm = snapped % 60;
+  return `${String(hh).padStart(2, '0')}:${String(mm).padStart(2, '0')}`;
+}
+
 export default function BookingsCalendar({
   bookings,
   currency,
@@ -69,6 +91,7 @@ export default function BookingsCalendar({
   staffOptions = [],
   onAssign,
   onStatus,
+  onCreateAt,
 }: {
   bookings: BookingDetail[];
   currency: string;
@@ -81,6 +104,8 @@ export default function BookingsCalendar({
   staffOptions?: Array<{ id: string; pseudonym: string }>;
   onAssign?: (id: string, staffId: string) => Promise<void>;
   onStatus?: (id: string, target: string, reason?: string) => Promise<boolean>;
+  /** Click an empty available cell in the All-staff view → prefill manual booking (B2). */
+  onCreateAt?: (init: { staffId: string; date: string; start: string }) => void;
 }) {
   const { terminology } = useTenantConfig();
   const [view, setView] = useState<'week' | 'day'>('week');
@@ -122,6 +147,38 @@ export default function BookingsCalendar({
       cancelled = true;
     };
   }, [selectedStaffId, slug]);
+
+  // B2 — all-staff day view. Toggle, plus a per-date summary cached for session.
+  const [staffViewMode, setStaffViewMode] = useState<'single' | 'all'>('single');
+  const [summary, setSummary] = useState<AvailabilitySummary | null>(null);
+  const [summaryLoading, setSummaryLoading] = useState(false);
+  const summaryCache = useRef<Record<string, AvailabilitySummary>>({});
+
+  useEffect(() => {
+    if (staffViewMode !== 'all' || !slug) return;
+    const ds = toDateStr(anchor);
+    const cached = summaryCache.current[ds];
+    if (cached) {
+      setSummary(cached);
+      return;
+    }
+    let cancelled = false;
+    setSummaryLoading(true);
+    fetch(`/api/${slug}/staff/availability-summary?date=${ds}`)
+      .then(res => (res.ok ? res.json() : null))
+      .then((data: AvailabilitySummary | null) => {
+        if (cancelled || !data) return;
+        summaryCache.current[ds] = data;
+        setSummary(data);
+      })
+      .catch(() => {})
+      .finally(() => {
+        if (!cancelled) setSummaryLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [staffViewMode, slug, anchor]);
 
   const quickActionsEnabled = !!onStatus;
 
@@ -178,10 +235,12 @@ export default function BookingsCalendar({
   }
 
   const todayStr = toDateStr(new Date());
+  const allStaff = staffViewMode === 'all';
   const rangeLabel =
-    view === 'week'
-      ? `${days[0].toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })} – ${days[6].toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}`
-      : anchor.toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+    allStaff || view === 'day'
+      ? anchor.toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })
+      : `${days[0].toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })} – ${days[6].toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}`;
+  const navStep = allStaff || view === 'day' ? 1 : 7;
 
   return (
     <div className="space-y-3">
@@ -189,7 +248,7 @@ export default function BookingsCalendar({
         <div className="flex items-center gap-1">
           <button
             type="button"
-            onClick={() => shift(view === 'week' ? -7 : -1)}
+            onClick={() => shift(-navStep)}
             aria-label="Previous"
             className="text-xs px-2 py-1 bg-elevated hover:bg-sunken text-fg rounded"
           >
@@ -208,7 +267,7 @@ export default function BookingsCalendar({
           </button>
           <button
             type="button"
-            onClick={() => shift(view === 'week' ? 7 : 1)}
+            onClick={() => shift(navStep)}
             aria-label="Next"
             className="text-xs px-2 py-1 bg-elevated hover:bg-sunken text-fg rounded"
           >
@@ -216,23 +275,58 @@ export default function BookingsCalendar({
           </button>
           <span className="text-sm text-fg font-medium ml-2">{rangeLabel}</span>
         </div>
-        <div className="flex items-center rounded border border-border overflow-hidden">
-          {(['week', 'day'] as const).map(v => (
-            <button
-              key={v}
-              type="button"
-              onClick={() => setView(v)}
-              aria-pressed={view === v}
-              className={`text-xs px-3 py-1.5 capitalize transition-colors ${
-                view === v ? 'bg-fg text-canvas' : 'bg-surface text-fg-muted hover:bg-elevated'
-              }`}
-            >
-              {v}
-            </button>
-          ))}
+        <div className="flex items-center gap-2">
+          {/* Single-staff (week/day) ⇄ All-staff (day) */}
+          <div className="flex items-center rounded border border-border overflow-hidden">
+            {([['single', 'Single staff'], ['all', 'All staff']] as const).map(([mode, label]) => (
+              <button
+                key={mode}
+                type="button"
+                onClick={() => setStaffViewMode(mode)}
+                aria-pressed={staffViewMode === mode}
+                className={`text-xs px-3 py-1.5 transition-colors ${
+                  staffViewMode === mode ? 'bg-fg text-canvas' : 'bg-surface text-fg-muted hover:bg-elevated'
+                }`}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+          {!allStaff && (
+            <div className="flex items-center rounded border border-border overflow-hidden">
+              {(['week', 'day'] as const).map(v => (
+                <button
+                  key={v}
+                  type="button"
+                  onClick={() => setView(v)}
+                  aria-pressed={view === v}
+                  className={`text-xs px-3 py-1.5 capitalize transition-colors ${
+                    view === v ? 'bg-fg text-canvas' : 'bg-surface text-fg-muted hover:bg-elevated'
+                  }`}
+                >
+                  {v}
+                </button>
+              ))}
+            </div>
+          )}
         </div>
       </div>
 
+      {allStaff && (
+        <AllStaffDay
+          summary={summary}
+          loading={summaryLoading}
+          dateStr={toDateStr(anchor)}
+          isToday={toDateStr(anchor) === todayStr}
+          onOpenBooking={id => {
+            const b = bookings.find(x => x.id === id);
+            if (b) setOpenBooking(b);
+          }}
+          onCreateAt={onCreateAt}
+        />
+      )}
+
+      {!allStaff && (
       <div className="border border-border rounded-lg overflow-hidden bg-surface">
         <div className="overflow-x-auto">
           <div className={view === 'week' ? 'min-w-[840px]' : 'min-w-[360px]'}>
@@ -387,6 +481,7 @@ export default function BookingsCalendar({
           </div>
         </div>
       </div>
+      )}
 
       <div className="flex flex-wrap items-center gap-3 text-[10px] text-fg-muted">
         {Object.entries({
@@ -590,6 +685,194 @@ export default function BookingsCalendar({
           onClose={() => setCancelBooking(null)}
         />
       )}
+    </div>
+  );
+}
+
+const SUMMARY_BLOCK_COLORS: Record<string, string> = {
+  pending_staff:
+    'bg-amber-100 border-amber-300 text-amber-900 dark:bg-amber-500/20 dark:border-amber-500/50 dark:text-amber-200',
+  confirmed:
+    'bg-emerald-100 border-emerald-300 text-emerald-900 dark:bg-emerald-500/20 dark:border-emerald-500/50 dark:text-emerald-200',
+};
+
+/**
+ * All-staff day view (B2): one column per active {staff} for a single date.
+ * Working hours render clear over a hatched out-of-hours background; days off
+ * tint the column red; bookings render as positioned blocks. Clicking an empty
+ * spot inside a working band prefills the manual-booking modal.
+ */
+function AllStaffDay({
+  summary,
+  loading,
+  dateStr,
+  isToday,
+  onOpenBooking,
+  onCreateAt,
+}: {
+  summary: AvailabilitySummary | null;
+  loading: boolean;
+  dateStr: string;
+  isToday: boolean;
+  onOpenBooking: (bookingId: string) => void;
+  onCreateAt?: (init: { staffId: string; date: string; start: string }) => void;
+}) {
+  const staff = summary?.staff ?? [];
+
+  // Fit the hour window to the day's schedules + bookings (default 8–20).
+  let startHour = 8;
+  let endHour = 20;
+  for (const s of staff) {
+    for (const w of s.working_blocks) {
+      startHour = Math.min(startHour, Math.floor(minutesOf(w.start) / 60));
+      endHour = Math.max(endHour, Math.ceil(minutesOf(w.end) / 60));
+    }
+    for (const b of s.bookings) {
+      startHour = Math.min(startHour, Math.floor(minutesOf(b.start) / 60));
+      endHour = Math.max(endHour, Math.ceil(minutesOf(b.end) / 60));
+    }
+  }
+  const hours = Array.from({ length: endHour - startHour }, (_, i) => startHour + i);
+  const columnHeight = (endHour - startHour) * HOUR_PX;
+
+  function handleColumnClick(e: React.MouseEvent<HTMLDivElement>, s: StaffSummaryEntry) {
+    if (!onCreateAt || s.day_off) return;
+    const rect = e.currentTarget.getBoundingClientRect();
+    const offsetY = e.clientY - rect.top;
+    const minutes = startHour * 60 + (offsetY / HOUR_PX) * 60;
+    const start = snapToQuarter(minutes);
+    // Only offer creation inside a working band.
+    const inWorking = s.working_blocks.some(w => start >= w.start && start < w.end);
+    if (!inWorking) return;
+    onCreateAt({ staffId: s.id, date: dateStr, start });
+  }
+
+  return (
+    <div className="space-y-3">
+      <div className="border border-border rounded-lg overflow-hidden bg-surface">
+        {loading && !summary ? (
+          <p className="text-sm text-fg-muted text-center py-10">Loading availability…</p>
+        ) : staff.length === 0 ? (
+          <p className="text-sm text-fg-muted text-center py-10">No active staff to show.</p>
+        ) : (
+          <div className="overflow-x-auto">
+            <div style={{ minWidth: `${56 + staff.length * 130}px` }}>
+              {/* Staff headers */}
+              <div
+                className="grid border-b border-border bg-elevated"
+                style={{ gridTemplateColumns: `56px repeat(${staff.length}, 1fr)` }}
+              >
+                <div />
+                {staff.map(s => (
+                  <div
+                    key={s.id}
+                    className="px-2 py-2 text-center text-[11px] font-medium border-l border-border text-fg truncate"
+                    title={s.pseudonym}
+                  >
+                    {s.pseudonym}
+                    {s.day_off && (
+                      <span className="block text-[9px] font-normal uppercase tracking-wider text-red-600 dark:text-red-300">
+                        Day off
+                      </span>
+                    )}
+                  </div>
+                ))}
+              </div>
+
+              {/* Body */}
+              <div
+                className="grid"
+                style={{ gridTemplateColumns: `56px repeat(${staff.length}, 1fr)` }}
+              >
+                {/* Hour gutter */}
+                <div className="relative" style={{ height: columnHeight }}>
+                  {hours.map(h => (
+                    <span
+                      key={h}
+                      className="absolute right-1.5 -translate-y-1/2 text-[10px] text-fg-subtle"
+                      style={{ top: (h - startHour) * HOUR_PX }}
+                    >
+                      {h > 0 ? `${String(h).padStart(2, '0')}:00` : ''}
+                    </span>
+                  ))}
+                </div>
+
+                {staff.map(s => (
+                  <div
+                    key={s.id}
+                    onClick={e => handleColumnClick(e, s)}
+                    className={`relative border-l border-border ${onCreateAt && !s.day_off ? 'cursor-copy' : ''}`}
+                    style={{ height: columnHeight }}
+                  >
+                    {s.day_off ? (
+                      <div className="absolute inset-0 bg-red-500/10 pointer-events-none" title={s.day_off_reason ?? 'Day off'} />
+                    ) : (
+                      <>
+                        {/* Out-of-schedule hatch */}
+                        <div
+                          className="absolute inset-0 pointer-events-none"
+                          style={{
+                            backgroundImage:
+                              'repeating-linear-gradient(45deg, rgba(120,120,120,0.10) 0, rgba(120,120,120,0.10) 5px, transparent 5px, transparent 11px)',
+                          }}
+                        />
+                        {/* Working bands (clear) */}
+                        {s.working_blocks.map((w, i) => {
+                          const top = Math.max(((minutesOf(w.start) - startHour * 60) / 60) * HOUR_PX, 0);
+                          const bot = Math.min(((minutesOf(w.end) - startHour * 60) / 60) * HOUR_PX, columnHeight);
+                          if (bot <= top) return null;
+                          return (
+                            <div
+                              key={i}
+                              className="absolute inset-x-0 bg-surface pointer-events-none"
+                              style={{ top, height: bot - top }}
+                            />
+                          );
+                        })}
+                      </>
+                    )}
+
+                    {/* Hour lines */}
+                    {hours.map(h => (
+                      <div
+                        key={h}
+                        className="absolute inset-x-0 border-t border-border/60 pointer-events-none"
+                        style={{ top: (h - startHour) * HOUR_PX }}
+                      />
+                    ))}
+
+                    {/* Booking blocks */}
+                    {s.bookings.map(b => {
+                      const top = ((minutesOf(b.start) - startHour * 60) / 60) * HOUR_PX;
+                      const height = Math.max(18, ((minutesOf(b.end) - minutesOf(b.start)) / 60) * HOUR_PX);
+                      const colors = SUMMARY_BLOCK_COLORS[b.status] ?? SUMMARY_BLOCK_COLORS.confirmed;
+                      return (
+                        <button
+                          key={b.id}
+                          type="button"
+                          onClick={e => {
+                            e.stopPropagation();
+                            onOpenBooking(b.id);
+                          }}
+                          title={`${b.start}–${b.end}`}
+                          className={`absolute inset-x-0.5 rounded border px-1 py-0.5 text-left text-[10px] leading-tight overflow-hidden hover:opacity-80 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring ${colors}`}
+                          style={{ top, height }}
+                        >
+                          <span className="font-medium block truncate">{b.start}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+      <p className="text-[10px] text-fg-muted">
+        {isToday ? 'Today · ' : ''}Click an empty spot in a working column to start a manual {''}
+        booking at that time.
+      </p>
     </div>
   );
 }

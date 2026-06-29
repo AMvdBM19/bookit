@@ -3,6 +3,18 @@
 > Feature history for the AI assistant: what exists and since when. Newest
 > first. Maintained per the AI Docs Maintenance Protocol in CLAUDE.md.
 
+## 2026-06-16 — All-staff calendar view (Phase 20-B)
+
+- **All-staff day view**: the Bookings calendar has a **Single staff ⇄ All
+  staff** toggle. "All staff" shows one column per active {staff} for a single
+  day, with each person's working hours, out-of-hours (hatched), days off (red
+  tint) and bookings. Navigate day by day with ‹ / ›.
+- Clicking an empty spot inside a working column **prefills the manual-booking
+  form** with that {staff}, date and time. Availability per day is fetched once
+  and cached for the session.
+- The existing single-staff availability overlay (shading the chosen member's
+  schedule) is unchanged.
+
 ## 2026-06-16 — Booking reschedule (Phase 20-A)
 
 - **Reschedule a booking**: owners can now move a pending or confirmed booking

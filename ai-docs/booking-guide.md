@@ -36,6 +36,14 @@ calendar **shades that member's availability**: their scheduled working hours
 show clear, hours outside their schedule are hatched, and days off are tinted
 with a "Day off" label.
 
+A **Single staff ⇄ All staff** toggle sits in the calendar header. **All
+staff** switches to a single-day view with **one column per active {staff}**:
+each column shows that person's working hours (clear), out-of-hours time
+(hatched), days off (red tint with a "Day off" label) and their bookings as
+blocks. Use ‹ / › to move day by day. Clicking an empty spot inside a working
+column opens the manual-booking form prefilled with that {staff}, date and
+time. (Availability per day is fetched once and cached for the session.)
+
 The **Board** is a Kanban: columns for pending → confirmed → completed /
 no-show / cancelled (the last three collapsed by default) with counts.
 Drag a card between columns to change status — only valid, time-gated

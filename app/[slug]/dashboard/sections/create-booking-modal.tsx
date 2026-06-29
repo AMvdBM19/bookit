@@ -37,10 +37,13 @@ export default function CreateBookingModal({
   slug,
   onClose,
   onCreated,
+  initial,
 }: {
   slug: string;
   onClose: () => void;
   onCreated: () => void;
+  /** Optional prefill (e.g. from the All-staff calendar empty-cell click). */
+  initial?: { staffId?: string; date?: string; start?: string; end?: string };
 }) {
   const { terminology, featureFlags } = useTenantConfig();
 
@@ -58,10 +61,10 @@ export default function CreateBookingModal({
   const [guestEmail, setGuestEmail] = useState('');
   const [guestPhone, setGuestPhone] = useState('');
 
-  const [staffId, setStaffId] = useState<string>('');
-  const [slotDate, setSlotDate] = useState('');
-  const [slotStart, setSlotStart] = useState('');
-  const [slotEnd, setSlotEnd] = useState('');
+  const [staffId, setStaffId] = useState<string>(initial?.staffId ?? '');
+  const [slotDate, setSlotDate] = useState(initial?.date ?? '');
+  const [slotStart, setSlotStart] = useState(initial?.start ?? '');
+  const [slotEnd, setSlotEnd] = useState(initial?.end ?? '');
   const [selectedTags, setSelectedTags] = useState<Set<string>>(new Set());
   const [notes, setNotes] = useState('');
   const [serviceAddress, setServiceAddress] = useState('');

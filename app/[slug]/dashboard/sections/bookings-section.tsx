@@ -242,6 +242,9 @@ export default function BookingsSection({ slug }: { slug: string }) {
   const [assignChoice, setAssignChoice] = useState<Record<string, string>>({});
   const [staffOptions, setStaffOptions] = useState<Array<{ id: string; pseudonym: string }>>([]);
   const [showCreate, setShowCreate] = useState(false);
+  const [createInitial, setCreateInitial] = useState<
+    { staffId?: string; date?: string; start?: string } | undefined
+  >(undefined);
   const [editBookingId, setEditBookingId] = useState<string | null>(null);
   const [rescheduleTarget, setRescheduleTarget] = useState<RescheduleTarget | null>(null);
   const [detailBooking, setDetailBooking] = useState<Booking | null>(null);
@@ -732,6 +735,10 @@ export default function BookingsSection({ slug }: { slug: string }) {
           selectedStaffId={staffFilter !== 'all' && staffFilter !== 'unassigned' ? staffFilter : null}
           onEdit={setEditBookingId}
           onReschedule={b => setRescheduleTarget(rescheduleTargetOf(b))}
+          onCreateAt={init => {
+            setCreateInitial(init);
+            setShowCreate(true);
+          }}
           staffOptions={staffOptions}
           onAssign={async (id, staffId) => {
             setAssignChoice(prev => ({ ...prev, [id]: staffId }));
@@ -1082,9 +1089,14 @@ export default function BookingsSection({ slug }: { slug: string }) {
       {showCreate && (
         <CreateBookingModal
           slug={slug}
-          onClose={() => setShowCreate(false)}
+          initial={createInitial}
+          onClose={() => {
+            setShowCreate(false);
+            setCreateInitial(undefined);
+          }}
           onCreated={() => {
             setShowCreate(false);
+            setCreateInitial(undefined);
             reload();
           }}
         />
