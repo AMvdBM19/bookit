@@ -55,8 +55,14 @@ app/api/super-admin/     — super admin tenant CRUD + stats + template CRUD + t
 app/api/templates/active — public active templates for the wizard picker
 app/api/[slug]/setup/select-template — stamps tenant_config from a chosen template
 instrumentation.ts         — boots reminder cron in Node runtime
-lib/cron/                  — node-cron jobs (reminders)
-lib/auth/super-admin.ts  — Bearer key validation for super-admin routes
+lib/cron/                  — node-cron jobs (reminders, retention)
+lib/auth/super-admin.ts  — Bearer + httpOnly cookie validation for super-admin routes
+app/api/health/            — shallow health check (DB probe, used by Docker HEALTHCHECK)
+lib/gdpr/anonymize.ts      — shared GDPR client anonymization (used by erasure API + retention cron)
+app/api/[slug]/clients/[clientId]/anonymize/ — agent-only client erasure (GDPR Art. 17)
+app/api/[slug]/clients/[clientId]/export/   — agent-only client data export (JSON)
+app/api/super-admin/auth/  — super-admin login/logout (httpOnly cookie)
+scripts/check-migration-drift.sh — compares local migrations vs Supabase applied
 app/book/[slug]/         — public booking widget + APIs (no auth)
 app/book/[slug]/api/     — catalog, availability, book endpoints
 lib/widget-theme.ts      — widget theming (WidgetTheme, PRESETS, themeToVars/CSS, settings mapping); widget renders from --w-* CSS vars set in app/book/[slug]/layout.tsx, live-preview via postMessage 'bookit:theme-override'
@@ -109,6 +115,7 @@ Phase 11B: ✅ Manual booking creation (create API, client search API, modal UI,
 Phase 11C: ✅ Pool booking mode (booking_mode flag, wizard step, pool availability, widget flow, staff claim, admin assign)
 Phase 12A: ✅ Widget customizer (CSS variable theming, live preview, 8 presets, embed code export, new Widget dashboard tab)
 Tier 1 Polish Sprint: ✅ Groups 1-10 (shared UI components, toasts, loading/empty states, confirm dialogs, onboarding checklist, per-service duration, buffer time, staff days off UI, CSV export, AI assistant foundation)
+Phase 21: ✅ Production Hardening (Sentry error tracking, /api/health endpoint, Docker HEALTHCHECK, super-admin httpOnly cookie auth, RLS audit, webhook hardening, GDPR client anonymization + data export + retention cron, terms/privacy consent on widget, seed.sql safety guard, migration drift script, VPS backup infrastructure)
 
 ## Deposits
 Widget shows a deposit notice when deposits_supported flag is true AND deposit_pct>0 AND duration>deposit_required_above_minutes.

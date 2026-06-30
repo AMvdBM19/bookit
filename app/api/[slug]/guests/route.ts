@@ -14,7 +14,7 @@ export async function GET() {
 
   const { data: guests, error } = await supabase
     .from('guest_clients')
-    .select('id, name, email, phone, booking_count, last_seen_at, created_at, wa_opt_in')
+    .select('id, name, email, phone, booking_count, last_seen_at, created_at, wa_opt_in, anonymized_at')
     .eq('tenant_id', user.tenantId)
     .order('last_seen_at', { ascending: false });
 

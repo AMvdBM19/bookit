@@ -1,6 +1,22 @@
 ﻿-- Book-IT ERP — Seed Data
 -- Two demo tenants: inkhaus (tattoo, guest mode) + velours-demo (adult_services, account mode)
 -- Auth users created via seed-auth.ts — all passwords: Test1234!
+--
+-- SAFETY: deterministic UUIDs (11111111-…, 22222222-…) are intentional for FK
+-- cross-references. The guard below aborts if real (non-seed) tenants exist,
+-- preventing accidental execution against a production database.
+
+DO $$ BEGIN
+  IF EXISTS (
+    SELECT 1 FROM tenants
+    WHERE id NOT IN (
+      '11111111-1111-1111-1111-111111111111',
+      '22222222-2222-2222-2222-222222222222'
+    )
+  ) THEN
+    RAISE EXCEPTION 'seed.sql refused to run: non-seed tenants detected — this looks like a production database';
+  END IF;
+END $$;
 
 -- ============================================================================
 -- TENANT 1: inkhaus (tattoo vertical, guest mode, staff_must_accept)

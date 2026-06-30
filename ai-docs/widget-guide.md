@@ -29,7 +29,11 @@ booking, services…) comes from the tenant's template.
    chosen quantity. If changing services changes the duration, the client is
    asked to re-pick a time.
 4. **Confirm** — summary card; price breakdown when "Show price to client"
-   is on; deposit notice when applicable (pricing-guide.md); submit.
+   is on; deposit notice when applicable (pricing-guide.md). When the
+   `require_terms_acceptance` compliance flag is active, a mandatory
+   checkbox links to the Terms URL (and Privacy URL if set); the submit
+   button is disabled until accepted. Even without mandatory acceptance,
+   a subtle "Privacy policy" link appears if `privacy_url` is configured.
 5. **Success** — "confirmed" (auto-confirm tenants) or "request submitted,
    you'll hear from us" (staff-must-accept and all pool bookings).
 

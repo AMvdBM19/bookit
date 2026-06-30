@@ -1,6 +1,6 @@
 import { createServiceClient } from '@/lib/supabase/server';
-import type { Terminology, FeatureFlags } from '@/lib/types/tenant-config';
-import { DEFAULT_TERMINOLOGY, DEFAULT_FEATURE_FLAGS } from '@/lib/types/tenant-config';
+import type { Terminology, FeatureFlags, ComplianceFlags } from '@/lib/types/tenant-config';
+import { DEFAULT_TERMINOLOGY, DEFAULT_FEATURE_FLAGS, DEFAULT_COMPLIANCE_FLAGS } from '@/lib/types/tenant-config';
 import type { BookingField } from '@/lib/types/booking-fields';
 
 export interface CatalogStaff {
@@ -58,6 +58,8 @@ export interface CatalogSettings {
   per_service_duration_enabled?: boolean | null;
   /** Widget chrome language — 'en' (default) or 'nl'. */
   widget_language?: string | null;
+  terms_url?: string | null;
+  privacy_url?: string | null;
 }
 
 export interface Catalog {
@@ -81,6 +83,7 @@ export interface Catalog {
   }>;
   terminology: Terminology;
   featureFlags: FeatureFlags;
+  complianceFlags: ComplianceFlags;
   /** Tenant's active custom booking-form fields, in display order (Phase 20-C). */
   bookingFields: BookingField[];
 }
@@ -183,7 +186,7 @@ export async function loadCatalog(slug: string): Promise<Catalog | null> {
 
   const { data: tenantConfig } = await supabase
     .from('tenant_config')
-    .select('terminology, feature_flags')
+    .select('terminology, feature_flags, compliance_flags')
     .eq('tenant_id', tenant.id)
     .maybeSingle();
 
@@ -204,6 +207,7 @@ export async function loadCatalog(slug: string): Promise<Catalog | null> {
 
   const terminology = { ...DEFAULT_TERMINOLOGY, ...(tenantConfig?.terminology as Partial<Terminology> | undefined) };
   const featureFlags = (tenantConfig?.feature_flags as FeatureFlags | undefined) ?? DEFAULT_FEATURE_FLAGS;
+  const complianceFlags = (tenantConfig?.compliance_flags as ComplianceFlags | undefined) ?? DEFAULT_COMPLIANCE_FLAGS;
 
   return {
     tenant: {
@@ -217,6 +221,7 @@ export async function loadCatalog(slug: string): Promise<Catalog | null> {
     tags: allTags ?? [],
     terminology,
     featureFlags,
+    complianceFlags,
     bookingFields,
   };
 }

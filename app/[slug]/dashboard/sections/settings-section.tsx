@@ -33,6 +33,8 @@ interface Settings {
   deposit_required_above_minutes: number | null;
   buffer_before_minutes?: number;
   buffer_after_minutes?: number;
+  terms_url?: string | null;
+  privacy_url?: string | null;
 }
 
 interface Summary {
@@ -522,6 +524,65 @@ export default function SettingsSection({ slug }: { slug: string }) {
             label="AI assistant"
             value={<Badge variant="outline">Coming soon</Badge>}
           />
+        </div>
+      </section>
+
+      {/* Legal / GDPR */}
+      <section>
+        <SectionHeader
+          title="Legal"
+          editing={editingSection === 'legal'}
+          onEdit={() => startEdit('legal')}
+          onCancel={cancelEdit}
+          onSave={() => saveSection(['terms_url', 'privacy_url'])}
+          saving={saving}
+        />
+        <div className="bg-surface rounded-lg border border-border px-4">
+          {editingSection === 'legal' ? (
+            <>
+              <EditRow label="Terms & Conditions URL">
+                <input
+                  type="url"
+                  value={draft.terms_url ?? ''}
+                  onChange={e => patchDraft({ terms_url: e.target.value || null })}
+                  className={inputCls}
+                  placeholder="https://..."
+                />
+              </EditRow>
+              <EditRow label="Privacy Policy URL">
+                <input
+                  type="url"
+                  value={draft.privacy_url ?? ''}
+                  onChange={e => patchDraft({ privacy_url: e.target.value || null })}
+                  className={inputCls}
+                  placeholder="https://..."
+                />
+              </EditRow>
+            </>
+          ) : (
+            <>
+              <Row
+                label="Terms & Conditions"
+                value={
+                  settings?.terms_url ? (
+                    <a href={settings.terms_url} target="_blank" rel="noopener noreferrer" className="text-blue-600 dark:text-blue-400 hover:underline text-xs break-all">
+                      {settings.terms_url}
+                    </a>
+                  ) : 'Not set'
+                }
+              />
+              <Row
+                label="Privacy Policy"
+                value={
+                  settings?.privacy_url ? (
+                    <a href={settings.privacy_url} target="_blank" rel="noopener noreferrer" className="text-blue-600 dark:text-blue-400 hover:underline text-xs break-all">
+                      {settings.privacy_url}
+                    </a>
+                  ) : 'Not set'
+                }
+              />
+            </>
+          )}
         </div>
       </section>
 

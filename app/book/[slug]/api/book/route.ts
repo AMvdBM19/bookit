@@ -4,8 +4,8 @@ import { checkAvailability } from '@/lib/availability/check';
 import { checkPoolAvailability } from '@/lib/availability/pool';
 import { effectiveDurationMinutes } from '@/lib/availability/duration';
 import { calculatePricing } from '@/lib/pricing/calculate';
-import type { FeatureFlags } from '@/lib/types/tenant-config';
-import { DEFAULT_FEATURE_FLAGS } from '@/lib/types/tenant-config';
+import type { FeatureFlags, ComplianceFlags } from '@/lib/types/tenant-config';
+import { DEFAULT_FEATURE_FLAGS, DEFAULT_COMPLIANCE_FLAGS } from '@/lib/types/tenant-config';
 import { notifyBookingRequest, sendWhatsApp, sendBookingEmail, createNotification } from '@/lib/notifications/dispatch';
 import { createDepositCheckout } from '@/lib/payments/checkout';
 import { checkRateLimit } from '@/lib/rate-limit/book';
@@ -31,6 +31,7 @@ interface BookingBody {
   age_confirmed?: boolean;
   /** Tenant-defined custom field values keyed by field_key (Phase 20-C). */
   custom_field_values?: Record<string, unknown>;
+  terms_accepted_at?: string;
 }
 
 interface BookingFieldDef {
@@ -103,11 +104,12 @@ export async function POST(
 
   const { data: tenantConfig } = await supabase
     .from('tenant_config')
-    .select('feature_flags')
+    .select('feature_flags, compliance_flags')
     .eq('tenant_id', tenant.id)
     .maybeSingle();
 
   const featureFlags = (tenantConfig?.feature_flags as FeatureFlags | undefined) ?? DEFAULT_FEATURE_FLAGS;
+  const complianceFlags = (tenantConfig?.compliance_flags as ComplianceFlags | undefined) ?? DEFAULT_COMPLIANCE_FLAGS;
 
   // Pool mode: clients book without choosing staff; the booking lands
   // unassigned. In staff_select mode a staff_id is mandatory.
@@ -118,6 +120,10 @@ export async function POST(
 
   if (settings?.require_age_confirm && !body.age_confirmed) {
     return NextResponse.json({ error: 'Age confirmation required' }, { status: 400 });
+  }
+
+  if (complianceFlags.require_terms_acceptance && !body.terms_accepted_at) {
+    return NextResponse.json({ error: 'You must accept the terms & conditions' }, { status: 400 });
   }
 
   if (featureFlags.require_booking_notes && !body.booking_notes?.trim()) {
@@ -447,6 +453,7 @@ export async function POST(
       // A client who picked their own staff owns the assignment. Pool bookings
       // land unassigned and get assigned_by set on claim/assign.
       assigned_by: staff ? 'client' : null,
+      terms_accepted_at: body.terms_accepted_at || null,
     })
     .select('id')
     .single();

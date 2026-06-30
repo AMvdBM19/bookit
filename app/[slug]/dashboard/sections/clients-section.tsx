@@ -5,6 +5,7 @@ import { toast } from 'sonner';
 import { useTenantConfig } from '@/lib/context/tenant-config';
 import Badge, { type BadgeVariant } from '@/components/ui/badge';
 import Modal from '@/components/ui/modal';
+import ConfirmDialog from '@/components/ui/confirm-dialog';
 import Spinner from '@/components/ui/spinner';
 import EmptyState from '@/components/ui/empty-state';
 
@@ -34,6 +35,7 @@ interface Guest {
   last_seen_at: string;
   created_at: string;
   is_blocked: boolean;
+  anonymized_at: string | null;
 }
 
 interface Client {
@@ -43,6 +45,7 @@ interface Client {
   phone: string | null;
   status: 'unverified' | 'pending' | 'approved' | 'rejected' | 'suspended';
   created_at: string;
+  anonymized_at: string | null;
 }
 
 const CLIENT_STATUS_VARIANTS: Record<string, BadgeVariant> = {
@@ -91,6 +94,7 @@ function GuestList({ slug }: { slug: string }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [blockTarget, setBlockTarget] = useState<Guest | null>(null);
+  const [anonymizeTarget, setAnonymizeTarget] = useState<Guest | null>(null);
 
   const reload = useCallback(async () => {
     setLoading(true);
@@ -167,17 +171,32 @@ function GuestList({ slug }: { slug: string }) {
                       {formatDateTime(g.last_seen_at)}
                     </td>
                     <td className="px-3 py-3 text-right">
-                      {g.is_blocked ? (
-                        <Badge variant="danger">Blocked</Badge>
-                      ) : (
-                        <button
-                          type="button"
-                          onClick={() => setBlockTarget(g)}
-                          className="text-xs px-2 py-1 bg-elevated hover:bg-red-100 hover:text-red-800 dark:hover:bg-red-500/20 dark:hover:text-red-400 text-fg rounded transition-colors"
-                        >
-                          Block
-                        </button>
-                      )}
+                      <div className="flex justify-end gap-1">
+                        {g.anonymized_at ? (
+                          <Badge variant="outline">Anonymized</Badge>
+                        ) : (
+                          <>
+                            {g.is_blocked ? (
+                              <Badge variant="danger">Blocked</Badge>
+                            ) : (
+                              <button
+                                type="button"
+                                onClick={() => setBlockTarget(g)}
+                                className="text-xs px-2 py-1 bg-elevated hover:bg-red-100 hover:text-red-800 dark:hover:bg-red-500/20 dark:hover:text-red-400 text-fg rounded transition-colors"
+                              >
+                                Block
+                              </button>
+                            )}
+                            <button
+                              type="button"
+                              onClick={() => setAnonymizeTarget(g)}
+                              className="text-xs px-2 py-1 bg-elevated hover:bg-red-100 hover:text-red-800 dark:hover:bg-red-500/20 dark:hover:text-red-400 text-fg rounded transition-colors"
+                            >
+                              Erase
+                            </button>
+                          </>
+                        )}
+                      </div>
                     </td>
                   </tr>
                 ))}
@@ -195,6 +214,29 @@ function GuestList({ slug }: { slug: string }) {
             setBlockTarget(null);
             reload();
           }}
+        />
+      )}
+
+      {anonymizeTarget && (
+        <ConfirmDialog
+          title="Anonymize client data"
+          description={`Permanently erase all personal data for ${anonymizeTarget.name} (${anonymizeTarget.email})? This includes name, email, phone, and booking notes. This action cannot be undone.`}
+          confirmLabel="Erase data"
+          confirmVariant="destructive"
+          onConfirm={async () => {
+            const res = await fetch(`/api/${slug}/clients/${anonymizeTarget.id}/anonymize`, {
+              method: 'POST',
+            });
+            if (res.ok) {
+              toast.success('Client data anonymized.');
+              setAnonymizeTarget(null);
+              reload();
+            } else {
+              const data = await res.json().catch(() => ({}));
+              toast.error(data.error ?? 'Anonymization failed.');
+            }
+          }}
+          onClose={() => setAnonymizeTarget(null)}
         />
       )}
     </div>
@@ -294,6 +336,7 @@ function ClientList({ slug }: { slug: string }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
+  const [anonymizeTarget, setAnonymizeTarget] = useState<Client | null>(null);
 
   const reload = useCallback(async () => {
     setLoading(true);
@@ -397,25 +440,39 @@ function ClientList({ slug }: { slug: string }) {
                       </td>
                       <td className="px-3 py-3 text-right">
                         <div className="flex justify-end gap-1">
-                          {c.status !== 'approved' && (
-                            <button
-                              type="button"
-                              onClick={() => setStatus(c, 'approved')}
-                              disabled={busy}
-                              className="text-xs px-2 py-1 bg-emerald-600 hover:bg-emerald-500 text-white rounded disabled:opacity-50"
-                            >
-                              Approve
-                            </button>
-                          )}
-                          {c.status !== 'suspended' && (
-                            <button
-                              type="button"
-                              onClick={() => setStatus(c, 'suspended')}
-                              disabled={busy}
-                              className="text-xs px-2 py-1 bg-elevated hover:bg-sunken text-fg rounded disabled:opacity-50"
-                            >
-                              Suspend
-                            </button>
+                          {c.anonymized_at ? (
+                            <Badge variant="outline">Anonymized</Badge>
+                          ) : (
+                            <>
+                              {c.status !== 'approved' && (
+                                <button
+                                  type="button"
+                                  onClick={() => setStatus(c, 'approved')}
+                                  disabled={busy}
+                                  className="text-xs px-2 py-1 bg-emerald-600 hover:bg-emerald-500 text-white rounded disabled:opacity-50"
+                                >
+                                  Approve
+                                </button>
+                              )}
+                              {c.status !== 'suspended' && (
+                                <button
+                                  type="button"
+                                  onClick={() => setStatus(c, 'suspended')}
+                                  disabled={busy}
+                                  className="text-xs px-2 py-1 bg-elevated hover:bg-sunken text-fg rounded disabled:opacity-50"
+                                >
+                                  Suspend
+                                </button>
+                              )}
+                              <button
+                                type="button"
+                                onClick={() => setAnonymizeTarget(c)}
+                                disabled={busy}
+                                className="text-xs px-2 py-1 bg-elevated hover:bg-red-100 hover:text-red-800 dark:hover:bg-red-500/20 dark:hover:text-red-400 text-fg rounded transition-colors disabled:opacity-50"
+                              >
+                                Erase
+                              </button>
+                            </>
                           )}
                         </div>
                       </td>
@@ -426,6 +483,29 @@ function ClientList({ slug }: { slug: string }) {
           </table>
         </div>
       </div>
+
+      {anonymizeTarget && (
+        <ConfirmDialog
+          title="Anonymize client data"
+          description={`Permanently erase all personal data for ${anonymizeTarget.display_name} (${anonymizeTarget.email})? This includes name, email, phone, and booking notes. This action cannot be undone.`}
+          confirmLabel="Erase data"
+          confirmVariant="destructive"
+          onConfirm={async () => {
+            const res = await fetch(`/api/${slug}/clients/${anonymizeTarget.id}/anonymize`, {
+              method: 'POST',
+            });
+            if (res.ok) {
+              toast.success('Client data anonymized.');
+              setAnonymizeTarget(null);
+              reload();
+            } else {
+              const data = await res.json().catch(() => ({}));
+              toast.error(data.error ?? 'Anonymization failed.');
+            }
+          }}
+          onClose={() => setAnonymizeTarget(null)}
+        />
+      )}
     </div>
   );
 }

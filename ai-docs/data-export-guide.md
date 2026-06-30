@@ -55,8 +55,10 @@ button either way.
 - The clients export is the practical answer to an **Art. 20 data
   portability** request; the bookings export filtered by that client's
   email covers their booking history.
-- Erasure ("right to be forgotten") is **not** self-service — route
-  deletion/anonymization requests to platform support.
+- **Erasure** ("right to be forgotten"): agents can erase a specific
+  client/guest from the Clients/Guests tab via the "Erase" button —
+  see client-guide.md for details. A single-client JSON export is also
+  available from the same list.
 - The bookings export doubles as the bookkeeping/handover artifact
   (total_price column + the no-show policy from pricing-guide.md).
 

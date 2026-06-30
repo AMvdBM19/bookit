@@ -50,6 +50,13 @@ age gate.
 Other compliance flags (KvK field, license, GDPR photo consent, terms
 acceptance) are template-level notices, not tenant-editable.
 
+## Legal section
+
+| Field | Effect |
+|---|---|
+| **Terms & conditions URL** | Link shown to clients in the widget. When `require_terms_acceptance` is active, clients must tick a checkbox to confirm before submitting. |
+| **Privacy policy URL** | Link shown alongside terms when both are set. If only the privacy URL is set (without mandatory acceptance), a subtle "Privacy policy" link appears below the submit button. |
+
 ## Integrations section
 
 - **WhatsApp** — shows a status badge ("Not configured" / "Active

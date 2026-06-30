@@ -48,6 +48,9 @@ const EDITABLE_FIELDS = [
   'widget_show_powered_by',
   'widget_logo_url',
   'widget_language',
+  // GDPR / terms (Phase 21-D4)
+  'terms_url',
+  'privacy_url',
 ] as const;
 
 type EditableField = (typeof EDITABLE_FIELDS)[number];

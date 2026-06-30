@@ -76,10 +76,8 @@ const DEFAULT_SETTINGS: DefaultSettings = {
   deposit_required_above_minutes: 60,
 };
 
-const KEY_STORAGE = 'bookit:super_admin_key';
-
-function authHeaders(key: string) {
-  return { Authorization: `Bearer ${key}`, 'Content-Type': 'application/json' };
+function authHeaders() {
+  return { 'Content-Type': 'application/json' };
 }
 
 function formatDate(iso: string) {
@@ -91,31 +89,51 @@ function formatDate(iso: string) {
 }
 
 export default function SuperAdminPage() {
-  const [apiKey, setApiKey] = useState<string>('');
+  const [authed, setAuthed] = useState(false);
+  const [checking, setChecking] = useState(true);
   const [keyInput, setKeyInput] = useState('');
   const [tab, setTab] = useState<'tenants' | 'templates'>('tenants');
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    const stored = typeof window !== 'undefined' ? sessionStorage.getItem(KEY_STORAGE) : null;
-    if (stored) setApiKey(stored);
+    fetch('/api/super-admin/tenants', { headers: authHeaders() })
+      .then(r => { if (r.ok) setAuthed(true); })
+      .finally(() => setChecking(false));
   }, []);
 
-  function saveKey(e: React.FormEvent) {
+  async function saveKey(e: React.FormEvent) {
     e.preventDefault();
     if (!keyInput.trim()) return;
-    sessionStorage.setItem(KEY_STORAGE, keyInput.trim());
-    setApiKey(keyInput.trim());
+    setError(null);
+    const res = await fetch('/api/super-admin/auth', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ key: keyInput.trim() }),
+    });
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      setError(data.error ?? 'Login failed');
+      return;
+    }
+    setAuthed(true);
     setKeyInput('');
   }
 
-  function logout() {
-    sessionStorage.removeItem(KEY_STORAGE);
-    setApiKey('');
+  async function logout() {
+    await fetch('/api/super-admin/auth', { method: 'DELETE' });
+    setAuthed(false);
     setError(null);
   }
 
-  if (!apiKey) {
+  if (checking) {
+    return (
+      <div className="min-h-screen bg-zinc-950 flex items-center justify-center">
+        <div className="text-zinc-500 text-sm">Loading…</div>
+      </div>
+    );
+  }
+
+  if (!authed) {
     return (
       <div className="min-h-screen bg-zinc-950 flex items-center justify-center px-4">
         <div className="w-full max-w-sm bg-zinc-900 rounded-xl border border-zinc-800 p-8 shadow-lg">
@@ -178,9 +196,9 @@ export default function SuperAdminPage() {
 
       <main className="p-6">
         {tab === 'tenants' ? (
-          <TenantsTab apiKey={apiKey} onAuthError={() => { setError('Invalid API key'); logout(); }} />
+          <TenantsTab onAuthError={() => { setError('Invalid API key'); logout(); }} />
         ) : (
-          <TemplatesTab apiKey={apiKey} />
+          <TemplatesTab />
         )}
       </main>
     </div>
@@ -189,7 +207,7 @@ export default function SuperAdminPage() {
 
 /* ------------------------------------------------------------------ Tenants */
 
-function TenantsTab({ apiKey, onAuthError }: { apiKey: string; onAuthError: () => void }) {
+function TenantsTab({ onAuthError }: { onAuthError: () => void }) {
   const [tenants, setTenants] = useState<TenantRow[]>([]);
   const [templates, setTemplates] = useState<TemplateRow[]>([]);
   const [loading, setLoading] = useState(false);
@@ -205,7 +223,7 @@ function TenantsTab({ apiKey, onAuthError }: { apiKey: string; onAuthError: () =
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch('/api/super-admin/tenants', { headers: authHeaders(apiKey) });
+      const res = await fetch('/api/super-admin/tenants', { headers: authHeaders() });
       if (res.status === 401) {
         onAuthError();
         return;
@@ -221,17 +239,17 @@ function TenantsTab({ apiKey, onAuthError }: { apiKey: string; onAuthError: () =
     } finally {
       setLoading(false);
     }
-  }, [apiKey, onAuthError]);
+  }, [onAuthError]);
 
   const loadTemplates = useCallback(async () => {
     try {
-      const res = await fetch('/api/super-admin/templates', { headers: authHeaders(apiKey) });
+      const res = await fetch('/api/super-admin/templates', { headers: authHeaders() });
       const data = await res.json();
       if (res.ok) setTemplates(data.templates ?? []);
     } catch {
       /* non-fatal */
     }
-  }, [apiKey]);
+  }, []);
 
   useEffect(() => {
     reload();
@@ -243,7 +261,7 @@ function TenantsTab({ apiKey, onAuthError }: { apiKey: string; onAuthError: () =
     try {
       const res = await fetch(`/api/super-admin/tenants/${t.id}`, {
         method: 'PATCH',
-        headers: authHeaders(apiKey),
+        headers: authHeaders(),
         body: JSON.stringify({ is_active: !t.is_active }),
       });
       if (!res.ok) {
@@ -263,7 +281,7 @@ function TenantsTab({ apiKey, onAuthError }: { apiKey: string; onAuthError: () =
     setStatsLoading(tenantId);
     try {
       const res = await fetch(`/api/super-admin/tenants/${tenantId}/stats`, {
-        headers: authHeaders(apiKey),
+        headers: authHeaders(),
       });
       const data = await res.json();
       if (res.ok) setStatsCache(prev => ({ ...prev, [tenantId]: data.stats }));
@@ -379,7 +397,7 @@ function TenantsTab({ apiKey, onAuthError }: { apiKey: string; onAuthError: () =
                           {statsCache[t.id] && <StatsPanel stats={statsCache[t.id]} />}
                           {statsCache[t.id] && (
                             <StaffLimitEditor
-                              apiKey={apiKey}
+
                               tenantId={t.id}
                               current={statsCache[t.id].max_staff ?? 5}
                               onSaved={next =>
@@ -390,7 +408,7 @@ function TenantsTab({ apiKey, onAuthError }: { apiKey: string; onAuthError: () =
                               }
                             />
                           )}
-                          <TenantConfigPanel apiKey={apiKey} tenantId={t.id} templates={templates} />
+                          <TenantConfigPanel tenantId={t.id} templates={templates} />
                         </td>
                       </tr>
                     )}
@@ -404,7 +422,6 @@ function TenantsTab({ apiKey, onAuthError }: { apiKey: string; onAuthError: () =
 
       {showCreate && (
         <CreateTenantModal
-          apiKey={apiKey}
           templates={templates}
           onClose={() => setShowCreate(false)}
           onCreated={() => {
@@ -468,12 +485,10 @@ function Card({ label, value }: { label: string; value: string | number }) {
 
 // Phase 19 A6: super-admin editor for a tenant's staff seat limit.
 function StaffLimitEditor({
-  apiKey,
   tenantId,
   current,
   onSaved,
 }: {
-  apiKey: string;
   tenantId: string;
   current: number;
   onSaved: (next: number) => void;
@@ -491,7 +506,7 @@ function StaffLimitEditor({
     try {
       const res = await fetch(`/api/super-admin/tenants/${tenantId}`, {
         method: 'PATCH',
-        headers: authHeaders(apiKey),
+        headers: authHeaders(),
         body: JSON.stringify({ max_staff: n }),
       });
       if (!res.ok) {
@@ -532,11 +547,9 @@ function StaffLimitEditor({
 }
 
 function TenantConfigPanel({
-  apiKey,
   tenantId,
   templates,
 }: {
-  apiKey: string;
   tenantId: string;
   templates: TemplateRow[];
 }) {
@@ -548,14 +561,14 @@ function TenantConfigPanel({
     setLoading(true);
     try {
       const res = await fetch(`/api/super-admin/tenants/${tenantId}/config`, {
-        headers: authHeaders(apiKey),
+        headers: authHeaders(),
       });
       const data = await res.json();
       if (res.ok) setConfig(data.config);
     } finally {
       setLoading(false);
     }
-  }, [apiKey, tenantId]);
+  }, [tenantId]);
 
   useEffect(() => {
     load();
@@ -604,7 +617,6 @@ function TenantConfigPanel({
 
       {showReset && (
         <ResetConfigModal
-          apiKey={apiKey}
           tenantId={tenantId}
           templates={templates}
           currentSlug={config.source_template_slug}
@@ -620,14 +632,12 @@ function TenantConfigPanel({
 }
 
 function ResetConfigModal({
-  apiKey,
   tenantId,
   templates,
   currentSlug,
   onClose,
   onReset,
 }: {
-  apiKey: string;
   tenantId: string;
   templates: TemplateRow[];
   currentSlug: string | null;
@@ -647,7 +657,7 @@ function ResetConfigModal({
     try {
       const res = await fetch(`/api/super-admin/tenants/${tenantId}/reset-config`, {
         method: 'POST',
-        headers: authHeaders(apiKey),
+        headers: authHeaders(),
         body: JSON.stringify({ template_slug: slug, reset_settings: resetSettings, reset_tags: resetTags }),
       });
       const data = await res.json();
@@ -718,12 +728,10 @@ function ResetConfigModal({
 }
 
 function CreateTenantModal({
-  apiKey,
   templates,
   onClose,
   onCreated,
 }: {
-  apiKey: string;
   templates: TemplateRow[];
   onClose: () => void;
   onCreated: () => void;
@@ -745,7 +753,7 @@ function CreateTenantModal({
     try {
       const res = await fetch('/api/super-admin/tenants', {
         method: 'POST',
-        headers: authHeaders(apiKey),
+        headers: authHeaders(),
         body: JSON.stringify({
           name,
           slug,
@@ -886,7 +894,7 @@ function CreateTenantModal({
 
 /* ---------------------------------------------------------------- Templates */
 
-function TemplatesTab({ apiKey }: { apiKey: string }) {
+function TemplatesTab() {
   const [templates, setTemplates] = useState<TemplateRow[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -898,7 +906,7 @@ function TemplatesTab({ apiKey }: { apiKey: string }) {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch('/api/super-admin/templates', { headers: authHeaders(apiKey) });
+      const res = await fetch('/api/super-admin/templates', { headers: authHeaders() });
       const data = await res.json();
       if (!res.ok) {
         setError(data.error ?? 'Failed to load templates');
@@ -910,7 +918,7 @@ function TemplatesTab({ apiKey }: { apiKey: string }) {
     } finally {
       setLoading(false);
     }
-  }, [apiKey]);
+  }, []);
 
   useEffect(() => {
     reload();
@@ -922,7 +930,7 @@ function TemplatesTab({ apiKey }: { apiKey: string }) {
     try {
       const res = await fetch(`/api/super-admin/templates/${t.id}`, {
         method: 'PATCH',
-        headers: authHeaders(apiKey),
+        headers: authHeaders(),
         body: JSON.stringify({ is_active: !t.is_active }),
       });
       if (!res.ok) {
@@ -942,7 +950,7 @@ function TemplatesTab({ apiKey }: { apiKey: string }) {
     try {
       const res = await fetch('/api/super-admin/templates', {
         method: 'POST',
-        headers: authHeaders(apiKey),
+        headers: authHeaders(),
         body: JSON.stringify({
           slug: `${t.slug}_copy`,
           label: `${t.label} (copy)`,
@@ -1071,7 +1079,6 @@ function TemplatesTab({ apiKey }: { apiKey: string }) {
 
       {(showCreate || editing) && (
         <TemplateFormModal
-          apiKey={apiKey}
           template={editing}
           onClose={() => {
             setShowCreate(false);
@@ -1089,12 +1096,10 @@ function TemplatesTab({ apiKey }: { apiKey: string }) {
 }
 
 function TemplateFormModal({
-  apiKey,
   template,
   onClose,
   onSaved,
 }: {
-  apiKey: string;
   template: TemplateRow | null;
   onClose: () => void;
   onSaved: () => void;
@@ -1151,12 +1156,12 @@ function TemplateFormModal({
       const res = isEdit
         ? await fetch(`/api/super-admin/templates/${template!.id}`, {
             method: 'PATCH',
-            headers: authHeaders(apiKey),
+            headers: authHeaders(),
             body: JSON.stringify({ ...payload, is_active: isActive }),
           })
         : await fetch('/api/super-admin/templates', {
             method: 'POST',
-            headers: authHeaders(apiKey),
+            headers: authHeaders(),
             body: JSON.stringify({ slug, ...payload }),
           });
       const data = await res.json();

@@ -73,8 +73,15 @@ notifications-guide.md.
 - Client/guest personal data stays within the tenant — staff see only the
   client name on their own bookings.
 - The CSV export (data-export-guide.md) supports data-portability requests.
-- Deletion/anonymization requests are not self-service yet; route them to
-  platform support.
+- **Erasure (GDPR Art. 17)**: agents can erase a client/guest from the
+  Clients or Guests tab via the "Erase" button. This anonymizes the name,
+  email, phone and all PII in related bookings. The action is irreversible
+  and logged. Already-erased records show an "Anonymized" badge.
+- **Data export**: agents can download a single client's record + all
+  bookings as a JSON file via the export button in the client/guest list.
+- **Retention cron**: if the tenant's `gdpr_retention_years` is set and
+  `ENABLE_RETENTION_CRON` is active, clients whose last booking is older
+  than the threshold are auto-anonymized nightly.
 
 ## Common owner questions
 

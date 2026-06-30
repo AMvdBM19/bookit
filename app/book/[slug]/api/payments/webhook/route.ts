@@ -21,6 +21,18 @@ export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ slug: string }> }
 ) {
+  try {
+    return await handleWebhook(request, params);
+  } catch (err) {
+    console.error('[payments:webhook] unhandled error:', err);
+    return NextResponse.json({ ok: true });
+  }
+}
+
+async function handleWebhook(
+  request: NextRequest,
+  params: Promise<{ slug: string }>
+) {
   const { slug } = await params;
 
   // Mollie posts application/x-www-form-urlencoded with id=tr_xxx.
@@ -33,7 +45,6 @@ export async function POST(
     molliePaymentId = body?.id ? String(body.id) : '';
   }
   if (!molliePaymentId) {
-    // Nothing actionable — ack so Mollie stops.
     return NextResponse.json({ ok: true });
   }
 

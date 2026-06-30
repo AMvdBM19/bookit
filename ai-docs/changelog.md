@@ -3,6 +3,40 @@
 > Feature history for the AI assistant: what exists and since when. Newest
 > first. Maintained per the AI Docs Maintenance Protocol in CLAUDE.md.
 
+## 2026-06-30 — Production Hardening (Phase 21)
+
+- **Error tracking**: Sentry integration for client, server and edge runtimes.
+  PII (cookies, email, IP) is scrubbed before events leave the browser/server.
+  Enabled by setting `SENTRY_DSN` / `NEXT_PUBLIC_SENTRY_DSN` env vars.
+- **Health endpoint**: `GET /api/health` returns `{ ok, ts, db }` — shallow
+  Supabase probe with a 3-second timeout. Used by the Docker HEALTHCHECK and
+  external uptime monitors.
+- **Super-admin auth hardening**: login now sets an httpOnly cookie (4-hour
+  TTL) instead of storing the API key in sessionStorage. Rate-limited to 5
+  attempts per 60 seconds per IP. Logout clears the cookie.
+- **GDPR client erasure** (Article 17): agents can erase a client from the
+  Clients/Guests tab via an "Erase" button. Anonymizes name, email, phone and
+  all PII in related bookings. An audit row is written to notification_log.
+  Idempotent — already-anonymized clients show an "Anonymized" badge.
+- **GDPR data export**: agents can download a client's record + all bookings
+  as a JSON file from the Clients/Guests tab.
+- **Retention cron**: daily job (04:00 UTC) auto-anonymizes clients whose last
+  booking is older than the tenant's `gdpr_retention_years` setting. Gated by
+  `ENABLE_RETENTION_CRON=true` env var.
+- **Terms & privacy consent**: when `require_terms_acceptance` compliance flag
+  is active, the booking widget shows a mandatory checkbox before submit.
+  `terms_url` and `privacy_url` can be set in Settings → Legal. A subtle
+  privacy link appears even without mandatory acceptance if `privacy_url` is set.
+  The accepted timestamp is stored on the booking row (`terms_accepted_at`).
+- **Webhook hardening**: payment webhook wrapped in top-level try/catch so
+  unhandled errors never leak stack traces or cause retries from Mollie.
+- **Seed safety guard**: `seed.sql` now refuses to run if non-seed tenants
+  exist, preventing accidental execution against production.
+- **Migration drift script**: `scripts/check-migration-drift.sh` compares
+  local migration files against Supabase's applied migrations.
+- **VPS backup**: nightly `pg_dump` cron at 03:00 CET, 7-day retention, with
+  restore documentation.
+
 ## 2026-06-29 — Phase 20 follow-up fixes
 
 - **File upload field**: file-type booking fields now accept **JPEG, PNG, WebP,

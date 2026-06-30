@@ -181,7 +181,7 @@ function BookingWidgetInner({ slug, catalog, lang }: Required<Props>) {
     goTo('confirm');
   }
 
-  async function handleSubmit() {
+  async function handleSubmit(opts?: { termsAcceptedAt?: string }) {
     if ((!selectedStaff && !isPool) || !state.selectedDate || !state.selectedSlot) return;
     update({ submitting: true, submitError: null });
 
@@ -203,6 +203,7 @@ function BookingWidgetInner({ slug, catalog, lang }: Required<Props>) {
           booking_notes: state.bookingNotes || undefined,
           age_confirmed: state.ageConfirmed,
           custom_field_values: state.customFieldValues,
+          terms_accepted_at: opts?.termsAcceptedAt || undefined,
         }),
       });
 
@@ -468,6 +469,9 @@ function BookingWidgetInner({ slug, catalog, lang }: Required<Props>) {
                   isGuestMode={!isAccountMode}
                   depositsSupported={catalog.featureFlags.deposits_supported}
                   basePriceLabel={catalog.terminology.base_price_label}
+                  requireTermsAcceptance={catalog.complianceFlags.require_terms_acceptance}
+                  termsUrl={catalog.settings?.terms_url}
+                  privacyUrl={catalog.settings?.privacy_url}
                 />
                 <div className="flex justify-between gap-2 pt-2">
                   <button

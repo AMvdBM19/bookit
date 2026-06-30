@@ -1,3 +1,5 @@
+import { withSentryConfig } from '@sentry/nextjs';
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   output: 'standalone',
@@ -27,4 +29,15 @@ const nextConfig = {
   },
 };
 
-export default nextConfig;
+const sentryConfig = process.env.NEXT_PUBLIC_SENTRY_DSN
+  ? withSentryConfig(nextConfig, {
+      silent: true,
+      org: process.env.SENTRY_ORG,
+      project: process.env.SENTRY_PROJECT,
+      disableSourceMapUpload: !process.env.SENTRY_AUTH_TOKEN,
+      hideSourceMaps: true,
+      tunnelRoute: '/monitoring',
+    })
+  : nextConfig;
+
+export default sentryConfig;

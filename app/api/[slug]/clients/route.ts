@@ -14,7 +14,7 @@ export async function GET() {
 
   const { data, error } = await supabase
     .from('clients')
-    .select('id, display_name, email, phone, status, status_reason, approved_at, created_at, wa_opt_in')
+    .select('id, display_name, email, phone, status, status_reason, approved_at, created_at, wa_opt_in, anonymized_at')
     .eq('tenant_id', user.tenantId)
     .order('created_at', { ascending: false });
 

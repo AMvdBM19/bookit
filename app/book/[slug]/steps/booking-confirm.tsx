@@ -1,5 +1,6 @@
 'use client';
 
+import { useState } from 'react';
 import Spinner from '@/components/ui/spinner';
 import type { CatalogSettings, CatalogStaff } from '../catalog-loader';
 import { formatWidgetMoney } from '@/lib/widget-i18n';
@@ -24,11 +25,14 @@ interface Props {
   settings: CatalogSettings | null;
   submitting: boolean;
   submitError: string | null;
-  onSubmit: () => void;
+  onSubmit: (opts?: { termsAcceptedAt?: string }) => void;
   brandColor: string;
   isGuestMode: boolean;
   depositsSupported: boolean;
   basePriceLabel: string;
+  requireTermsAcceptance?: boolean;
+  termsUrl?: string | null;
+  privacyUrl?: string | null;
 }
 
 function formatDate(dateStr: string, locale: string): string {
@@ -68,7 +72,11 @@ export default function BookingConfirm({
   isGuestMode,
   depositsSupported,
   basePriceLabel,
+  requireTermsAcceptance = false,
+  termsUrl,
+  privacyUrl,
 }: Props) {
+  const [termsAccepted, setTermsAccepted] = useState(false);
   const t = useWidgetStrings();
   const showPrice = settings?.show_price_to_client ?? false;
   const baseRate = settings?.base_rate_per_30min ?? 60;
@@ -174,18 +182,55 @@ export default function BookingConfirm({
         </div>
       )}
 
+      {requireTermsAcceptance && (
+        <label className="flex items-start gap-2 cursor-pointer">
+          <input
+            type="checkbox"
+            checked={termsAccepted}
+            onChange={e => setTermsAccepted(e.target.checked)}
+            className="mt-0.5 accent-[var(--w-primary)]"
+          />
+          <span className="text-xs w-tx-soft">
+            I agree to the{' '}
+            {termsUrl ? (
+              <a href={termsUrl} target="_blank" rel="noopener noreferrer" className="underline w-tx">
+                terms &amp; conditions
+              </a>
+            ) : (
+              'terms & conditions'
+            )}
+            {privacyUrl && (
+              <>
+                {' '}and{' '}
+                <a href={privacyUrl} target="_blank" rel="noopener noreferrer" className="underline w-tx">
+                  privacy policy
+                </a>
+              </>
+            )}
+          </span>
+        </label>
+      )}
+
       {submitError && <p className="text-red-400 text-xs">{submitError}</p>}
 
       <button
         type="button"
-        onClick={onSubmit}
-        disabled={submitting}
+        onClick={() => onSubmit(requireTermsAcceptance && termsAccepted ? { termsAcceptedAt: new Date().toISOString() } : undefined)}
+        disabled={submitting || (requireTermsAcceptance && !termsAccepted)}
         className="w-full w-round py-2.5 text-sm font-medium transition-opacity hover:opacity-90 disabled:opacity-50 focus:outline-none w-focus inline-flex items-center justify-center gap-2"
         style={{ backgroundColor: brandColor, color: '#fff' }}
       >
         {submitting && <Spinner size="sm" />}
         {submitting ? t.submitting : t.submitBooking}
       </button>
+
+      {!requireTermsAcceptance && privacyUrl && (
+        <p className="text-[10px] w-tx3 text-center">
+          <a href={privacyUrl} target="_blank" rel="noopener noreferrer" className="underline">
+            Privacy policy
+          </a>
+        </p>
+      )}
 
       {isGuestMode && (
         <p className="text-[10px] w-tx3 text-center">
