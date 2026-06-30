@@ -100,6 +100,37 @@ export async function POST(
     }
   }
 
+  // 1c. Persist business hours
+  const businessHoursEnabled = body.business_hours_enabled === true;
+  const businessHours: Array<{
+    day_of_week: number;
+    open_time: string;
+    close_time: string;
+    is_active: boolean;
+  }> = Array.isArray(body.business_hours) ? body.business_hours : [];
+
+  if (businessHours.length > 0) {
+    await supabase
+      .from('business_hours')
+      .delete()
+      .eq('tenant_id', tenantId);
+
+    const hourRows = businessHours.map(h => ({
+      tenant_id: tenantId,
+      day_of_week: h.day_of_week,
+      open_time: h.open_time,
+      close_time: h.close_time,
+      is_active: h.is_active !== false,
+    }));
+
+    await supabase.from('business_hours').insert(hourRows);
+  }
+
+  await supabase
+    .from('tenant_settings')
+    .update({ business_hours_enabled: businessHoursEnabled })
+    .eq('tenant_id', tenantId);
+
   // 2. Update tenants with identity fields
   const tenantUpdate: Record<string, unknown> = {};
   if (body.kvk_number) tenantUpdate.kvk_number = body.kvk_number;

@@ -40,8 +40,9 @@ export default function StepServices({ state, onChange, error }: Props) {
   return (
     <div className="space-y-4">
       <p className="text-xs text-zinc-500">
-        These {servicePluralLower} are pre-populated from your industry template.
-        Edit, remove, or add your own. At least one is required.
+        These optional {servicePluralLower} let customers pick add-ons or
+        sub-services when booking. They&apos;re pre-populated from your template —
+        edit, remove, or add your own. You can also skip this step entirely.
       </p>
 
       <div className="flex flex-wrap gap-2">
@@ -62,7 +63,10 @@ export default function StepServices({ state, onChange, error }: Props) {
           </span>
         ))}
         {state.service_tags.length === 0 && (
-          <p className="text-xs text-zinc-600 italic">No {servicePluralLower} yet.</p>
+          <p className="text-xs text-zinc-600 italic">
+            No {servicePluralLower} yet — that&apos;s fine. Your customers will book
+            your main service directly.
+          </p>
         )}
       </div>
 

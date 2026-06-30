@@ -68,6 +68,9 @@ app/book/[slug]/api/     — catalog, availability, book endpoints
 lib/widget-theme.ts      — widget theming (WidgetTheme, PRESETS, themeToVars/CSS, settings mapping); widget renders from --w-* CSS vars set in app/book/[slug]/layout.tsx, live-preview via postMessage 'bookit:theme-override'
 app/api/[slug]/staff/    — staff creation API (agent-only)
 lib/whatsapp/            — WA provider abstraction (Twilio + Meta)
+lib/availability/business-hours.ts — business hours query + slot clamping helpers
+app/api/[slug]/business-hours/     — GET/PUT business hours schedule (agent-only)
+app/api/[slug]/bookings/[bookingId]/file/ — unified signed URL endpoint for booking files
 supabase/migrations/   — DB schema
 supabase/seed.sql      — demo data (inkhaus + velours-demo)
 
@@ -116,6 +119,7 @@ Phase 11C: ✅ Pool booking mode (booking_mode flag, wizard step, pool availabil
 Phase 12A: ✅ Widget customizer (CSS variable theming, live preview, 8 presets, embed code export, new Widget dashboard tab)
 Tier 1 Polish Sprint: ✅ Groups 1-10 (shared UI components, toasts, loading/empty states, confirm dialogs, onboarding checklist, per-service duration, buffer time, staff days off UI, CSV export, AI assistant foundation)
 Phase 21: ✅ Production Hardening (Sentry error tracking, /api/health endpoint, Docker HEALTHCHECK, super-admin httpOnly cookie auth, RLS audit, webhook hardening, GDPR client anonymization + data export + retention cron, terms/privacy consent on widget, seed.sql safety guard, migration drift script, VPS backup infrastructure)
+Phase 22: ✅ Onboarding Config Ownership + Service Tags Optional + Business Working Hours + File Preview (default_slot_minutes wizard-owned, zero-tag tenants, business_hours table + availability clamping + widget closed days, unified /file endpoint + image thumbnails + download links)
 
 ## Deposits
 Widget shows a deposit notice when deposits_supported flag is true AND deposit_pct>0 AND duration>deposit_required_above_minutes.

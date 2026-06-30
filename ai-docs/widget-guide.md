@@ -17,10 +17,11 @@ booking, services…) comes from the tenant's template.
    auto-skipped when only one staff member exists.
 2. **Date & time** — a month-grid calendar with previous/next month
    navigation, bounded by the minimum lead time (below) and the tenant's
-   max booking window (above); out-of-range days are disabled. Tapping a
-   date loads free slots. Slot length is the default slot minutes, or — with
-   per-service duration on — the summed durations of the selected services
-   that block the slot (non-blocking services add price but no time).
+   max booking window (above); out-of-range days are disabled. When business
+   hours are enabled, closed days are also greyed out and unselectable.
+   Tapping a date loads free slots. Slot length is the default slot minutes,
+   or — with per-service duration on — the summed durations of the selected
+   services that block the slot (non-blocking services add price but no time).
 3. **Details** — name, email, phone (optional), service selection, notes
    (label, placeholder and required-ness are template-driven), and an age
    confirmation checkbox when the age gate is active. Each service can show a

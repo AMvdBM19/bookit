@@ -21,6 +21,7 @@ interface Settings {
   logo_url: string | null;
   brand_color: string | null;
   booking_confirm_mode: string;
+  default_slot_minutes: number;
   base_rate_per_30min: number;
   currency: string;
   min_lead_time_hours: number;
@@ -291,6 +292,7 @@ export default function SettingsSection({ slug }: { slug: string }) {
           onSave={() =>
             saveSection([
               'booking_confirm_mode',
+              'default_slot_minutes',
               'min_lead_time_hours',
               'max_booking_days_ahead',
               'reminder_lead_time_minutes',
@@ -312,6 +314,18 @@ export default function SettingsSection({ slug }: { slug: string }) {
                   <option value="staff_must_accept">{terminology.staff} must accept</option>
                   <option value="auto_confirm">Auto-confirm</option>
                 </select>
+              </EditRow>
+              <EditRow label="Default slot duration (min)">
+                <input
+                  type="number"
+                  min={5}
+                  max={480}
+                  step={5}
+                  value={draft.default_slot_minutes ?? 30}
+                  onChange={e => patchDraft({ default_slot_minutes: Number(e.target.value) })}
+                  className={inputCls}
+                />
+                <p className="text-[11px] text-fg-muted mt-1">Base duration for each {terminology.booking.toLowerCase()}.</p>
               </EditRow>
               <EditRow label="Min lead time (h)">
                 <input
@@ -375,6 +389,7 @@ export default function SettingsSection({ slug }: { slug: string }) {
                     : `${terminology.staff} must accept`
                 }
               />
+              <Row label="Default slot duration" value={`${settings?.default_slot_minutes ?? 30} min`} />
               <Row label="Min lead time" value={`${settings?.min_lead_time_hours ?? '—'} h`} />
               <Row
                 label="Max booking window"
@@ -393,6 +408,9 @@ export default function SettingsSection({ slug }: { slug: string }) {
           )}
         </div>
       </section>
+
+      {/* Business Hours */}
+      <BusinessHoursSection slug={slug} />
 
       {/* Compliance */}
       <section>
@@ -649,6 +667,172 @@ export default function SettingsSection({ slug }: { slug: string }) {
         </div>
       )}
     </div>
+  );
+}
+
+/* ------------------------------------------------ Business hours section */
+
+const DAY_LABELS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+
+interface BusinessHour {
+  day_of_week: number;
+  open_time: string;
+  close_time: string;
+  is_active: boolean;
+}
+
+function BusinessHoursSection({ slug }: { slug: string }) {
+  const { terminology } = useTenantConfig();
+  const [loading, setLoading] = useState(true);
+  const [enabled, setEnabled] = useState(false);
+  const [hours, setHours] = useState<BusinessHour[]>([]);
+  const [editing, setEditing] = useState(false);
+  const [draftEnabled, setDraftEnabled] = useState(false);
+  const [draftHours, setDraftHours] = useState<BusinessHour[]>([]);
+  const [saving, setSaving] = useState(false);
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    try {
+      const res = await fetch(`/api/${slug}/business-hours`);
+      const data = await res.json();
+      if (res.ok) {
+        setEnabled(data.enabled);
+        const rows: BusinessHour[] = data.hours ?? [];
+        const full = [1, 2, 3, 4, 5, 6, 0].map(day => {
+          const existing = rows.find(h => h.day_of_week === day);
+          return existing ?? { day_of_week: day, open_time: '09:00', close_time: '17:00', is_active: false };
+        });
+        setHours(full);
+      }
+    } catch { /* ignore */ } finally {
+      setLoading(false);
+    }
+  }, [slug]);
+
+  useEffect(() => { load(); }, [load]);
+
+  function startEdit() {
+    setDraftEnabled(enabled);
+    setDraftHours(hours.map(h => ({ ...h })));
+    setEditing(true);
+  }
+
+  function cancel() {
+    setEditing(false);
+  }
+
+  function updateDay(dayOfWeek: number, updates: Partial<BusinessHour>) {
+    setDraftHours(prev => prev.map(h =>
+      h.day_of_week === dayOfWeek ? { ...h, ...updates } : h
+    ));
+  }
+
+  async function save() {
+    setSaving(true);
+    try {
+      const res = await fetch(`/api/${slug}/business-hours`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ enabled: draftEnabled, hours: draftHours }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        toast.error(data.error ?? "Couldn't save business hours.");
+        return;
+      }
+      toast.success('Business hours saved.');
+      setEditing(false);
+      await load();
+    } catch {
+      toast.error("Couldn't save business hours.");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  if (loading) return null;
+
+  return (
+    <section>
+      <SectionHeader
+        title="Business Hours"
+        editing={editing}
+        onEdit={startEdit}
+        onCancel={cancel}
+        onSave={save}
+        saving={saving}
+      />
+      <div className="bg-surface rounded-lg border border-border px-4">
+        {editing ? (
+          <div className="py-3 space-y-3">
+            <label className="flex items-center gap-2 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={draftEnabled}
+                onChange={e => setDraftEnabled(e.target.checked)}
+              />
+              <span className="text-sm text-fg">Enable business hours</span>
+            </label>
+            <p className="text-[11px] text-fg-muted">
+              {draftEnabled
+                ? `Customers can book any time your business is open. You assign a ${terminology.staff.toLowerCase()} afterward.`
+                : `Customers can only book when a specific ${terminology.staff.toLowerCase()} is available.`}
+            </p>
+            <div className="space-y-1">
+              {[1, 2, 3, 4, 5, 6, 0].map(day => {
+                const row = draftHours.find(h => h.day_of_week === day);
+                if (!row) return null;
+                return (
+                  <div key={day} className="flex items-center gap-3 py-1">
+                    <label className="flex items-center gap-2 w-24 shrink-0 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={row.is_active}
+                        onChange={e => updateDay(day, { is_active: e.target.checked })}
+                      />
+                      <span className={`text-xs ${row.is_active ? 'text-fg' : 'text-fg-muted'}`}>
+                        {DAY_LABELS[day]}
+                      </span>
+                    </label>
+                    {row.is_active ? (
+                      <div className="flex items-center gap-1">
+                        <input
+                          type="time"
+                          value={row.open_time}
+                          onChange={e => updateDay(day, { open_time: e.target.value })}
+                          className={inputCls + ' w-24 text-xs'}
+                        />
+                        <span className="text-xs text-fg-muted">–</span>
+                        <input
+                          type="time"
+                          value={row.close_time}
+                          onChange={e => updateDay(day, { close_time: e.target.value })}
+                          className={inputCls + ' w-24 text-xs'}
+                        />
+                      </div>
+                    ) : (
+                      <span className="text-xs text-fg-muted">Closed</span>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        ) : (
+          <div className="py-1">
+            <Row label="Business hours" value={enabled ? 'Enabled' : 'Disabled (staff availability only)'} />
+            {enabled && hours.filter(h => h.is_active).map(h => (
+              <Row
+                key={h.day_of_week}
+                label={DAY_LABELS[h.day_of_week]}
+                value={`${h.open_time} – ${h.close_time}`}
+              />
+            ))}
+          </div>
+        )}
+      </div>
+    </section>
   );
 }
 

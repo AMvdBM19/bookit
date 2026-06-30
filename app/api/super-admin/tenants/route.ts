@@ -295,12 +295,15 @@ export async function POST(request: NextRequest) {
   }
 
   // 7. Insert default tenant_settings from the template's default_settings.
+  // Operational fields (default_slot_minutes, min_lead_time_hours,
+  // per_service_duration_enabled) are NOT stamped here — the onboarding
+  // wizard owns them. Template defaults pre-fill the wizard UI; the
+  // tenant's choices persist at setup/complete.
   const { error: settingsError } = await supabase.from('tenant_settings').insert({
     tenant_id: tenantId,
     agency_display_name: businessName || name,
     brand_color: '#2BB673',
     booking_confirm_mode: templateDefaults.booking_confirm_mode,
-    default_slot_minutes: templateDefaults.default_slot_minutes,
     client_approval_mode: templateDefaults.client_approval_mode,
     deposit_pct: templateDefaults.deposit_pct,
     deposit_required_above_minutes: templateDefaults.deposit_required_above_minutes,

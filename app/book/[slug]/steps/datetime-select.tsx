@@ -24,6 +24,8 @@ interface Props {
   /** Booking window bounds — dates outside are disabled in the calendar. */
   minLeadTimeHours?: number;
   maxBookingDaysAhead?: number;
+  /** Days of week (0-6, 0=Sunday) closed by business hours. */
+  closedDays?: number[];
 }
 
 interface AvailabilityResponse {
@@ -52,12 +54,14 @@ function MonthCalendar({
   brandColor,
   minDateStr,
   maxDateStr,
+  closedDays = [],
 }: {
   selectedDate: string | null;
   onSelectDate: (date: string) => void;
   brandColor: string;
   minDateStr: string;
   maxDateStr: string;
+  closedDays?: number[];
 }) {
   const t = useWidgetStrings();
   const initial = selectedDate ?? minDateStr;
@@ -124,7 +128,9 @@ function MonthCalendar({
       <div className="grid grid-cols-7 gap-1">
         {cells.map((dateStr, i) => {
           if (!dateStr) return <span key={`blank-${i}`} />;
-          const inRange = dateStr >= minDateStr && dateStr <= maxDateStr;
+          const dayOfWeek = new Date(dateStr + 'T00:00:00').getDay();
+          const isClosed = closedDays.includes(dayOfWeek);
+          const inRange = dateStr >= minDateStr && dateStr <= maxDateStr && !isClosed;
           const isSelected = dateStr === selectedDate;
           return (
             <button
@@ -165,6 +171,7 @@ export default function DateTimeSelect({
   brandColor,
   minLeadTimeHours = 0,
   maxBookingDaysAhead = 30,
+  closedDays = [],
 }: Props) {
   const t = useWidgetStrings();
   const [slots, setSlots] = useState<Slot[]>([]);
@@ -229,6 +236,7 @@ export default function DateTimeSelect({
           brandColor={brandColor}
           minDateStr={minDateStr}
           maxDateStr={maxDateStr}
+          closedDays={closedDays}
         />
       </div>
 

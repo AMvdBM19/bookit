@@ -217,9 +217,11 @@ function humanizeKey(key: string): string {
 const SKIP_CUSTOM_KEYS = ['service_address', 'reference_image'];
 function CustomFieldValues({
   slug,
+  bookingId,
   values,
 }: {
   slug: string;
+  bookingId: string;
   values: Record<string, unknown>;
 }) {
   const [meta, setMeta] = useState<Record<string, { label: string; type: string }>>({});
@@ -247,9 +249,10 @@ function CustomFieldValues({
       {entries.map(([key, value]) => {
         const m = meta[key];
         const label = m?.label ?? humanizeKey(key);
+        const isFile = m?.type === 'file' || (typeof value === 'string' && /^[0-9a-f-]+\/.+\.(jpg|jpeg|png|webp|pdf|doc|docx)$/i.test(value));
         let display: React.ReactNode;
-        if (m?.type === 'file' || (typeof value === 'string' && /^[0-9a-f-]+\/.+\.(jpg|png|webp)$/i.test(value))) {
-          display = <span className="text-fg-muted">File uploaded</span>;
+        if (isFile) {
+          display = <BookingFilePreview slug={slug} bookingId={bookingId} fieldKey={key} />;
         } else if (Array.isArray(value)) {
           display = value.join(', ');
         } else {
@@ -257,7 +260,7 @@ function CustomFieldValues({
         }
         return (
           <DetailItem key={key} label={label}>
-            <p className="whitespace-pre-wrap">{display}</p>
+            <div className="whitespace-pre-wrap">{display}</div>
           </DetailItem>
         );
       })}
@@ -319,49 +322,88 @@ function DetailItem({ label, children }: { label: string; children: React.ReactN
   );
 }
 
+function BookingFilePreview({
+  slug,
+  bookingId,
+  fieldKey,
+}: {
+  slug: string;
+  bookingId: string;
+  fieldKey: string;
+}) {
+  const [state, setState] = useState<{
+    loading: boolean;
+    url: string | null;
+    filename: string | null;
+    contentType: string | null;
+    failed: boolean;
+  }>({ loading: true, url: null, filename: null, contentType: null, failed: false });
+
+  useEffect(() => {
+    let cancelled = false;
+    fetch(`/api/${slug}/bookings/${bookingId}/file?key=${encodeURIComponent(fieldKey)}`)
+      .then(res => res.json().then(data => ({ ok: res.ok, data })))
+      .then(({ ok, data }) => {
+        if (cancelled) return;
+        if (!ok || !data.url) {
+          setState(s => ({ ...s, loading: false, failed: true }));
+          return;
+        }
+        setState({
+          loading: false,
+          url: data.url,
+          filename: data.filename ?? 'file',
+          contentType: data.content_type ?? 'application/octet-stream',
+          failed: false,
+        });
+      })
+      .catch(() => {
+        if (!cancelled) setState(s => ({ ...s, loading: false, failed: true }));
+      });
+    return () => { cancelled = true; };
+  }, [slug, bookingId, fieldKey]);
+
+  if (state.loading) return <span className="text-fg-muted">Loading…</span>;
+  if (state.failed) return <span className="text-fg-muted">Couldn&apos;t load file.</span>;
+
+  const isImage = state.contentType?.startsWith('image/');
+
+  if (isImage && state.url) {
+    return (
+      <a href={state.url} target="_blank" rel="noopener noreferrer" title="Open full size">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src={state.url}
+          alt={state.filename ?? 'Uploaded file'}
+          className="w-24 h-24 rounded-lg object-cover border border-border hover:opacity-90"
+        />
+      </a>
+    );
+  }
+
+  return (
+    <a
+      href={state.url!}
+      target="_blank"
+      rel="noopener noreferrer"
+      className="inline-flex items-center gap-1.5 text-xs text-blue-600 dark:text-blue-400 hover:underline"
+    >
+      <svg className="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 0 0-3.375-3.375h-1.5A1.125 1.125 0 0 1 13.5 7.125v-1.5a3.375 3.375 0 0 0-3.375-3.375H8.25m.75 12 3 3m0 0 3-3m-3 3v-6m-1.5-9H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 0 0-9-9Z" />
+      </svg>
+      Download {state.filename}
+    </a>
+  );
+}
+
 /**
  * Inline booking detail panel: client contact, notes, services + pricing,
  * source and lifecycle timestamps. Used by the expandable rows on the
  * Bookings tab and by the calendar view.
  */
-// Lazy signed-URL loader for the private reference image.
+// Legacy reference image now uses the generalized /file endpoint.
 function ReferenceImage({ slug, bookingId }: { slug: string; bookingId: string }) {
-  const [url, setUrl] = useState<string | null>(null);
-  const [failed, setFailed] = useState(false);
-
-  useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      try {
-        const res = await fetch(`/api/${slug}/bookings/${bookingId}/reference-image`);
-        const data = await res.json().catch(() => ({}));
-        if (cancelled) return;
-        if (!res.ok || !data.url) {
-          setFailed(true);
-          return;
-        }
-        setUrl(data.url);
-      } catch {
-        if (!cancelled) setFailed(true);
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [slug, bookingId]);
-
-  if (failed) return <span className="text-fg-muted">Couldn&apos;t load image.</span>;
-  if (!url) return <span className="text-fg-muted">Loading…</span>;
-  return (
-    <a href={url} target="_blank" rel="noopener noreferrer" title="Open full size">
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img
-        src={url}
-        alt="Client reference"
-        className="w-24 h-24 rounded-lg object-cover border border-border hover:opacity-90"
-      />
-    </a>
-  );
+  return <BookingFilePreview slug={slug} bookingId={bookingId} fieldKey="reference_image" />;
 }
 
 export default function BookingDetailPanel({
@@ -492,7 +534,7 @@ export default function BookingDetailPanel({
         )}
 
         {slug && booking.custom_field_values && (
-          <CustomFieldValues slug={slug} values={booking.custom_field_values} />
+          <CustomFieldValues slug={slug} bookingId={booking.id} values={booking.custom_field_values} />
         )}
 
         <DetailItem label="History">

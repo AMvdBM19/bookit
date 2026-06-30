@@ -359,6 +359,7 @@ function BookingWidgetInner({ slug, catalog, lang }: Required<Props>) {
                 brandColor={brandColor}
                 minLeadTimeHours={catalog.settings?.min_lead_time_hours ?? 0}
                 maxBookingDaysAhead={catalog.settings?.max_booking_days_ahead ?? 30}
+                closedDays={catalog.closedDays}
               />
               {state.validationError && (
                 <p className="text-red-400 text-xs">{state.validationError}</p>

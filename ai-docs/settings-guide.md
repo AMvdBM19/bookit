@@ -26,6 +26,7 @@ Edit → Save flow.
 | Field | Effect |
 |---|---|
 | **Confirm mode** | "{Staff} must accept" (new bookings wait as pending) vs **Auto-confirm** (instantly confirmed). Pool bookings always start pending regardless. |
+| **Default slot duration (min)** | Base duration for each booking. Set in onboarding, editable here. 5–480 minutes. When per-service duration is enabled, individual service tags can override this. |
 | **Min lead time (h)** | Hides widget slots starting sooner than this many hours from now. |
 | **Max booking window (days)** | How far ahead clients can book. |
 | **Reminder lead time (min)** | How long before a confirmed booking the WhatsApp reminder fires (see notifications-guide.md). |
@@ -90,6 +91,34 @@ acceptance) are template-level notices, not tenant-editable.
   as normal.
 - **AI assistant** shows as "Coming soon".
 
+## Business hours section
+
+When **Business hours** is toggled ON, the tenant defines a weekly schedule of
+open/closed days with opening and closing times. This schedule gates the booking
+widget: closed days are greyed out in the calendar, and available time slots on
+open days are clamped to the business window. When OFF (default), availability
+depends only on individual {staff} schedules.
+
+| Control | Effect |
+|---|---|
+| **Enable toggle** | Turns business-hours gating on or off globally. |
+| **Day toggles** | Mark each day of the week as Open or Closed. At least one day must be open when enabled. |
+| **Open / Close times** | Per-day start and end time (open must be before close). |
+
+In **pool booking mode**, open business hours also generate "unassigned" slots
+for the entire business window, allowing clients to book even when no specific
+{staff} has availability. These bookings arrive as pending for any {staff} to
+claim or for the agent to assign.
+
+Business hours are set during onboarding and editable later under Settings →
+Bookings. The `business_hours_enabled` toggle is saved on `tenant_settings`;
+the per-day schedule lives in the `business_hours` table.
+
+### Related APIs
+
+- `GET /api/{slug}/business-hours` — current schedule + enabled flag (agent-only).
+- `PUT /api/{slug}/business-hours` — replace the full weekly schedule (agent-only).
+
 ## Booking form section
 
 The custom booking-form **field builder** has moved to the **Widget** tab, so
@@ -118,9 +147,10 @@ fields".
 ## Full editable-field list (PATCH /api/{slug}/settings)
 
 Identity: `agency_display_name`, `logo_url`, `brand_color`.
-Bookings: `booking_confirm_mode`, `min_lead_time_hours`,
-`max_booking_days_ahead`, `reminder_lead_time_minutes`,
-`buffer_before_minutes`, `buffer_after_minutes`.
+Bookings: `booking_confirm_mode`, `default_slot_minutes`,
+`min_lead_time_hours`, `max_booking_days_ahead`,
+`reminder_lead_time_minutes`, `buffer_before_minutes`,
+`buffer_after_minutes`, `business_hours_enabled`.
 Compliance: `require_age_confirm`.
 Pricing: `pricing_enabled`, `show_price_to_client`, `staff_payout_pct`,
 `agency_share_pct`, `tax_label`, `tax_period`, `no_show_revenue_policy`,

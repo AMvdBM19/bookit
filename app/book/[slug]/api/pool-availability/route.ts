@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase/server';
 import { checkPoolAvailability } from '@/lib/availability/pool';
 import { effectiveDurationMinutes } from '@/lib/availability/duration';
+import { getBusinessHours, getBusinessWindow, clampSlotsToBusinessHours } from '@/lib/availability/business-hours';
 
 export const dynamic = 'force-dynamic';
 
@@ -107,21 +108,40 @@ export async function GET(
     }
   }
 
+  const bh = await getBusinessHours(supabase, tenant.id);
+  const dayOfWeek = new Date(date + 'T00:00:00').getDay();
+
+  if (bh.enabled) {
+    const window = getBusinessWindow(bh.hours, dayOfWeek);
+    if (!window) {
+      return NextResponse.json({
+        available: false,
+        slots: [],
+        reason: 'Business is closed on this day',
+        date,
+      });
+    }
+  }
+
   const result = await checkPoolAvailability(supabase, tenant.id, date, tagIds, undefined, undefined, {
     bufferBeforeMinutes: settings?.buffer_before_minutes ?? 0,
     bufferAfterMinutes: settings?.buffer_after_minutes ?? 0,
   });
 
-  // Split each staff member's free intervals into discrete slots, then dedupe
-  // across staff. Splitting per-staff (rather than the merged union) guarantees
-  // every offered slot fits within a single staff member's free time.
   const now = new Date();
   const leadCutoff = new Date(now.getTime() + minLeadHours * 3600000);
   const seen = new Set<string>();
   const discreteSlots: Array<{ start: string; end: string }> = [];
 
+  // When business hours are enabled, also offer slots within business
+  // hours even if no specific worker is free (unassigned booking).
+  const bhWindow = bh.enabled ? getBusinessWindow(bh.hours, dayOfWeek) : null;
+
   for (const staffFreeSlots of result.staffSlots) {
-    for (const slot of staffFreeSlots) {
+    const clamped = bhWindow
+      ? clampSlotsToBusinessHours(staffFreeSlots, bhWindow)
+      : staffFreeSlots;
+    for (const slot of clamped) {
       let cursor = slot.start;
       while (true) {
         const endTime = addMinutes(cursor, slotMinutes);
@@ -142,6 +162,32 @@ export async function GET(
         }
         cursor = endTime;
       }
+    }
+  }
+
+  // When business hours are enabled, fill the business window with
+  // unassigned slots even where no staff is free. The booking lands as
+  // pending_staff with staff_id=NULL — reuses the pool shape.
+  if (bhWindow) {
+    let cursor = bhWindow.start;
+    while (true) {
+      const endTime = addMinutes(cursor, slotMinutes);
+      if (endTime > bhWindow.end) break;
+
+      if (date === todayDateStr) {
+        const slotDateTime = new Date(`${date}T${cursor}`);
+        if (slotDateTime < leadCutoff) {
+          cursor = endTime;
+          continue;
+        }
+      }
+
+      const key = `${cursor}-${endTime}`;
+      if (!seen.has(key)) {
+        seen.add(key);
+        discreteSlots.push({ start: cursor, end: endTime });
+      }
+      cursor = endTime;
     }
   }
 

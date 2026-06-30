@@ -3,6 +3,29 @@
 > Feature history for the AI assistant: what exists and since when. Newest
 > first. Maintained per the AI Docs Maintenance Protocol in CLAUDE.md.
 
+## 2026-06-30 — Onboarding Config, Business Hours, File Preview (Phase 22)
+
+- **Onboarding config ownership**: operational settings (default slot duration,
+  min lead time, per-service duration, booking mode) are now owned by the
+  onboarding wizard. Super-admin no longer stamps these at tenant creation —
+  template defaults pre-fill the wizard, and the tenant's choices persist.
+  Default slot duration is now editable post-onboarding in Settings → Bookings.
+- **Service tags optional**: the onboarding wizard no longer requires at least
+  one service tag. Tenants offering a single master service can skip tags
+  entirely. The booking widget works with zero tags — clients book the base
+  service directly without a tag-selection step.
+- **Business working hours**: new tenant-level availability gate. When enabled,
+  customers can only book during business hours (weekly schedule). Closed days
+  are greyed out in the date picker. Slots outside business hours are hidden.
+  When no specific {staff} is free during business hours, unassigned bookings
+  (pending_staff) can still be created — reuses the pool booking shape. Default
+  OFF for zero regression. Configured in onboarding wizard and Settings.
+- **File preview in booking details**: custom-field file uploads now show
+  inline image thumbnails (clickable to full-size) or download links with file
+  icons for non-image files (PDF, DOC). Legacy reference images use the same
+  unified component. Powered by a new `/api/{slug}/bookings/{id}/file` endpoint
+  that generates signed URLs from the booking-references bucket.
+
 ## 2026-06-30 — Production Hardening (Phase 21)
 
 - **Error tracking**: Sentry integration for client, server and edge runtimes.

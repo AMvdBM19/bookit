@@ -9,6 +9,7 @@ const EDITABLE_FIELDS = [
   'logo_url',
   'brand_color',
   'booking_confirm_mode',
+  'default_slot_minutes',
   'min_lead_time_hours',
   'max_booking_days_ahead',
   'show_price_to_client',
@@ -48,6 +49,8 @@ const EDITABLE_FIELDS = [
   'widget_show_powered_by',
   'widget_logo_url',
   'widget_language',
+  // Business hours (Phase 22-C)
+  'business_hours_enabled',
   // GDPR / terms (Phase 21-D4)
   'terms_url',
   'privacy_url',
@@ -148,6 +151,18 @@ export async function PATCH(request: NextRequest) {
         { status: 400 }
       );
     }
+  }
+
+  // Default slot duration: positive integer, max 480 (8 hours).
+  if ('default_slot_minutes' in update) {
+    const mins = Number(update.default_slot_minutes);
+    if (!Number.isInteger(mins) || mins < 5 || mins > 480) {
+      return NextResponse.json(
+        { error: 'default_slot_minutes must be an integer between 5 and 480' },
+        { status: 400 }
+      );
+    }
+    update.default_slot_minutes = mins;
   }
 
   // Buffer minutes: 0–60 in whole minutes.

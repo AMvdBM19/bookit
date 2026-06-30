@@ -12,6 +12,7 @@ import StepBookingRules from './steps/step-booking-rules';
 import StepBookingMode from './steps/step-booking-mode';
 import StepFinancial from './steps/step-financial';
 import StepCompliance from './steps/step-compliance';
+import StepBusinessHours from './steps/step-business-hours';
 import StepServices from './steps/step-services';
 import StepReview from './steps/step-review';
 
@@ -34,6 +35,13 @@ export interface WizardState {
   age_gate_minimum: number;
   require_age_confirm: boolean;
   require_id_upload: boolean;
+  business_hours_enabled: boolean;
+  business_hours: Array<{
+    day_of_week: number;
+    open_time: string;
+    close_time: string;
+    is_active: boolean;
+  }>;
   service_tags: string[];
 }
 
@@ -61,6 +69,16 @@ function buildDefaultState(
     age_gate_minimum: featureFlags.age_gate_minimum ?? 18,
     require_age_confirm: featureFlags.show_age_gate_step,
     require_id_upload: false,
+    business_hours_enabled: false,
+    business_hours: [
+      { day_of_week: 1, open_time: '09:00', close_time: '17:00', is_active: true },
+      { day_of_week: 2, open_time: '09:00', close_time: '17:00', is_active: true },
+      { day_of_week: 3, open_time: '09:00', close_time: '17:00', is_active: true },
+      { day_of_week: 4, open_time: '09:00', close_time: '17:00', is_active: true },
+      { day_of_week: 5, open_time: '09:00', close_time: '17:00', is_active: true },
+      { day_of_week: 6, open_time: '10:00', close_time: '16:00', is_active: false },
+      { day_of_week: 0, open_time: '10:00', close_time: '16:00', is_active: false },
+    ],
     service_tags: [...initialServiceTags],
   };
 }
@@ -71,6 +89,7 @@ type StepKey =
   | 'branding'
   | 'booking'
   | 'booking_mode'
+  | 'business_hours'
   | 'financial'
   | 'compliance'
   | 'services'
@@ -88,6 +107,8 @@ function stepLabel(key: StepKey, terminology: Terminology): string {
       return 'Booking Rules';
     case 'booking_mode':
       return `${terminology.staff} Selection`;
+    case 'business_hours':
+      return 'Business Hours';
     case 'financial':
       return 'Financial';
     case 'compliance':
@@ -120,6 +141,10 @@ function validateStep(
     case 'booking':
       if (state.min_lead_time_hours < 0) return 'Lead time cannot be negative.';
       return null;
+    case 'business_hours':
+      if (state.business_hours_enabled && state.business_hours.filter(h => h.is_active).length === 0)
+        return 'At least one open day is required when business hours are enabled.';
+      return null;
     case 'financial':
       if (state.base_rate_per_30min < 0) return 'Base rate cannot be negative.';
       if (state.staff_payout_pct < 0 || state.staff_payout_pct > 100)
@@ -131,7 +156,6 @@ function validateStep(
         return 'Minimum age must be at least 18.';
       return null;
     case 'services':
-      if (state.service_tags.length === 0) return 'At least one option is required.';
       return null;
     default:
       return null;
@@ -151,7 +175,7 @@ export default function WizardShell({ slug, tenantName, initialServiceTags }: Pr
   const steps = useMemo<StepKey[]>(() => {
     const s: StepKey[] = [];
     if (!sourceTemplateSlug) s.push('template');
-    s.push('identity', 'branding', 'booking', 'booking_mode', 'financial');
+    s.push('identity', 'branding', 'booking', 'booking_mode', 'business_hours', 'financial');
 
     const hasAnyCompliance = Object.values(complianceFlags).some(v => v === true);
     const hasAgeGate = featureFlags.show_age_gate_step;
@@ -261,6 +285,7 @@ export default function WizardShell({ slug, tenantName, initialServiceTags }: Pr
         {stepKey === 'branding' && <StepBranding {...stepProps} />}
         {stepKey === 'booking' && <StepBookingRules {...stepProps} />}
         {stepKey === 'booking_mode' && <StepBookingMode {...stepProps} />}
+        {stepKey === 'business_hours' && <StepBusinessHours {...stepProps} />}
         {stepKey === 'financial' && <StepFinancial {...stepProps} />}
         {stepKey === 'compliance' && <StepCompliance {...stepProps} />}
         {stepKey === 'services' && <StepServices {...stepProps} />}

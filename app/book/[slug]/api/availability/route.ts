@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase/server';
 import { checkAvailability } from '@/lib/availability/check';
 import { effectiveDurationMinutes } from '@/lib/availability/duration';
+import { getBusinessHours, getBusinessWindow, clampSlotsToBusinessHours } from '@/lib/availability/business-hours';
 
 export const dynamic = 'force-dynamic';
 
@@ -120,16 +121,37 @@ export async function GET(
     }
   }
 
+  const bh = await getBusinessHours(supabase, tenant.id);
+  const dayOfWeek = new Date(date + 'T00:00:00').getDay();
+
+  if (bh.enabled) {
+    const window = getBusinessWindow(bh.hours, dayOfWeek);
+    if (!window) {
+      return NextResponse.json({
+        available: false,
+        slots: [],
+        reason: 'Business is closed on this day',
+        date,
+      });
+    }
+  }
+
   const result = await checkAvailability(supabase, tenant.id, staffId, date, undefined, undefined, {
     bufferBeforeMinutes: settings?.buffer_before_minutes ?? 0,
     bufferAfterMinutes: settings?.buffer_after_minutes ?? 0,
   });
 
+  let freeSlots = result.slots;
+  if (bh.enabled) {
+    const window = getBusinessWindow(bh.hours, dayOfWeek)!;
+    freeSlots = clampSlotsToBusinessHours(freeSlots, window);
+  }
+
   const discreteSlots: Array<{ start: string; end: string }> = [];
   const now = new Date();
   const leadCutoff = new Date(now.getTime() + minLeadHours * 3600000);
 
-  for (const slot of result.slots) {
+  for (const slot of freeSlots) {
     let cursor = slot.start;
     while (true) {
       const endTime = addMinutes(cursor, slotMinutes);

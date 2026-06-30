@@ -71,9 +71,11 @@ The **List** view has three sections:
 
 Every row in all three tables has a chevron ("See details") that expands an
 inline panel showing, when present: {client} contact (email, phone,
-WhatsApp opt-in), the booking notes, the service address, a clickable
-reference-image thumbnail, and any **custom booking-form fields** the tenant
-collects (managed in Widget → Booking form fields), selected services with per-service
+WhatsApp opt-in), the booking notes, the service address, and any **custom
+booking-form fields** the tenant collects (managed in Widget → Booking form
+fields) — file-type fields render as clickable image thumbnails (for images)
+or download links (for documents). The legacy reference image is unified into
+the same preview. Also shown: selected services with per-service
 extras and the total price, the assigned {staff} (or "Unassigned — pool"),
 the source (Widget/Manual), and requested/confirmed/cancelled timestamps
 plus cancellation reason. Staff see a slimmer "See details" on their own
@@ -178,24 +180,29 @@ restricted this way.
 
 A slot is offered when:
 
-1. The staff member's weekly schedule covers it (Settings are per staff, set in
+1. If **business hours** are enabled, the day is open and the slot falls within
+   the business window (closed days are greyed out in the widget calendar).
+2. The staff member's weekly schedule covers it (Settings are per staff, set in
    their own dashboard or during their setup wizard).
-2. The staff member has no **day off** (exception) on that date.
-3. No pending/confirmed booking overlaps it — each existing booking's blocked
+3. The staff member has no **day off** (exception) on that date.
+4. No pending/confirmed booking overlaps it — each existing booking's blocked
    range is widened by `buffer_before_minutes` / `buffer_after_minutes`.
-4. It satisfies the tenant's `min_lead_time_hours` (e.g. no same-hour bookings)
+5. It satisfies the tenant's `min_lead_time_hours` (e.g. no same-hour bookings)
    and `max_booking_days_ahead` window.
 
-Common "why can't clients book X" answers: the staff member has no schedule for
-that weekday, a day off exists, buffers around an adjacent booking consume the
-gap, the lead-time minimum hides today's remaining slots, or the date is beyond
-the booking window.
+Common "why can't clients book X" answers: the business is closed that day
+(business hours), the staff member has no schedule for that weekday, a day off
+exists, buffers around an adjacent booking consume the gap, the lead-time
+minimum hides today's remaining slots, or the date is beyond the booking window.
 
 ## Pool mode specifics
 
 - The widget shows no staff list; clients pick only date/time (+ services).
 - Availability is the union of all eligible staff (active, setup complete,
   offering at least one selected service when services are chosen).
+- When business hours are enabled, the entire business window generates
+  "unassigned" slots even when no specific staff is free, allowing clients
+  to book; those bookings arrive pending for any staff to claim.
 - Pool bookings always start `pending_staff`, even in auto-confirm tenants.
 - They are claimed first-come-first-served by staff, or assigned by the owner
   from the Bookings tab.
@@ -236,8 +243,9 @@ When a booking becomes fully paid, the **Receipt** email template
 - `PATCH /api/{slug}/bookings/{id}/status` — completed / no_show.
 - `POST /api/{slug}/bookings/create` — manual creation (agent).
 - `GET /api/{slug}/export/bookings` — CSV export (agent).
-- `GET /api/{slug}/bookings/{id}/reference-image` — signed URL for the
-  private reference image (agent, or the assigned staff member).
+- `GET /api/{slug}/bookings/{id}/file?key=reference_image` — signed URL for
+  a booking file (reference image or custom field upload). Agent, or the
+  assigned staff member.
 - `GET|PATCH /api/{slug}/bookings/{id}/edit` — edit context / apply an
   edit (agent; staff when staff_can_edit_bookings and own booking).
 - Public: `GET /book/{slug}/api/availability`, `/pool-availability`,

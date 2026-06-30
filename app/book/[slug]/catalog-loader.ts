@@ -86,6 +86,10 @@ export interface Catalog {
   complianceFlags: ComplianceFlags;
   /** Tenant's active custom booking-form fields, in display order (Phase 20-C). */
   bookingFields: BookingField[];
+  /** When true, only days with active business hours are bookable. */
+  businessHoursEnabled: boolean;
+  /** Days of week (0-6, 0=Sunday) that are closed. Empty when feature is off. */
+  closedDays: number[];
 }
 
 export async function loadCatalog(slug: string): Promise<Catalog | null> {
@@ -209,6 +213,19 @@ export async function loadCatalog(slug: string): Promise<Catalog | null> {
   const featureFlags = (tenantConfig?.feature_flags as FeatureFlags | undefined) ?? DEFAULT_FEATURE_FLAGS;
   const complianceFlags = (tenantConfig?.compliance_flags as ComplianceFlags | undefined) ?? DEFAULT_COMPLIANCE_FLAGS;
 
+  const businessHoursEnabled = settings?.business_hours_enabled === true;
+  let closedDays: number[] = [];
+  if (businessHoursEnabled) {
+    const { data: bhRows } = await supabase
+      .from('business_hours')
+      .select('day_of_week, is_active')
+      .eq('tenant_id', tenant.id);
+    const openDays = new Set(
+      (bhRows ?? []).filter(r => r.is_active).map(r => r.day_of_week as number)
+    );
+    closedDays = [0, 1, 2, 3, 4, 5, 6].filter(d => !openDays.has(d));
+  }
+
   return {
     tenant: {
       id: tenant.id,
@@ -223,5 +240,7 @@ export async function loadCatalog(slug: string): Promise<Catalog | null> {
     featureFlags,
     complianceFlags,
     bookingFields,
+    businessHoursEnabled,
+    closedDays,
   };
 }
