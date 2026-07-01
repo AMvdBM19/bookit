@@ -16,7 +16,6 @@ const inputCls =
 
 export default function StepBusinessHours({ state, onChange, error }: Props) {
   const { terminology } = useTenantConfig();
-  const staffPluralLower = terminology.staff_plural.toLowerCase();
 
   function updateDay(dayOfWeek: number, updates: Partial<WizardState['business_hours'][number]>) {
     const next = state.business_hours.map(h =>
